@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\super_admin\AllProjectController;
 use App\Http\Controllers\super_admin\DashboardController;
 
 // Route Login Page
@@ -10,4 +11,4 @@ Route::post('/login-proses', [AuthController::class, 'proses_login'])->name('log
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Dashboard
-Route::get('/super_admin/dashboard', [DashboardController::class, 'dashboard']);
+Route::get('/dashboard', [AllProjectController::class, 'dashboard']);
