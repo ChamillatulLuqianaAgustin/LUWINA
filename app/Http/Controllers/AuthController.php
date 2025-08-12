@@ -7,15 +7,11 @@ use Google\Cloud\Firestore\FirestoreClient;
 
 class AuthController extends Controller
 {
-    /**
-     * Ambil instance Firestore.
-     * Tidak disimpan di property agar tidak menimbulkan recursive serialization.
-     */
     private function getFirestore()
     {
         return new FirestoreClient([
-            'projectId' => 'luwina-381dd',
-            'keyFilePath' => config('firebase.credentials')
+            'projectId' => env('FIREBASE_PROJECT_ID'),
+            'keyFilePath' => base_path(env('FIREBASE_CREDENTIALS')), // Ambil dari .env
         ]);
     }
 
@@ -31,32 +27,54 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Ambil Firestore instance hanya di sini
         $firestore = $this->getFirestore();
-        $usersRef = $firestore->collection('User');
-        $query = $usersRef->where('user_nik', '=', $request->nik)->documents();
 
-        if ($query->isEmpty()) {
-            return back()->with('failed', 'Username atau Password Salah');
+        // Cari user berdasarkan NIK
+        $userSnapshot = $firestore->collection('User')
+            ->where('user_nik', '=', $request->nik)
+            ->limit(1)
+            ->documents();
+
+        if ($userSnapshot->isEmpty()) {
+            return back()->withErrors(['nik' => 'NIK tidak ditemukan']);
         }
 
-        foreach ($query as $userDoc) {
-            $userData = $userDoc->data();
+        $userDoc = $userSnapshot->rows()[0];
+        $userData = $userDoc->data();
 
-            // Cocokkan password (gunakan hashing di produksi)
-            if ($userData['user_password'] === $request->password) {
-                // Simpan data penting saja di session (jangan object Firestore)
-                session([
-                    'user_id'   => $userDoc->id(),
-                    'user_nama' => $userData['user_nama'],
-                    'user_role' => $userData['user_role'],
-                ]);
-
-                return redirect()->route('welcome');
-            }
+        // Cek password
+        if (($userData['user_password'] ?? '') !== $request->password) {
+            return back()->withErrors(['password' => 'Password salah']);
         }
 
-        return back()->with('failed', 'Username atau Password Salah');
+        // Ambil role dari Firestore reference
+        $roleName = 'Unknown Role';
+        if (!empty($userData['user_role']) && $userData['user_role'] instanceof \Google\Cloud\Firestore\DocumentReference) {
+            $roleSnapshot = $userData['user_role']->snapshot();
+            $roleName = $roleSnapshot->exists()
+                ? (string) ($roleSnapshot->data()['role'] ?? 'Unknown Role')
+                : 'Unknown Role';
+        }
+
+        // Simpan hanya data primitif ke session
+        session([
+            'user_id'   => (string) $userDoc->id(),
+            'user_nama' => (string) ($userData['user_nama'] ?? ''),
+            'user_nik'  => (string) $userData['user_nik'],
+            'role'      => $roleName
+        ]);
+
+
+        // Redirect sesuai role
+        if ($roleName === 'Super Admin') {
+            return redirect('/dashboard');
+        } elseif ($roleName === 'Telkom Akses') {
+            // return redirect('/dashboard/telkom'); SAMAIN SAMA ROUTE NYA DI WEB
+        } elseif ($roleName === 'Mitra') {
+            // return redirect('/dashboard/mitra'); SAMAIN SAMA ROUTE NYA DI WEB
+        } else {
+            return redirect('/');
+        }
     }
 
     public function logout(Request $request)

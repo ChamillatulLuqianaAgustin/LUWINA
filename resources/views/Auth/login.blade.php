@@ -55,10 +55,13 @@
             transition: background-color 0.3s;
             font-size: 14px;
             font-weight: bold;
+            border: 1.5px solid transparent;
         }
 
         .login-button:hover {
-            background-color: #2563eb;
+            background-color: white;
+            color: #133995;
+            border-color: #CFD0D2;
         }
     </style>
 </head>
