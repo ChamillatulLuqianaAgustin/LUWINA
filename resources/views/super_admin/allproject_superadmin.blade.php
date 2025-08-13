@@ -7,33 +7,28 @@
 
 @section('content')
 
-<!-- Poppins -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <div class="page">
 
-  <!-- Top controls -->
   <div class="top-controls">
     <button class="btn-primary-custom">+ Add Project</button>
 
     <div class="controls-right">
       <label for="tanggal" style="margin-right:6px;">Tanggal:</label>
-      <input type="date" id="tanggal" value="{{ date('Y-m-d') }}" style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
+      <input type="date" id="tanggal" name="tanggal" value="{{ date('Y-m-d') }}" style="padding:6px 8px; border-radius:6px; border:1px solid #ccc;">
       <button class="btn-primary-custom">📥 Download All</button>
     </div>
   </div>
 
-  <!-- Charts layout -->
   <div class="charts-row">
-    <!-- LEFT (large) -->
     <div class="card left">
-      <div class="card-title">Distribusi Total Project 2025</div>
+      <div class="card-title">Distribusi Total Project {{ date('Y') }}</div>
       <div class="chart-wrap">
         <canvas id="chartTotalProject"></canvas>
       </div>
     </div>
 
-    <!-- RIGHT (two small stacked) -->
     <div class="right-column">
       <div class="card">
         <div class="card-title">Distribusi Total Project Hari Ini</div>
@@ -51,7 +46,6 @@
     </div>
   </div>
 
-  <!-- Table -->
   <div class="table-card">
     <table>
       <thead>
@@ -65,47 +59,40 @@
         </tr>
       </thead>
       <tbody>
+        @foreach($projects as $index => $project)
         <tr>
-          <td>1</td>
-          <td>3MLG_MAGU_FAG/08_SAKLJ</td>
-          <td>PEMBETULAN TIANG DI JL JAKARTA</td>
-          <td>RECOVERY</td>
-          <td>2025-07-16</td>
-          <td>2025-07-25</td>
+          <td>{{ $index + 1 }}</td>
+          <td>{{ $project->nama_project ?? '-' }}</td>
+          <td>{{ $project->deskripsi_project ?? '-' }}</td>
+          <td>{{ $project->qe ?? '-' }}</td>
+          <td>
+            @if(isset($project->tanggal_upload) && is_object($project->tanggal_upload) && method_exists($project->tanggal_upload, 'toDateTime'))
+              {{ $project->tanggal_upload ?? '-' }}
+            @elseif(isset($project->tanggal_upload))
+              {{ $project->tanggal_upload }}
+            @else
+              -
+            @endif
+          </td>
+          <td>{{ $project->tanggal_pengerjaan ?? '-' }}</td>
         </tr>
-        <tr>
-          <td>2</td>
-          <td>3MLG_PREV_GESER ODP+TIANG_ODP-KLJ-FCF-06</td>
-          <td>GESER TIANG ODP-KLJ-FCF/06</td>
-          <td>RELOKASI</td>
-          <td>2025-06-11</td>
-          <td>-</td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td>3MLG_QPREV_THE_RITZ_INC35406882_KLJ</td>
-          <td>PENGECORAN TIANG DI JL SURABAYA</td>
-          <td>PREVENTIVE</td>
-          <td>2025-07-09</td>
-          <td>-</td>
-        </tr>
+        @endforeach
       </tbody>
       <tfoot>
         <tr>
           <td colspan="5" style="text-align:right">TOTAL ALL PROJECT</td>
-          <td>0</td>
+          <td>{{ $totalProject }}</td>
         </tr>
         <tr>
           <td colspan="5" style="text-align:right">TOTAL REVENUE</td>
-          <td>0</td>
+          <td>{{ number_format($totalRevenue, 2, ',', '.') }}</td>
         </tr>
       </tfoot>
     </table>
   </div>
 
-</div> <!-- /.page -->
+</div>
 
-<!-- Chart.js (keep maintainAspectRatio: false so canvas fills container) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const blue = '#133995';
@@ -115,8 +102,11 @@
   new Chart(document.getElementById('chartTotalProject'), {
     type: 'bar',
     data: {
-      labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-      datasets: [{ data: [450,300,480,320,410,300,280,350,360,370,380,380], backgroundColor: blue }]
+      labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+      datasets: [{
+        data: @json($chartTotalProjectData),
+        backgroundColor: blue
+      }]
     },
     options: {
       maintainAspectRatio: false,
@@ -129,8 +119,11 @@
   new Chart(document.getElementById('chartToday'), {
     type: 'bar',
     data: {
-      labels: ['PROCESS','ACC','REJECT'],
-      datasets: [{ data: [9,7,1], backgroundColor: blue }]
+      labels: Object.keys(@json($chartTodayData)),
+      datasets: [{
+        data: Object.values(@json($chartTodayData)),
+        backgroundColor: blue
+      }]
     },
     options: {
       indexAxis: 'y',
@@ -144,8 +137,11 @@
   new Chart(document.getElementById('chartPie'), {
     type: 'doughnut',
     data: {
-      labels: ['PROCESS','ACC','REJECT'],
-      datasets: [{ data: [50,40,10], backgroundColor: [blue, lightBlue, red] }]
+      labels: Object.keys(@json($chartPieData)),
+      datasets: [{
+        data: Object.values(@json($chartPieData)),
+        backgroundColor: [blue, lightBlue, red]
+      }]
     },
     options: {
       maintainAspectRatio: false,
@@ -156,9 +152,10 @@
 </script>
 
 <style>
+  /* styling sama seperti sebelumnya */
   :root{
     --blue: #133995;
-    --bg: #F5F5F6;
+    --bg: white;
     --card-border: #dcdcdc;
   }
   body { font-family: 'Poppins', sans-serif; background: var(--bg); }
@@ -169,7 +166,6 @@
     padding: 22px;
   }
 
-  /* top controls */
   .top-controls {
     display:flex;
     justify-content:space-between;
@@ -189,10 +185,9 @@
     cursor:pointer;
   }
 
-  /* CHART LAYOUT: left big, right two stacked */
   .charts-row {
     display: grid;
-    grid-template-columns: 2fr 1fr; /* left 2 / right 1 */
+    grid-template-columns: 2fr 1fr;
     gap: 18px;
     margin-bottom: 22px;
   }
@@ -207,20 +202,18 @@
     box-sizing: border-box;
   }
 
-  /* Left big card */
   .card.left {
-    height: 420px; /* total height for left */
+    height: 420px;
   }
 
-  /* Right column: two cards stacked with equal height that together equal left */
   .right-column {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    height: 420px; /* same total as left */
+    height: 420px;
   }
   .right-column .card {
-    flex: 1; /* split equally */
+    flex: 1;
     padding: 12px;
   }
 
@@ -231,10 +224,9 @@
     margin-bottom:10px;
   }
 
-  /* Chart container area that Chart.js will fill */
   .chart-wrap {
     flex: 1;
-    min-height: 0; /* important for flex children to allow proper shrinking */
+    min-height: 0;
     display: flex;
   }
   .chart-wrap canvas {
@@ -243,7 +235,6 @@
     display:block;
   }
 
-  /* Table styling */
   .table-card {
     border-radius: 10px;
     border: 1px solid var(--card-border);
@@ -265,8 +256,11 @@
     padding: 10px;
     vertical-align: middle;
   }
-  .table-card tfoot td { font-weight:700; padding:12px; }
-  /* Responsive fallback: on small screens stack */
+  .table-card tfoot td {
+    font-weight:700;
+    padding:12px;
+  }
+
   @media (max-width: 900px) {
     .charts-row { grid-template-columns: 1fr; }
     .right-column { height: auto; }

@@ -67,7 +67,7 @@ class AuthController extends Controller
 
         // Redirect sesuai role
         if ($roleName === 'Super Admin') {
-            return redirect('/dashboard');
+            return redirect()->route('superadmin.allproject');
         } elseif ($roleName === 'Telkom Akses') {
             // return redirect('/dashboard/telkom'); SAMAIN SAMA ROUTE NYA DI WEB
         } elseif ($roleName === 'Mitra') {

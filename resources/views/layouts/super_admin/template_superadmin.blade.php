@@ -14,8 +14,8 @@
 <body class="hold-transition sidebar-mini layout-fixed sidebar-collapse">
 <div class="wrapper">
 
-    {{-- Bagian header, nanti bisa beda tiap user --}}
-    @yield('header')
+    {{-- Header/menu --}}
+    @include('layouts.super_admin.header_superadmin')
 
     {{-- Main content --}}
     <section class="content">

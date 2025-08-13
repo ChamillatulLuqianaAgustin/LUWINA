@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\super_admin\UserController;
 use App\Http\Controllers\super_admin\MakeProjectController;
-use App\Http\Controllers\RoleController;
 use App\Http\Controllers\super_admin\AllProjectController;
 use App\Http\Controllers\super_admin\ProcessController;
 use App\Http\Controllers\super_admin\AccController;
@@ -19,8 +19,8 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 // All Project
 Route::prefix('superadmin')->group(function () {
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
-    Route::get('/make-project', [MakeProjectController::class, 'index'])->name('superadmin.make-project');
-    Route::get('/allproject', [AllProjectController::class, 'allproject']);
+    Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
+    Route::get('/allproject', [AllProjectController::class, 'allproject'])->name('superadmin.allproject');
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');

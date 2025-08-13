@@ -20,13 +20,14 @@
 
 <!-- Menu Navigasi -->
 <div class="menu-nav">
-    <a href="#" class="active">USER</a>
-    <a href="#">MAKE PROJECT</a>
-    <a href="#">ALL PROJECT</a>
-    <a href="#">PROCESS</a>
-    <a href="#">ACC</a>
-    <a href="#">REJECT</a>
+    <a href="{{ route('superadmin.user') }}" class="{{ request()->routeIs('superadmin.user') ? 'active' : '' }}"><span>USER</span></a>
+    <a href="{{ route('superadmin.makeproject') }}" class="{{ request()->routeIs('superadmin.makeproject') ? 'active' : '' }}"><span>MAKE PROJECT</span></a>
+    <a href="{{ route('superadmin.allproject') }}" class="{{ request()->routeIs('superadmin.allproject') ? 'active' : '' }}"><span>ALL PROJECT</span></a>
+    <a href="{{ route('superadmin.process') }}" class="{{ request()->routeIs('superadmin.process') ? 'active' : '' }}"><span>PROCESS</span></a>
+    <a href="{{ route('superadmin.acc') }}" class="{{ request()->routeIs('superadmin.acc') ? 'active' : '' }}"><span>ACC</span></a>
+    <a href="{{ route('superadmin.reject') }}" class="{{ request()->routeIs('superadmin.reject') ? 'active' : '' }}"><span>REJECT</span></a>
 </div>
+
 
 <style>
     .menu-nav {
@@ -86,9 +87,9 @@
     document.querySelectorAll('.menu-nav a').forEach(link => {
         link.innerHTML = `<span>${link.textContent}</span>`;
         link.addEventListener('click', e => {
-            e.preventDefault();
-            document.querySelectorAll('.menu-nav a').forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
+            document.querySelectorAll('.menu-nav a').forEach(link => {
+                link.innerHTML = `<span>${link.textContent}</span>`;
+            });
         });
     });
 </script>
