@@ -20,6 +20,7 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::prefix('superadmin')->group(function () {
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
+    Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
     Route::get('/allproject', [AllProjectController::class, 'allproject'])->name('superadmin.allproject');
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
