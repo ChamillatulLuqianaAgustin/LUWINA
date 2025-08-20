@@ -7,101 +7,108 @@
 
 @section('content')
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-<div class="page">
-    <!-- Add project -->
-    <div class="top-controls">
-        <a href="{{ url('/superadmin/makeproject') }}" class="btn-primary-custom">+ Add Project</a>
+    <div class="page">
+        <!-- Add project -->
+        <div class="top-controls">
+            <a href="{{ url('/superadmin/makeproject') }}" class="btn-primary-custom">+ Add Project</a>
 
-        <div class="controls-right">
-            <!-- Input Tanggal -->
-            <div class="date-group">
-                <label for="date_range">Tanggal Upload:</label>
-                <input type="text" id="date_range" class="form-control" placeholder="Pilih rentang tanggal">
-            </div>
-            <!-- Download -->
-            <button class="btn-primary-custom">
-                <i class="fa-solid fa-download"></i> Download All
-            </button>
-        </div>
-    </div>
-
-    <!-- Menampilkan Chart -->
-    <div class="charts-row">
-        <div class="card left">
-            <div class="card-title">Distribusi Total Project {{ date('Y') }}</div>
-            <div class="chart-wrap">
-                <canvas id="chartTotalProject"></canvas>
+            <div class="controls-right">
+                <!-- Input Tanggal -->
+                <div class="date-group">
+                    <label for="date_range">Tanggal Upload:</label>
+                    <input type="text" id="date_range" class="form-control" placeholder="Pilih rentang tanggal">
+                </div>
+                <!-- Download -->
+                <button class="btn-primary-custom">
+                    <i class="fa-solid fa-download"></i> Download All
+                </button>
             </div>
         </div>
 
-        <div class="right-column">
-            <div class="card">
-                <div class="card-title">Distribusi Total Project Hari Ini</div>
+        <!-- Menampilkan Chart -->
+        <div class="charts-row">
+            <div class="card left">
+                <div class="card-title">Distribusi Total Project {{ date('Y') }}</div>
                 <div class="chart-wrap">
-                    <canvas id="chartToday"></canvas>
+                    <canvas id="chartTotalProject"></canvas>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">Distribusi Total All Project</div>
-                <div class="chart-wrap">
-                    <canvas id="chartPie"></canvas>
+            <div class="right-column">
+                <div class="card">
+                    <div class="card-title">Distribusi Quality Enhancement {{ date('Y') }}</div>
+                    <div class="chart-wrap">
+                        <canvas id="chartQE"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Distribusi Status All Project {{ date('Y') }}</div>
+                    <div class="chart-wrap">
+                        <canvas id="chartPie"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Tabel untuk Menampilkan Data -->
-    <div class="table-responsive">
-        <table class="data-table table-bordered table-striped table-hover table-sm" id="data-table" style="min-width: 100%">
-            <thead style="text-align: center;">
-                <tr>
-                    <th style="min-width: 50px; border-top-left-radius: 10px;">NO</th>
-                    <th>NAMA PROJECT</th>
-                    <th>DESKRIPSI PROJECT</th>
-                    <th>QE</th>
-                    <th>TANGGAL UPLOAD</th>
-                    <th>TANGGAL PENGERJAAN</th>
-                    <th>TANGGAL SELESAI</th>
-                    <th>STATUS</th>
-                    <th>TOTAL</th>
-                    <th style="min-width: 50px; border-top-right-radius: 10px;">DETAIL</th>
-                </tr>
-            </thead>
-            <tbody style="text-align: center;">
-                @foreach($projects as $index => $project)
+        <!-- Tabel untuk Menampilkan Data -->
+        <div class="table-responsive">
+            <table class="data-table table-bordered table-striped table-hover table-sm" id="data-table"
+                style="min-width: 100%">
+                <thead style="text-align: center;">
                     <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $project->nama_project ?? '-' }}</td>
-                        <td>{{ $project->deskripsi_project ?? '-' }}</td>
-                        <td>{{ $project->qe ?? '-' }}</td>
-                        <td>{{ $project->tanggal_upload ?? '-' }}</td>
-                        <td>{{ $project->tanggal_pengerjaan ?? '-' }}</td>
-                        <td>{{ $project->tanggal_selesai ?? '-' }}</td>
-                        <td>{{ $project->status ?? '-' }}</td>
-                        <td>{{ number_format($project->total ?? 0, 2, ',', '.') }}</td>
-                        <td>
-                            <a href="{{ route('project.detail', $project->id) }}" class="btn btn-sm btn-primary">Detail</a>
-                        </td>
+                        <th style="min-width: 50px;">NO</th>
+                        <th style="width: 300px;">NAMA PROJECT</th>
+                        <th style="width: 400px;">DESKRIPSI PROJECT</th>
+                        <th style="width: 100px;">QE</th>
+                        <th style="width: 200px;">TANGGAL UPLOAD</th>
+                        <th style="width: 200px;">TANGGAL PENGERJAAN</th>
+                        <th style="width: 200px;">TANGGAL SELESAI</th>
+                        <th style="width: 100px;">STATUS</th>
+                        <th style="width: 150px;">TOTAL</th>
+                        <th style="width: 50px;">DETAIL</th>
                     </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="7" class="text-end">TOTAL ALL PROJECT</th>
-                    <th colspan="4">{{ $totalProject }}</th>
-                </tr>
-                <tr>
-                    <th colspan="7" class="text-end">TOTAL REVENUE</th>
-                    <th colspan="4">{{ number_format($totalRevenue, 2, ',', '.') }}</th>
-                </tr>
-            </tfoot>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach ($project_doc as $index => $project)
+                        <tr>
+                            <td style="width: 50px;">{{ $index + 1 }}</td>
+                            <td style="max-width: 300px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['nama_project'] }}</td>
+                            <td style="max-width: 400px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['deskripsi_project'] }}</td>
+                            <td style="max-width: 100px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['qe'] }}</td>
+                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['tgl_upload'] }}</td>
+                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['tgl_pengerjaan'] }}</td>
+                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['tgl_selesai'] }}</td>
+                            <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['status'] }}</td>
+                            <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                                {{ $project['total'] }}</td>
+                            <td>
+                                {{-- <a href="{{ route('project.detail', $project['id']) }}" class="btn btn-sm btn-primary">Detail</a> --}}
+                                <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="8" class="text-end">TOTAL PROJECT</th>
+                        <th colspan="2">{{ $grandTotal }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 
     <!-- Script Chart.JS -->
@@ -120,7 +127,7 @@
                 locale: "id"
             });
         });
-        
+
         const blue = '#133995';
         const lightBlue = '#4A6AC0';
         const red = '#ff4d4d';
@@ -129,7 +136,7 @@
         new Chart(document.getElementById('chartTotalProject'), {
             type: 'bar',
             data: {
-                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
                 datasets: [{
                     data: @json($chartTotalProjectData),
                     backgroundColor: blue
@@ -138,18 +145,32 @@
             options: {
                 maintainAspectRatio: false,
                 responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true }, x: { title: { display: true, text: 'Bulan' } } }
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Bulan'
+                        }
+                    }
+                }
             }
         });
 
-        // Chart Today (Distribusi per QE hari ini)
-        new Chart(document.getElementById('chartToday'), {
+        // Chart QE (Distribusi QE Tahun Ini)
+        new Chart(document.getElementById('chartQE'), {
             type: 'bar',
             data: {
-                labels: Object.keys(@json($chartTodayData)),
+                labels: Object.keys(@json($chartQEData)),
                 datasets: [{
-                    data: Object.values(@json($chartTodayData)),
+                    data: Object.values(@json($chartQEData)),
                     backgroundColor: blue
                 }]
             },
@@ -157,10 +178,19 @@
                 indexAxis: 'y',
                 maintainAspectRatio: false,
                 responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true } }
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
             }
         });
+
 
         // Chart Pie (Distribusi All Project)
         new Chart(document.getElementById('chartPie'), {
@@ -175,7 +205,11 @@
             options: {
                 maintainAspectRatio: false,
                 responsive: true,
-                plugins: { legend: { position: 'bottom' } }
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
             }
         });
     </script>
@@ -187,9 +221,9 @@
             --card-border: #dcdcdc;
         }
 
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: var(--bg); 
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
         }
 
         .page {
@@ -306,53 +340,61 @@
             display: block;
         }
 
-        /* Bagian Tabel */
+        /* Table */
         .table-responsive {
             overflow-x: auto;
         }
 
-        .data-table {
+        #data-table {
             border-collapse: collapse;
             width: 100%;
+            overflow: hidden;
+            border-radius: 10px;
             font-family: 'Poppins', sans-serif;
+            font-weight: normal !important;
+            table-layout: fixed;
         }
 
-        .data-table th,
-        .data-table td {
-            border: 1px solid #133995;
+        #data-table th,
+        #data-table td {
+            border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
         }
 
-        .data-table th {
-            background-color: var(--blue);
+        #data-table th {
+            background-color: #133995;
             color: #ffffff;
             height: 20px;
-            /* Tinggi baris header lebih besar */
             font-family: 'Poppins', sans-serif;
             font-weight: 600 !important;
         }
 
-        .data-table tfoot th {
+        #data-table tfoot th {
             background-color: #F0F2F9;
             color: #133995;
             font-weight: 600;
             text-align: center;
         }
 
-        .data-table tfoot th:nth-child(2) {
-            text-align: center; /* untuk kolom total */
-        }
-
-        .data-table tfoot tr:first-child th {
-            border-top: 2px solid #133995;
-        }
-
         @media (max-width: 900px) {
-            .charts-row { grid-template-columns: 1fr; }
-            .right-column { height: auto; }
-            .card.left { height: auto; }
-            .chart-wrap canvas { height: 300px !important; }
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .right-column {
+                height: auto;
+            }
+
+            .card.left {
+                height: auto;
+            }
+
+            .chart-wrap canvas {
+                height: 300px !important;
+            }
         }
     </style>
 
