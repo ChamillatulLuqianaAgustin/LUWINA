@@ -69,7 +69,7 @@ class AllProjectController extends Controller
             'REJECT' => 10,
         ];
 
-        return view('super_admin.allproject_superadmin', compact(
+        return view('super_admin.allproject.allproject_superadmin', compact(
             'projects',
             'totalProject',
             'totalRevenue',

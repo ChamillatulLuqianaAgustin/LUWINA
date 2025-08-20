@@ -10,9 +10,10 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
     @stack('css')
+    
 </head>
 <body class="hold-transition sidebar-mini layout-fixed sidebar-collapse">
-<div class="wrapper">
+<div class="page-wrapper" style="padding: 10px 20px;">
 
     {{-- Header/menu --}}
     @include('layouts.super_admin.header_superadmin')

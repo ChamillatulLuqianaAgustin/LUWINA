@@ -66,6 +66,6 @@ class UserController extends Controller
         // Urutkan berdasarkan ID (optional)
         usort($role_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-        return view('super_admin.user_superadmin', compact('usr_doc'), compact('role_doc')); // Kirim data ke view
+        return view('super_admin.user.user_superadmin', compact('usr_doc'), compact('role_doc')); // Kirim data ke view
     }
 }

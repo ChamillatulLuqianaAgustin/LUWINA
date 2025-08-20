@@ -54,7 +54,7 @@ class MakeProjectController extends Controller
         // Urutkan berdasarkan ID (optional)
         usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-        return view('super_admin.makeproject_superadmin', compact('qeOptions'), compact('project_ta_doc'));
+        return view('super_admin.makeproject.makeproject_superadmin', compact('qeOptions'), compact('project_ta_doc'));
     }
 
     public function store(Request $request)
