@@ -334,7 +334,7 @@
         }
 
         .data-table tfoot th {
-            background-color: #F0F2F9;
+            background-color: #EDF7FF;
             color: #133995;
             font-weight: 600;
             text-align: center;
