@@ -129,6 +129,13 @@
         align-items: center;
     }
 
+    .btn-back:hover {
+        background-color: #fff;
+        color: #133995 !important;
+        border: 1px solid #CFD0D2;
+        text-decoration: none;
+    }
+
     .btn-kerjakan {
         background: #E5E5E8;
         color: #133995;
@@ -144,7 +151,8 @@
     }
 
     .btn-kerjakan:hover {
-        background: #d4d4d8;
+        background: #133995;
+        color: #fff;
     }
 
     .table-wrapper {

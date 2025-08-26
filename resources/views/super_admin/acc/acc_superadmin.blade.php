@@ -138,6 +138,10 @@
             color: #555;
         }
 
+        .date-group input:hover {
+            border-color: #ADAEB3;
+        }
+
         /* Table */
         .table-responsive {
             overflow-x: auto;

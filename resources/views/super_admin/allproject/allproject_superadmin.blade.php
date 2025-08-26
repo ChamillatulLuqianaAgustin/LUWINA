@@ -263,6 +263,10 @@
             color: #ADAEB3;
         }
 
+        .date-group input:hover {
+            border-color: #ADAEB3;
+        }
+
         .btn-primary-custom {
             display: inline-block;
             padding: 8px 16px;
@@ -278,7 +282,9 @@
         }
 
         .btn-primary-custom:hover {
-            background-color: #0056b3;
+            background-color: #fff;
+            color: #133995 !important;
+            border: 1px solid #CFD0D2;
             text-decoration: none;
         }
 

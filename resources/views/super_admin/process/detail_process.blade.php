@@ -130,6 +130,13 @@
         align-items: center;
     }
 
+    .btn-back:hover {
+        background-color: #fff;
+        color: #133995 !important;
+        border: 1px solid #CFD0D2;
+        text-decoration: none;
+    }
+
     .btn-action {
         border: none;
         padding: 10px 16px;
@@ -145,8 +152,24 @@
         background: #22973F;
     }
 
+    .btn-acc:hover {
+        background-color: #fff;
+        color: #22973F !important;
+        border: 1px solid #CFD0D2;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
     .btn-reject {
         background: #C8170D;
+    }
+
+    .btn-reject:hover {
+        background-color: #fff;
+        color: #C8170D !important;
+        border: 1px solid #CFD0D2;
+        text-decoration: none;
+        cursor: pointer;
     }
 
     .table-wrapper {
