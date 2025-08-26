@@ -22,6 +22,7 @@ Route::prefix('superadmin')->group(function () {
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
     Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
+    Route::get('/allproject/detail/{id}', [AllProjectController::class, 'detail'])->name('superadmin.allproject_detail');
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');

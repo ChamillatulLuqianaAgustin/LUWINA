@@ -1,5 +1,5 @@
 @extends('layouts.super_admin.template_superadmin')
-@section('title', 'Detail Process')
+@section('title', 'Detail All Project')
 
 @section('header')
     @include('layouts.super_admin.header_superadmin')
@@ -14,24 +14,16 @@
         <!-- Tombol Back + ACC / Reject -->
         <div class="action-bar">
             <!-- Tombol Back -->
-            <a href="{{ route('superadmin.process') }}" class="btn-back">
+            <a href="{{ route('superadmin.allproject') }}" class="btn-back">
                 <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Back
             </a>
-
-            <!-- Tombol ACC / Reject -->
-            <div class="action-buttons">
-                <button class="btn-action btn-acc">
-                    <i class="fa fa-check" style="margin-right: 8px;"></i> ACC</button>
-                <button class="btn-action btn-reject">
-                    <i class="fa fa-times" style="margin-right: 8px;"></i> Reject</button>
-            </div>
         </div>
 
         <!-- Nama Project + Table wrapper -->
         <div class="table-wrapper">
             <!-- Header Nama Project -->
             <div class="project-header">
-                <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
+                <span class="project-title">{{ $allproject['nama_project'] ?? 'Nama project belum ada' }}</span>
                 <a href="#" class="edit-project disabled">Edit Project</a>
             </div>
 
@@ -53,7 +45,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($process['detail'] ?? [] as $index => $item)
+                        @foreach ($allproject['detail'] ?? [] as $index => $item)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $item->designator }}</td>

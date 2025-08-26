@@ -96,7 +96,8 @@
                             <td class="satuan"></td>
                             <td class="harga_material"></td>
                             <td class="harga_jasa"></td>
-                            <td style="width: 60px;"><input type="number" name="volume[]" required class="vol-field" value="0">
+                            <td style="width: 60px;"><input type="number" name="volume[]" required class="vol-field"
+                                    value="0">
                             </td>
                             <td class="total_material"></td>
                             <td class="total_jasa"></td>
