@@ -61,8 +61,9 @@
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $reject['total'] }}</td>
                             <td>
-                                {{-- <a href="{{ route('project.detail', $reject['id']) }}" class="btn btn-sm btn-primary">Detail</a> --}}
-                                <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                                <a href="{{ route('superadmin.reject_detail', $reject['id']) }}" title="Lihat Detail">
+                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                                </a>
                             </td>
                         </tr>
                     @endforeach
@@ -170,7 +171,7 @@
         }
 
         #data-table tfoot th {
-            background-color: #F0F2F9;
+            background-color: #EDF7FF;
             color: #133995;
             font-weight: 600;
             text-align: center;

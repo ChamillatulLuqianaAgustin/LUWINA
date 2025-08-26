@@ -21,10 +21,11 @@ Route::prefix('superadmin')->group(function () {
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
     Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
-    Route::get('/allproject', [AllProjectController::class, 'allproject'])->name('superadmin.allproject');
+    Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/acc/detail/{id}', [AccController::class, 'detail'])->name('superadmin.acc_detail');
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');
+    Route::get('/reject/detail/{id}', [RejectController::class, 'detail'])->name('superadmin.reject_detail');
 });

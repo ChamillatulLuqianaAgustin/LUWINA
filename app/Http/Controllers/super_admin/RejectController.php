@@ -137,6 +137,77 @@ class RejectController extends Controller
         return view('super_admin.reject.reject_superadmin', compact('reject_doc', 'grandTotal'));
     }
 
+    public function detail($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.reject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // Ambil relasi
+        $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
+        $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
+        $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
+
+        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
+        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+
+        $detailDocs = $docRef->collection('Detail')->documents();
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if ($d->exists()) {
+                $row = $d->data();
+
+                $row['total_material'] = ($row['harga_material'] ?? 0) * ($row['volume'] ?? 0);
+                $row['total_jasa'] = ($row['harga_jasa'] ?? 0) * ($row['volume'] ?? 0);
+
+                $totalMaterial += $row['total_material'];
+                $totalJasa += $row['total_jasa'];
+
+                $detail[] = $row;
+            }
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('super_admin.reject.detail_reject', [
+            'process' => [
+                'id' => $id,
+                'nama_project' => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe' => $qeData ? $qeData['type'] : null,
+                'foto' => $fotoData,
+                'pending' => $pendingData,
+                'tgl_upload' => $tglUpload,
+                'tgl_pengerjaan' => $tglPengerjaan,
+                'tgl_selesai' => $tglSelesai,
+                'status' => $data['ta_project_status'],
+                'total' => $data['ta_project_total'],
+                'detail' => $detail,
+            ],
+            'totals' => $totals,
+        ]);
+    }
+
     private function formatDate($timestamp)
     {
         if (!$timestamp) return null;
