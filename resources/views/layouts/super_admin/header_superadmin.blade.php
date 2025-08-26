@@ -10,22 +10,33 @@
 
     <!-- Profil + NIK/NAMA -->
     <div style="display:flex; align-items:center; margin-top:30px;">
-        <img src="{{ asset('assets/profile.png') }}" alt="User Avatar" style="height:60px; border-radius:50%; margin-right:12px;">
+        <img src="{{ asset('assets/profile.png') }}" alt="User Avatar"
+            style="height:60px; border-radius:50%; margin-right:12px;">
         <div>
-            <div style="font-weight:400; color:#133995; margin-bottom:4px;">NIK</div>
-            <div style="color:#133995; font-weight:400;">NAMA</div>
+            <div style="font-weight:400; color:#133995; margin-bottom:4px;">
+                {{ $user['nik'] }}
+            </div>
+            <div style="color:#133995; font-weight:400;">
+                {{ $user['nama'] }}
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Menu Navigasi -->
 <div class="menu-nav">
-    <a href="{{ route('superadmin.user') }}" class="{{ request()->routeIs('superadmin.user*') ? 'active' : '' }}"><span>USER</span></a>
-    <a href="{{ route('superadmin.makeproject') }}" class="{{ request()->routeIs('superadmin.makeproject*') ? 'active' : '' }}"><span>MAKE PROJECT</span></a>
-    <a href="{{ route('superadmin.allproject') }}" class="{{ request()->routeIs('superadmin.allproject*') ? 'active' : '' }}"><span>ALL PROJECT</span></a>
-    <a href="{{ route('superadmin.process') }}" class="{{ request()->routeIs('superadmin.process*') ? 'active' : '' }}"><span>PROCESS</span></a>
-    <a href="{{ route('superadmin.acc') }}" class="{{ request()->routeIs('superadmin.acc*') ? 'active' : '' }}"><span>ACC</span></a>
-    <a href="{{ route('superadmin.reject') }}" class="{{ request()->routeIs('superadmin.reject*') ? 'active' : '' }}"><span>REJECT</span></a>
+    <a href="{{ route('superadmin.user') }}"
+        class="{{ request()->routeIs('superadmin.user*') ? 'active' : '' }}"><span>USER</span></a>
+    <a href="{{ route('superadmin.makeproject') }}"
+        class="{{ request()->routeIs('superadmin.makeproject*') ? 'active' : '' }}"><span>MAKE PROJECT</span></a>
+    <a href="{{ route('superadmin.allproject') }}"
+        class="{{ request()->routeIs('superadmin.allproject*') ? 'active' : '' }}"><span>ALL PROJECT</span></a>
+    <a href="{{ route('superadmin.process') }}"
+        class="{{ request()->routeIs('superadmin.process*') ? 'active' : '' }}"><span>PROCESS</span></a>
+    <a href="{{ route('superadmin.acc') }}"
+        class="{{ request()->routeIs('superadmin.acc*') ? 'active' : '' }}"><span>ACC</span></a>
+    <a href="{{ route('superadmin.reject') }}"
+        class="{{ request()->routeIs('superadmin.reject*') ? 'active' : '' }}"><span>REJECT</span></a>
 </div>
 
 

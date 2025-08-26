@@ -93,9 +93,9 @@
                             <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['status'] }}</td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $project['total'] }}</td>
+                                {{ $project['total_formatted'] }}</td>
                             <td>
-                                {{-- <a href="{{ route('project.detail', $project['id']) }}" class="btn btn-sm btn-primary">Detail</a> --}}
+                                <a href="{{ route('superadmin.allproject_detail', $project['id']) }}" title="Lihat Detail">
                                 <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
                             </td>
                         </tr>
@@ -378,8 +378,8 @@
             font-weight: 600 !important;
         }
 
-        .data-table tfoot th {
-            background-color: #F0F2F9;
+        #data-table tfoot th {
+            background-color: #EDF7FF;
             color: #133995;
             font-weight: 600;
             text-align: center;

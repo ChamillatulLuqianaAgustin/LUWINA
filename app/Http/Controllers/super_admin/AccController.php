@@ -71,6 +71,7 @@ class AccController extends Controller
         // GET ACC
         $acc_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $acc_doc = [];
+        $tot = 0;
         $grandTotal = 0;
         foreach ($acc_collection as $doca) {
             if ($doca->exists()) {
@@ -114,6 +115,7 @@ class AccController extends Controller
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
                 $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+                $totalValue = (float) ($data['ta_project_total'] ?? 0);
 
                 $acc_doc[] = [
                     'id' => $doca->id(),
@@ -124,10 +126,11 @@ class AccController extends Controller
                     'tgl_pengerjaan' => $tglPengerjaan,
                     'tgl_selesai' => $tglSelesai,
                     'status' => $data['ta_project_status'],
-                    'total' => $data['ta_project_total'],
+                    'total' => number_format($totalValue, 0, ',', '.'),
                 ];
 
-                $grandTotal += (int) ($data['ta_project_total'] ?? 0);
+                $tot += (float) ($data['ta_project_total'] ?? 0);
+                $grandTotal = number_format($tot, 0, ',', '.');
             }
         }
 
@@ -149,7 +152,7 @@ class AccController extends Controller
 
         $data = $doc->data();
 
-        // Ambil relasi
+        // --- Ambil data project utama ---
         $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
         $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
         $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
@@ -158,28 +161,53 @@ class AccController extends Controller
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
         $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
-        $detailDocs = $docRef->collection('Detail')->documents();
+        // --- Ambil detail dari collection Detail_Project_TA ---
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef) // filter by referensi project
+            ->documents();
+
         $detail = [];
         $totalMaterial = 0;
         $totalJasa = 0;
 
         foreach ($detailDocs as $d) {
-            if ($d->exists()) {
-                $row = $d->data();
+            if (!$d->exists()) continue;
 
-                $row['total_material'] = ($row['harga_material'] ?? 0) * ($row['volume'] ?? 0);
-                $row['total_jasa'] = ($row['harga_jasa'] ?? 0) * ($row['volume'] ?? 0);
+            $row = $d->data();
 
-                $totalMaterial += $row['total_material'];
-                $totalJasa += $row['total_jasa'];
+            // Ambil data designator dari Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $designatorRef->snapshot()->data();
 
-                $detail[] = $row;
-            }
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
         }
 
         $total = $totalMaterial + $totalJasa;
         $ppn = $total * 0.11;
-        $grand = $total + $ppn;
+        $grand = $total - $ppn;
+
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
 
         $totals = [
             'material' => $totalMaterial,
@@ -190,11 +218,11 @@ class AccController extends Controller
         ];
 
         return view('super_admin.acc.detail_acc', [
-            'process' => [
+            'acc' => [
                 'id' => $id,
                 'nama_project' => $data['ta_project_pekerjaan'],
                 'deskripsi_project' => $data['ta_project_deskripsi'],
-                'qe' => $qeData ? $qeData['type'] : null,
+                'qe' => $qeData['type'] ?? null,
                 'foto' => $fotoData,
                 'pending' => $pendingData,
                 'tgl_upload' => $tglUpload,
