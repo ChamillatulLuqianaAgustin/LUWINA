@@ -32,7 +32,7 @@
         <!-- Header Nama Project -->
         <div class="project-header">
             <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
-            <a href="#" class="edit-project disabled">Edit Project</a>
+            <a href="{{ route('superadmin.process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
         </div>
 
         <!-- Tabel Detail -->

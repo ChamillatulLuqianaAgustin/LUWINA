@@ -208,6 +208,97 @@ class ProcessController extends Controller
         ]);
     }
 
+    public function edit($id)
+    {
+        $firestore = $this->getFirestore();
+
+        // Ambil project utama
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.process')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // Ambil collection "Detail"
+        $detailDocs = $docRef->collection('Detail')->documents();
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if ($d->exists()) {
+                $row = $d->data();
+                $row['id'] = $d->id();
+
+                $row['total_material'] = ($row['harga_material'] ?? 0) * ($row['volume'] ?? 0);
+                $row['total_jasa'] = ($row['harga_jasa'] ?? 0) * ($row['volume'] ?? 0);
+
+                $totalMaterial += $row['total_material'];
+                $totalJasa += $row['total_jasa'];
+
+                $detail[] = $row;
+            }
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        // Ambil daftar designator untuk select
+        $projectTaDocs = $firestore->collection('Project_TA')->documents();
+        $project_ta_doc = [];
+        foreach ($projectTaDocs as $dsg) {
+            if ($dsg->exists()) {
+                $project_ta_doc[] = [
+                    'id' => $dsg->id(),
+                    'designator' => $dsg->data()['designator'],
+                    'uraian' => $dsg->data()['uraian'],
+                    'satuan' => $dsg->data()['satuan'],
+                    'harga_material' => $dsg->data()['harga_material'],
+                    'harga_jasa' => $dsg->data()['harga_jasa'],
+                ];
+            }
+        }
+
+        // Ambil QE options
+        $qeCollection = $firestore->collection('QE')->documents();
+        $qeOptions = [];
+        foreach ($qeCollection as $qe) {
+            if ($qe->exists()) {
+                $qeOptions[] = [
+                    'id' => $qe->id(),
+                    'label' => $qe->data()['type'],
+                ];
+            }
+        }
+
+        return view('super_admin.process.edit_process', [
+            'process' => [
+                'id' => $id,
+                'nama_project' => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe' => $data['ta_project_qe_id']?->id(),
+                'khs' => $data['ta_project_khs'] ?? '',
+                'pelaksana' => $data['ta_project_pelaksana'] ?? '',
+                'witel' => $data['ta_project_witel'] ?? '',
+                'detail' => $detail,
+            ],
+            'qeOptions' => $qeOptions,
+            'project_ta_doc' => $project_ta_doc,
+            'totals' => $totals, // ✅ lempar ke blade
+        ]);
+    }
+
     private function formatDate($timestamp)
     {
         if (!$timestamp) return null;

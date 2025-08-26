@@ -31,7 +31,7 @@
                         <th style="min-width: 50px;">NO</th>
                         <th style="width: 300px;">NAMA PROJECT</th>
                         <th style="width: 400px;">DESKRIPSI PROJECT</th>
-                        <th style="width: 100px;">QE</th>
+                        <th style="width: 200px;">QE</th>
                         <th style="width: 200px;">TANGGAL UPLOAD</th>
                         <th style="width: 200px;">TANGGAL PENGERJAAN</th>
                         <th style="width: 200px;">TANGGAL SELESAI</th>
@@ -48,7 +48,7 @@
                                 {{ $acc['nama_project'] }}</td>
                             <td style="max-width: 400px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['deskripsi_project'] }}</td>
-                            <td style="max-width: 100px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
+                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['qe'] }}</td>
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['tgl_upload'] }}</td>
@@ -179,6 +179,17 @@
             color: #133995;
             font-weight: 600;
             text-align: center;
+        }
+
+        #data-table td {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #data-table td::-webkit-scrollbar {
+            display: none;
         }
     </style>
 

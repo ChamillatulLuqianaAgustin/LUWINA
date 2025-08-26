@@ -18,14 +18,22 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Super Admin
 Route::prefix('superadmin')->group(function () {
+    // user
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
+    // make project
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
     Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
+    // all peoject
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
+    // process
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
+    Route::get('/process/edit/{id}', [ProcessController::class, 'edit'])->name('superadmin.process_edit');
+    Route::post('/process/update/{id}', [ProcessController::class, 'update'])->name('superadmin.process_update');
+    // acc
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/acc/detail/{id}', [AccController::class, 'detail'])->name('superadmin.acc_detail');
+    // reject
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');
     Route::get('/reject/detail/{id}', [RejectController::class, 'detail'])->name('superadmin.reject_detail');
 });
