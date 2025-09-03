@@ -396,6 +396,11 @@
             display: none;
         }
 
+        #data-table td:first-child,
+        #data-table th:first-child {
+            width: 50px;
+        }
+
         @media (max-width: 900px) {
             .charts-row {
                 grid-template-columns: 1fr;

@@ -140,6 +140,35 @@ class ProcessController extends Controller
         return view('super_admin.process.process_superadmin', compact('process_doc', 'grandTotal'));
     }
 
+    private function hitungTotal($detailDocs)
+    {
+        $totalMaterial = 0;
+        $totalJasa     = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+            $volume         = $row['ta_detail_volume'] ?? 0;
+
+            $totalMaterial += ($designatorData['ta_harga_material'] ?? 0) * $volume;
+            $totalJasa     += ($designatorData['ta_harga_jasa'] ?? 0) * $volume;
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn   = $total * 0.11;
+        $grand = $total + $ppn;
+
+        return [
+            'material' => $totalMaterial,
+            'jasa'     => $totalJasa,
+            'total'    => $total,
+            'ppn'      => $ppn,
+            'grand'    => $grand,
+        ];
+    }
+
     public function detail($id)
     {
         $firestore = $this->getFirestore();
@@ -153,84 +182,59 @@ class ProcessController extends Controller
         $data = $doc->data();
 
         // --- Ambil data project utama ---
-        $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
+        $fotoData    = $data['ta_project_foto_id']    ? $data['ta_project_foto_id']->snapshot()->data()    : null;
         $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
-        $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
+        $qeData      = $data['ta_project_qe_id']      ? $data['ta_project_qe_id']->snapshot()->data()      : null;
 
-        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglUpload     = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+        $tglSelesai    = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
         // --- Ambil detail dari collection Detail_Project_TA ---
         $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef) // filter by referensi project
+            ->where('ta_detail_all_id', '=', $docRef)
             ->documents();
 
         $detail = [];
-        $totalMaterial = 0;
-        $totalJasa = 0;
-
         foreach ($detailDocs as $d) {
             if (!$d->exists()) continue;
 
             $row = $d->data();
-
-            // Ambil data designator dari Data_Project_TA
-            $designatorRef = $row['ta_detail_ta_id'];
-            $designatorData = $designatorRef->snapshot()->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
-            $volume = $row['ta_detail_volume'] ?? 0;
-
-            $totalM = $hargaMaterial * $volume;
-            $totalJ = $hargaJasa * $volume;
-
-            $totalMaterial += $totalM;
-            $totalJasa += $totalJ;
+            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume        = $row['ta_detail_volume'] ?? 0;
 
             $detail[] = (object)[
-                'designator' => $designatorData['ta_designator'] ?? '',
-                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'designator'     => $designatorData['ta_designator'] ?? '',
+                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['ta_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
-                'harga_jasa' => $hargaJasa,
-                'volume' => $volume,
-                'total_material' => $totalM,
-                'total_jasa' => $totalJ,
+                'harga_jasa'     => $hargaJasa,
+                'volume'         => $volume,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa'     => $hargaJasa * $volume,
             ];
         }
 
-        $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total - $ppn;
-
-        $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $grand],
-        ]);
-
-        $totals = [
-            'material' => $totalMaterial,
-            'jasa' => $totalJasa,
-            'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
-        ];
+        // ✅ pake helper
+        $totals = $this->hitungTotal($detailDocs);
 
         return view('super_admin.process.detail_process', [
             'process' => [
-                'id' => $id,
-                'nama_project' => $data['ta_project_pekerjaan'],
-                'deskripsi_project' => $data['ta_project_deskripsi'],
-                'qe' => $qeData['type'] ?? null,
-                'foto' => $fotoData,
-                'pending' => $pendingData,
-                'tgl_upload' => $tglUpload,
-                'tgl_pengerjaan' => $tglPengerjaan,
-                'tgl_selesai' => $tglSelesai,
-                'status' => $data['ta_project_status'],
-                'total' => $data['ta_project_total'],
-                'detail' => $detail,
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project'=> $data['ta_project_deskripsi'],
+                'qe'               => $qeData['type'] ?? null,
+                'foto'             => $fotoData,
+                'pending'          => $pendingData,
+                'tgl_upload'       => $tglUpload,
+                'tgl_pengerjaan'   => $tglPengerjaan,
+                'tgl_selesai'      => $tglSelesai,
+                'status'           => $data['ta_project_status'],
+                'total'            => $data['ta_project_total'],
+                'detail'           => $detail,
             ],
             'totals' => $totals,
         ]);
@@ -239,92 +243,163 @@ class ProcessController extends Controller
     public function edit($id)
     {
         $firestore = $this->getFirestore();
-
-        // Ambil project utama
         $docRef = $firestore->collection('All_Project_TA')->document($id);
         $doc = $docRef->snapshot();
+
         if (!$doc->exists()) {
             return redirect()->route('superadmin.process')->with('error', 'Data project tidak ditemukan');
         }
 
         $data = $doc->data();
+        
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
 
-        // Ambil collection "Detail"
-        $detailDocs = $docRef->collection('Detail')->documents();
         $detail = [];
-        $totalMaterial = 0;
-        $totalJasa = 0;
-
         foreach ($detailDocs as $d) {
-            if ($d->exists()) {
-                $row = $d->data();
-                $row['id'] = $d->id();
+            if (!$d->exists()) continue;
 
-                $row['total_material'] = ($row['harga_material'] ?? 0) * ($row['volume'] ?? 0);
-                $row['total_jasa'] = ($row['harga_jasa'] ?? 0) * ($row['volume'] ?? 0);
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
 
-                $totalMaterial += $row['total_material'];
-                $totalJasa += $row['total_jasa'];
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume        = $row['ta_detail_volume'] ?? 0;
 
-                $detail[] = $row;
-            }
+            $detail[] = (object)[
+                'id'             => $d->id(),
+                'designator'     => $designatorData['ta_designator'] ?? '',
+                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa'     => $hargaJasa,
+                'volume'         => $volume,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa'     => $hargaJasa * $volume,
+            ];
         }
 
-        $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total + $ppn;
+        // ✅ pake helper
+        $totals = $this->hitungTotal($detailDocs);
 
-        $totals = [
-            'material' => $totalMaterial,
-            'jasa' => $totalJasa,
-            'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
-        ];
+        // (sisanya sama kaya kode kamu: ambil qeOptions, project_ta_doc, dll)
 
-        // Ambil daftar designator untuk select
-        $projectTaDocs = $firestore->collection('Project_TA')->documents();
-        $project_ta_doc = [];
-        foreach ($projectTaDocs as $dsg) {
-            if ($dsg->exists()) {
-                $project_ta_doc[] = [
-                    'id' => $dsg->id(),
-                    'designator' => $dsg->data()['designator'],
-                    'uraian' => $dsg->data()['uraian'],
-                    'satuan' => $dsg->data()['satuan'],
-                    'harga_material' => $dsg->data()['harga_material'],
-                    'harga_jasa' => $dsg->data()['harga_jasa'],
-                ];
-            }
-        }
-
-        // Ambil QE options
         $qeCollection = $firestore->collection('QE')->documents();
         $qeOptions = [];
         foreach ($qeCollection as $qe) {
             if ($qe->exists()) {
                 $qeOptions[] = [
-                    'id' => $qe->id(),
+                    'id'    => $qe->id(),
                     'label' => $qe->data()['type'],
+                ];
+            }
+        }
+
+        $projectTaDocs = $firestore->collection('Data_Project_TA')->documents();
+        $project_ta_doc = [];
+        foreach ($projectTaDocs as $dsg) {
+            if ($dsg->exists()) {
+                $project_ta_doc[] = [
+                    'id'             => $dsg->id(),
+                    'designator'     => $dsg->data()['ta_designator'],
+                    'uraian'         => $dsg->data()['ta_uraian_pekerjaan'],
+                    'satuan'         => $dsg->data()['ta_satuan'],
+                    'harga_material' => $dsg->data()['ta_harga_material'],
+                    'harga_jasa'     => $dsg->data()['ta_harga_jasa'],
                 ];
             }
         }
 
         return view('super_admin.process.edit_process', [
             'process' => [
-                'id' => $id,
-                'nama_project' => $data['ta_project_pekerjaan'],
-                'deskripsi_project' => $data['ta_project_deskripsi'],
-                'qe' => $data['ta_project_qe_id']?->id(),
-                'khs' => $data['ta_project_khs'] ?? '',
-                'pelaksana' => $data['ta_project_pelaksana'] ?? '',
-                'witel' => $data['ta_project_witel'] ?? '',
-                'detail' => $detail,
+                'id'          => $id,
+                'nama_project'=> $data['ta_project_pekerjaan'],
+                'deskripsi_project'=> $data['ta_project_deskripsi'],
+                'qe'          => $data['ta_project_qe_id']?->id(),
+                'khs'         => $data['ta_project_khs'] ?? '',
+                'pelaksana'   => $data['ta_project_pelaksana'] ?? '',
+                'witel'       => $data['ta_project_witel'] ?? '',
+                'detail'      => $detail,
             ],
-            'qeOptions' => $qeOptions,
+            'qeOptions'      => $qeOptions,
             'project_ta_doc' => $project_ta_doc,
-            'totals' => $totals, // ✅ lempar ke blade
+            'totals'         => $totals,
         ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.process')->with('error', 'Project tidak ditemukan');
+        }
+
+        // update nama project
+        $docRef->update([
+            ['path' => 'ta_project_pekerjaan', 'value' => $request->nama_project],
+        ]);
+
+        // update detail
+        $designators = $request->input('designator', []);
+        $volumes     = $request->input('volume', []);
+        $detailCollection = $firestore->collection('Detail_Project_TA');
+
+        foreach ($designators as $index => $dsgId) {
+            $volume = (int)($volumes[$index] ?? 0);
+            if ($dsgId && $volume > 0) {
+                $designatorRef = $firestore->collection('Data_Project_TA')->document($dsgId);
+
+                // cek apakah sudah ada detail yg sama
+                $existing = $detailCollection
+                    ->where('ta_detail_all_id', '=', $docRef)
+                    ->where('ta_detail_ta_id', '=', $designatorRef)
+                    ->documents();
+
+                if (count(iterator_to_array($existing)) > 0) {
+                    // update volume jika sudah ada
+                    foreach ($existing as $exist) {
+                        $detailCollection->document($exist->id())->update([
+                            ['path' => 'ta_detail_volume', 'value' => $volume],
+                        ]);
+                    }
+                } else {
+                    // buat baru
+                    $detailCollection->add([
+                        'ta_detail_all_id' => $docRef,
+                        'ta_detail_ta_id'  => $designatorRef,
+                        'ta_detail_volume' => $volume,
+                    ]);
+                }
+            }
+        }
+
+        $detailDocs = $detailCollection->where('ta_detail_all_id', '=', $docRef)->documents();
+        $totals = $this->hitungTotal($detailDocs);
+
+        $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
+
+        return redirect()
+            ->route('superadmin.process_detail', $id)
+            ->with('success', 'Project berhasil diperbarui');
+    }
+
+    public function delete($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('Detail_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->back()->with('error', 'Detail project tidak ditemukan');
+        }
+
+        $docRef->delete();
+
+        return redirect()->back()->with('success', 'Detail project berhasil dihapus');
     }
 
     private function formatDate($timestamp)

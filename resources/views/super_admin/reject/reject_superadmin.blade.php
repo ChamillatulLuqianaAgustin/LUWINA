@@ -187,6 +187,11 @@
         #data-table td::-webkit-scrollbar {
             display: none;
         }
+
+        #data-table td:first-child,
+        #data-table th:first-child {
+            width: 50px;
+        }
     </style>
 
 @endsection

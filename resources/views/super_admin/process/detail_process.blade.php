@@ -27,27 +27,12 @@
         </div>
     </div>
 
-    <!-- Nama Project + Table wrapper -->
-    <div class="table-wrapper">
-        <!-- Header Nama Project -->
-        <div class="project-header">
-            <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
-            <a href="{{ route('superadmin.process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
-            <!-- Tombol ACC / Reject -->
-            <div class="action-buttons">
-                <button class="btn-action btn-acc">
-                    <i class="fa fa-check" style="margin-right: 8px;"></i> ACC</button>
-                <button class="btn-action btn-reject">
-                    <i class="fa fa-times" style="margin-right: 8px;"></i> Reject</button>
-            </div>
-        </div>
-
         <!-- Nama Project + Table wrapper -->
         <div class="table-wrapper">
             <!-- Header Nama Project -->
             <div class="project-header">
                 <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="#" class="edit-project disabled">Edit Project</a>
+                <a href="{{ route('superadmin.process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
             </div>
 
             <!-- Tabel Detail -->
@@ -56,13 +41,13 @@
                     style="min-width: 100%">
                     <thead style="text-align: center;">
                         <tr>
-                            <th>NO</th>
-                            <th>DESIGNATOR</th>
-                            <th>URAIAN</th>
-                            <th>SATUAN</th>
+                            <th style="min-width: 50px;">NO</th>
+                            <th style="width: 150px;">DESIGNATOR</th>
+                            <th style="width: 300px;"> URAIAN</th>
+                            <th style="width: 100px;">SATUAN</th>
                             <th>HARGA MATERIAL</th>
                             <th>HARGA JASA</th>
-                            <th>VOLUME</th>
+                            <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
                         </tr>
@@ -84,23 +69,23 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="7" class="text-end">MATERIAL</th>
+                            <th colspan="7" class="text-end">Material</th>
                             <th colspan="2">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">JASA</th>
+                            <th colspan="7" class="text-end">Jasa</th>
                             <th colspan="2">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL</th>
+                            <th colspan="7" class="text-end">Total</th>
                             <th colspan="2">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">PPN</th>
+                            <th colspan="7" class="text-end">PPN (11%)</th>
                             <th colspan="2">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
+                            <th colspan="7" class="text-end">Total Setelah PPN</th>
                             <th colspan="2">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                         </tr>
                     </tfoot>
@@ -260,6 +245,22 @@
             font-weight: 700 !important;
             text-align: center;
             border: none !important;
+        }
+
+        #data-table td {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #data-table td::-webkit-scrollbar {
+            display: none;
+        }
+
+        #data-table td:first-child,
+        #data-table th:first-child {
+            width: 50px;
         }
     </style>
 

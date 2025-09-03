@@ -13,7 +13,7 @@
 <div class="page">
     <!-- Tombol Back -->
     <div class="action-bar">
-        <a href="{{ route('superadmin.process_edit') }}" class="btn-back">
+        <a href="{{ route('superadmin.process_detail', $process['id']) }}" class="btn-back">
             <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Back
         </a>
     </div>
@@ -28,7 +28,7 @@
             <!-- Header Nama Project -->
             <div class="project-header">
                 <input type="text" name="nama_project" class="input-edit-project"
-                    value="{{ old('nama_project', $process['nama_project']) }}">
+                    value="{{ old('nama_project', $process['nama_project']) }}" required>
                 <button type="submit" class="btn-done">Done</button>
             </div>
 
@@ -38,60 +38,86 @@
                     style="min-width: 100%">
                     <thead style="text-align: center;">
                         <tr>
-                            <th>NO</th>
-                            <th>DESIGNATOR</th>
-                            <th>URAIAN</th>
-                            <th>SATUAN</th>
+                            <th style="min-width: 50px;">NO</th>
+                            <th style="width: 150px;">DESIGNATOR</th>
+                            <th style="width: 300px;"> URAIAN</th>
+                            <th style="width: 100px;">SATUAN</th>
                             <th>HARGA MATERIAL</th>
                             <th>HARGA JASA</th>
-                            <th>VOLUME</th>
+                            <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
+                            <th style="width: 50px;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($process['detail'] ?? [] as $index => $item)
                             <tr>
-                                <td>{{ $index+1 }}</td>
+                                <td>{{ $index + 1 }}</td>
                                 <td>
-                                    <input type="text" name="detail[{{ $index }}][designator]" 
-                                        class="input-edit"
-                                        value="{{ old('detail.'.$index.'.designator', $item->designator) }}">
+                                    <select name="designator[]" 
+                                            class="form-control select-dsg" 
+                                            required 
+                                            onchange="changeFontColor(this)">
+                                        <option value="" disabled hidden>Pilih Designator</option>
+                                        @foreach ($project_ta_doc as $dsg)
+                                            <option value="{{ $dsg['id'] }}"
+                                                {{ $item->designator == $dsg['designator'] ? 'selected' : '' }}>
+                                                {{ $dsg['designator'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </td>
-                                <td>{{ $item->uraian }}</td>
-                                <td>{{ $item->satuan }}</td>
-                                <td>{{ number_format($item->harga_material, 0, ',', '.') }}</td>
-                                <td>{{ number_format($item->harga_jasa, 0, ',', '.') }}</td>
+                                <td class="uraian" style="width:300px;">
+                                    <div class="uraian-overflow" title="{{ $item->uraian }}">{{ $item->uraian }}</div>
+                                </td>
+                                <td class="satuan">{{ $item->satuan }}</td>
+                                <td class="harga_material">{{ $item->harga_material }}</td>
+                                <td class="harga_jasa">{{ $item->harga_jasa }}</td>
+                                <td style="width:60px;">
+                                    <input type="number" 
+                                        name="volume[]" 
+                                        class="form-control vol-field" 
+                                        value="{{ old('volume.' . $index, $item->volume) }}" 
+                                        min="0" step="1" required>
+                                </td>
+                                <td class="total_material">{{ $item->total_material }}</td>
+                                <td class="total_jasa">{{ $item->total_jasa }}</td>
                                 <td>
-                                    <input type="number" name="detail[{{ $index }}][volume]" 
-                                        class="input-edit"
-                                        value="{{ old('detail.'.$index.'.volume', $item->volume) }}">
+                                    @if(!empty($item->id))
+                                        <button type="button" class="btn-delete" onclick="deleteDetail('{{ $item->id }}')">
+                                            <img src="{{ asset('assets/sampah.png') }}" alt="Delete" width="18">
+                                        </button>
+                                    @endif
                                 </td>
-                                <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
-                                <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="7" class="text-end">MATERIAL</th>
+                            <th colspan="7" class="text-end">Material</th>
                             <th colspan="2">{{ number_format($totals['material'], 0, ',', '.') }}</th>
+                            <th></th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">JASA</th>
+                            <th colspan="7" class="text-end">Jasa</th>
                             <th colspan="2">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
+                            <th></th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL</th>
+                            <th colspan="7" class="text-end">Total</th>
                             <th colspan="2">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                            <th></th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">PPN</th>
+                            <th colspan="7" class="text-end">PPN (11%)</th>
                             <th colspan="2">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
+                            <th></th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
+                            <th colspan="7" class="text-end">Total Setelah PPN</th>
                             <th colspan="2">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
+                            <th></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -228,13 +254,125 @@
         border: none !important;
     }
 
+    #data-table td {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    #data-table td::-webkit-scrollbar {
+        display: none;
+    }
+
+    #data-table td:first-child,
+    #data-table th:first-child {
+        width: 50px;
+    }
+
+    .select-dsg {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #999;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .vol-field {
+        width: 70px;
+        padding: 6px 8px;
+        border: 1px solid #133995;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: 'Poppins', sans-serif;
+        text-align: center;
+    }
+
     .input-edit {
         width: 100%;
         padding: 6px 8px;
-        border: 1px solid #999;
+        border: 1px solid #133995;
         border-radius: 4px;
         font-size: 14px;
     }
 </style>
+
+<script>
+    const dsgData = @json($project_ta_doc);
+
+    function calculateRow(row) {
+        const volume = parseFloat(row.querySelector('.vol-field').value) || 0;
+        const hargaMaterial = parseFloat(row.querySelector('.harga_material').textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
+        const hargaJasa = parseFloat(row.querySelector('.harga_jasa').textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
+
+        const totalMaterial = volume * hargaMaterial;
+        const totalJasa = volume * hargaJasa;
+
+        row.querySelector('.total_material').textContent = totalMaterial.toLocaleString('id-ID');
+        row.querySelector('.total_jasa').textContent = totalJasa.toLocaleString('id-ID');
+    }
+
+    function attachVolumeListener(row) {
+        row.querySelector('.vol-field').addEventListener('input', () => {
+            calculateRow(row);
+            updateSummary();
+        });
+    }
+
+    function changeFontColor(selectElement) {
+        if (selectElement.value) {
+            selectElement.style.color = 'black';
+            const selectedId = selectElement.value;
+            const row = selectElement.closest('tr');
+            const selectedDsg = dsgData.find(dsg => dsg.id == selectedId);
+
+            if (selectedDsg) {
+                const uraianBox = row.querySelector('.uraian-overflow');
+                uraianBox.textContent = selectedDsg.uraian;
+                uraianBox.setAttribute('title', selectedDsg.uraian);
+
+                row.querySelector('.satuan').textContent = selectedDsg.satuan;
+                row.querySelector('.harga_material').textContent = selectedDsg.harga_material;
+                row.querySelector('.harga_jasa').textContent = selectedDsg.harga_jasa;
+
+                calculateRow(row);
+                updateSummary();
+            }
+        }
+    }
+
+    function updateSummary() {
+        let totalMaterial = 0;
+        let totalJasa = 0;
+
+        document.querySelectorAll('#data-table tbody tr').forEach(row => {
+            const material = parseFloat(row.querySelector('.total_material').textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
+            const jasa = parseFloat(row.querySelector('.total_jasa').textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
+            totalMaterial += material;
+            totalJasa += jasa;
+        });
+
+        const total = totalMaterial + totalJasa;
+        const ppn = total * 0.11;
+        const grand = total + ppn;
+
+        document.querySelector('#data-table tfoot').innerHTML = `
+            <tr><th colspan="7">MATERIAL</th><th colspan="2">${totalMaterial.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">JASA</th><th colspan="2">${totalJasa.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">TOTAL</th><th colspan="2">${total.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">PPN (11%)</th><th colspan="2">${ppn.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">TOTAL SETELAH PPN</th><th colspan="2">${grand.toLocaleString('id-ID')}</th><th></th></tr>
+        `;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('#data-table tbody tr').forEach(row => {
+            attachVolumeListener(row);
+            calculateRow(row);
+        });
+        updateSummary();
+    });
+</script>
 
 @endsection

@@ -40,15 +40,15 @@
                 style="min-width: 100%">
                 <thead style="text-align: center;">
                     <tr>
-                        <th>NO</th>
-                        <th>DESIGNATOR</th>
-                        <th>URAIAN</th>
-                        <th>SATUAN</th>
-                        <th>HARGA MATERIAL</th>
-                        <th>HARGA JASA</th>
-                        <th>VOLUME</th>
-                        <th>TOTAL MATERIAL</th>
-                        <th>TOTAL JASA</th>
+                        <th style="min-width: 50px;">NO</th>
+                            <th style="width: 150px;">DESIGNATOR</th>
+                            <th style="width: 300px;"> URAIAN</th>
+                            <th style="width: 100px;">SATUAN</th>
+                            <th>HARGA MATERIAL</th>
+                            <th>HARGA JASA</th>
+                            <th style="width: 100px;">VOLUME</th>
+                            <th>TOTAL MATERIAL</th>
+                            <th>TOTAL JASA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -222,6 +222,22 @@
         text-align: center;
         border: none !important;
     }
+
+    #data-table td {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #data-table td::-webkit-scrollbar {
+            display: none;
+        }
+
+        #data-table td:first-child,
+        #data-table th:first-child {
+            width: 50px;
+        }
 </style>
 
 @endsection
