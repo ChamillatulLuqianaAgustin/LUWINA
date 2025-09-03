@@ -30,6 +30,7 @@
                         <th style="width: 200px;">ROLE</th>
                         <th style="width: 200px;">PASSWORD</th>
                         <th style="width: 50px;">EDIT</th>
+                        <th style="width: 50px;">DELETE</th>
                     </tr>
                 </thead>
                 <tbody style="text-align: center;">
@@ -48,11 +49,22 @@
                             <td>
                                 <a href="#" class="btn-edit-user" data-id="{{ $user['id'] }}"
                                     data-nik="{{ $user['nik'] }}" data-nama="{{ $user['nama'] }}"
-                                    data-uker="{{ $user['uker'] }}" data-password="{{ $user['password'] }}">
+                                    data-uker="{{ $user['uker'] }}" data-role="{{ $user['role_id'] }}"
+                                    data-password="{{ $user['password'] }}">
                                     <img src="{{ asset('assets/edit.png') }}" alt="Edit"
                                         style="width:20px;height:20px;">
                                 </a>
-
+                            </td>
+                            <td>
+                                <form action="{{ route('superadmin.user_destroy', $user['id']) }}" method="POST"
+                                    onsubmit="return confirm('Yakin hapus user ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" style="background:none;border:none;cursor:pointer;">
+                                        <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                            style="width:20px;height:20px;">
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @endforeach
@@ -65,32 +77,32 @@
     <div id="addUserModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3 class="title">Add User</h3>
-            <form class="addUserForm" id="addUserForm">
+            <form class="addUserForm" id="addUserForm" method="POST" action="{{ route('superadmin.user_store') }}">
+                @csrf
                 <div class="edit-nik">
                     <label for="nik" class="label-nik">NIK:</label>
-                    <input type="text" id="nik" name="nik" class="input-field" placeholder="Masukkan NIK User">
+                    <input type="text" id="nik" name="nik" class="input-field" placeholder="Masukkan NIK User"
+                        required>
                 </div>
 
                 <div class="edit-nama">
                     <label for="nama" class="label-nama">Nama:</label>
-                    <input type="text" id="nama" name="nama" class="input-field"
-                        placeholder="Masukkan Nama User">
+                    <input type="text" id="nama" name="nama" class="input-field" placeholder="Masukkan Nama User"
+                        required>
                 </div>
 
                 <div class="edit-uker">
                     <label for="uker" class="label-uker">Unit Kerja:</label>
                     <input type="text" id="uker" name="uker" class="input-field"
-                        placeholder="Masukkan Unit Kerja User">
+                        placeholder="Masukkan Unit Kerja User" required>
                 </div>
 
                 <div class="edit-role">
                     <label for="role" class="label-role">Role:</label>
-                    <select id="role" name="role" class="select-field">
+                    <select id="role" name="role" class="select-field" required>
                         <option value="" disabled selected hidden>Pilih Role User</option>
                         @foreach ($role_doc as $rl)
-                            <option value="{{ $rl['id'] }}" {{ old('rl') == $rl['id'] ? 'selected' : '' }}>
-                                {{ $rl['role'] }}
-                            </option>
+                            <option value="{{ $rl['id'] }}">{{ $rl['role'] }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -99,14 +111,14 @@
                     <label for="password" class="label-password">Password:</label>
                     <div class="password-wrapper">
                         <input type="password" id="password" name="password" class="input-field"
-                            placeholder="Masukkan Password User">
+                            placeholder="Masukkan Password User" required>
                         <span class="toggle-password" onclick="togglePassword('password', this)" style="top: 55%;">
                             <img src="{{ asset('assets/eye-closed.png') }}" alt="Show" id="password_eye">
                         </span>
                     </div>
                 </div>
 
-                <button type="button" class="btn-save">Save</button>
+                <button type="submit" class="btn-save">Save</button>
             </form>
         </div>
     </div>
@@ -115,7 +127,10 @@
     <div id="editUserModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3 class="title">Edit User</h3>
-            <form class="editUserForm" id="editUserForm">
+            <form class="editUserForm" id="editUserForm" method="POST">
+                @csrf
+                <input type="hidden" id="edit_id" name="id">
+
                 <div class="edit-nik">
                     <label for="edit_nik" class="label-nik">NIK:</label>
                     <input type="text" id="edit_nik" name="nik" class="input-field">
@@ -150,7 +165,7 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn-save">Save</button>
+                <button type="submit" class="btn-save">Save</button>
             </form>
         </div>
     </div>
@@ -239,6 +254,12 @@
             text-align: center;
             overflow: hidden;
             white-space: nowrap;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #data-table td::-webkit-scrollbar {
+            display: none;
         }
 
         #data-table th {
@@ -414,21 +435,24 @@
             link.addEventListener('click', function(event) {
                 event.preventDefault();
 
-                // Ambil data dari atribut
+                const id = this.getAttribute('data-id');
                 const nik = this.getAttribute('data-nik');
                 const nama = this.getAttribute('data-nama');
                 const uker = this.getAttribute('data-uker');
-                // const role = this.getAttribute('data-role');
+                const role = this.getAttribute('data-role');
                 const password = this.getAttribute('data-password');
 
-                // Isi ke field Edit User
+                // Isi form
+                document.getElementById('edit_id').value = id;
                 document.getElementById('edit_nik').value = nik;
                 document.getElementById('edit_nama').value = nama;
                 document.getElementById('edit_uker').value = uker;
-                // document.getElementById('edit_role').value = role;
+                document.getElementById('edit_role').value = role;
                 document.getElementById('edit_password').value = password;
 
-                // Tampilkan modal
+                // Set action form ke route update
+                document.getElementById('editUserForm').action = `/superadmin/user/update/${id}`;
+
                 editUserModal.style.display = "block";
             });
         });
@@ -441,11 +465,10 @@
         });
 
         // Menangani pengiriman form edit
-        document.getElementById('editUserForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            // Lakukan pengiriman data ke server untuk menyimpan perubahan
-            modal.style.display = "none"; // Menutup modal setelah simpan
-        });
+        // document.getElementById('editUserForm').addEventListener('submit', function() {
+        //     editUserModal.style.display = "none"; // Tutup modal setelah submit
+        // });
+
 
         // Fungsi untuk toggle password
         function togglePassword(id, element) {
@@ -477,13 +500,6 @@
             if (event.target === addUserModal) {
                 addUserModal.style.display = "none";
             }
-        });
-
-        // Menangani submit form Add User
-        document.getElementById("addUserForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            // TODO: kirim data ke server di sini
-            addUserModal.style.display = "none"; // tutup modal setelah simpan
         });
     </script>
 
