@@ -16,12 +16,11 @@ class AllProjectController extends Controller
         ]);
     }
 
-    public function index()
+    private function fetchFotoData()
     {
-        // GET FOTO
         $foto_collection = $this->getFirestore()->collection('Foto_Evident')->documents();
-
         $foto_doc = [];
+
         foreach ($foto_collection as $docf) {
             if ($docf->exists()) {
                 $foto_doc[] = [
@@ -31,13 +30,15 @@ class AllProjectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($foto_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+        return $foto_doc;
+    }
 
-        // GET PENDING
+    private function fetchPendingData()
+    {
         $pending_collection = $this->getFirestore()->collection('Pending')->documents();
-
         $pending_doc = [];
+
         foreach ($pending_collection as $docpe) {
             if ($docpe->exists()) {
                 $pending_doc[] = [
@@ -48,13 +49,15 @@ class AllProjectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($pending_doc, fn($e, $f) => (int)$e['id'] <=> (int)$f['id']);
+        return $pending_doc;
+    }
 
-        // GET QE
+    private function fetchQEData()
+    {
         $qe_collection = $this->getFirestore()->collection('QE')->documents();
-
         $qe_doc = [];
+
         foreach ($qe_collection as $docq) {
             if ($docq->exists()) {
                 $qe_doc[] = [
@@ -64,48 +67,26 @@ class AllProjectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($qe_doc, fn($g, $h) => (int)$g['id'] <=> (int)$h['id']);
+        return $qe_doc;
+    }
 
-        // GET ALL PROJECT
+    private function fetchAllProjects()
+    {
         $project_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $project_doc = [];
         $tot = 0;
-        $grandTotal = 0;
+
         foreach ($project_collection as $docp) {
             if ($docp->exists()) {
                 $data = $docp->data();
+                $projectFotoRef = $data['ta_project_foto_id'];
+                $projectPendingRef = $data['ta_project_pending_id'];
+                $projectQERef = $data['ta_project_qe_id'];
 
-                $projectFotoRef = $data['ta_project_foto_id']; // Ambil referensi
-                $projectPendingRef = $data['ta_project_pending_id']; // Ambil referensi
-                $projectQERef = $data['ta_project_qe_id']; // Ambil referensi
-
-                // Ambil data foto
-                $fotoData = null;
-                if ($projectFotoRef) {
-                    $fotoDoc = $projectFotoRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($fotoDoc->exists()) {
-                        $fotoData = $fotoDoc->data();
-                    }
-                }
-
-                // Ambil data pending
-                $pendingData = null;
-                if ($projectPendingRef) {
-                    $pendingDoc = $projectPendingRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($pendingDoc->exists()) {
-                        $pendingData = $pendingDoc->data();
-                    }
-                }
-
-                // Ambil data QE
-                $qeData = null;
-                if ($projectQERef) {
-                    $qeDoc = $projectQERef->snapshot(); // Ambil snapshot dari referensi
-                    if ($qeDoc->exists()) {
-                        $qeData = $qeDoc->data();
-                    }
-                }
+                $fotoData = $this->getReferenceData($projectFotoRef);
+                $pendingData = $this->getReferenceData($projectPendingRef);
+                $qeData = $this->getReferenceData($projectQERef);
 
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
@@ -121,35 +102,52 @@ class AllProjectController extends Controller
                     'tgl_pengerjaan' => $tglPengerjaan,
                     'tgl_selesai' => $tglSelesai,
                     'status' => $data['ta_project_status'],
-                    'total' => $totalValue, // simpan numeric
+                    'total' => $totalValue,
                     'total_formatted' => number_format($totalValue, 0, ',', '.'),
                 ];
 
-                $tot += (float) ($data['ta_project_total'] ?? 0);
-                $grandTotal = number_format($tot, 0, ',', '.');
+                $tot += $totalValue;
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
-        usort($project_doc, fn($a, $b) => (int)$a['id'] <=> (int)$b['id']);
+        return [$project_doc, number_format($tot, 0, ',', '.')];
+    }
 
-        // CHART
+    private function getReferenceData($ref)
+    {
+        if ($ref && method_exists($ref, 'snapshot')) {
+            $doc = $ref->snapshot();
+            return $doc->exists() ? $doc->data() : null;
+        }
+        return null;
+    }
+
+    public function index()
+    {
+        // Fetch data using separate functions
+        $foto_doc = $this->fetchFotoData();
+        $pending_doc = $this->fetchPendingData();
+        $qe_doc = $this->fetchQEData();
+        list($project_doc, $grandTotal) = $this->fetchAllProjects();
+
+        // Prepare data for charts
         $totalProject = count($project_doc);
         $totalRevenue = array_sum(array_column($project_doc, 'total'));
 
-
+        // Data per month for the current year
         $dataPerBulan = array_fill(1, 12, 0);
         foreach ($project_doc as $project) {
             if (!empty($project['tgl_upload'])) {
                 $bulan = (int) date('n', strtotime($project['tgl_upload']));
                 $tahun = (int) date('Y', strtotime($project['tgl_upload']));
-                if ($tahun == 2025) {
+                if ($tahun == date('Y')) {
                     $dataPerBulan[$bulan]++;
                 }
             }
         }
         $chartTotalProjectData = array_values($dataPerBulan);
 
+        // Chart data for QE
         $chartQEData = [];
         foreach ($project_doc as $project) {
             if (!empty($project['tgl_upload'])) {
@@ -164,7 +162,8 @@ class AllProjectController extends Controller
             }
         }
 
-        $chartPieData   = [];
+        // Chart data for project status
+        $chartPieData = [];
         foreach ($project_doc as $project) {
             if (!empty($project['tgl_upload'])) {
                 $tahun = (int) date('Y', strtotime($project['tgl_upload']));
@@ -199,18 +198,18 @@ class AllProjectController extends Controller
 
         $data = $doc->data();
 
-        // --- Ambil data project utama ---
-        $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
-        $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
-        $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
+        // Fetch related data
+        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
         $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
         $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
-        // --- Ambil detail dari collection Detail_Project_TA ---
+        // Fetch detail data from Detail_Project_TA
         $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef) // filter by referensi project
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
             ->documents();
 
         $detail = [];
@@ -222,9 +221,9 @@ class AllProjectController extends Controller
 
             $row = $d->data();
 
-            // Ambil data designator dari Data_Project_TA
+            // Fetch data from Data_Project_TA
             $designatorRef = $row['ta_detail_ta_id'];
-            $designatorData = $designatorRef->snapshot()->data();
+            $designatorData = $this->getReferenceData($designatorRef);
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
             $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
@@ -252,6 +251,7 @@ class AllProjectController extends Controller
         $ppn = $total * 0.11;
         $grand = $total - $ppn;
 
+        // Update project total in Firestore
         $docRef->update([
             ['path' => 'ta_project_total', 'value' => $grand],
         ]);
@@ -268,14 +268,14 @@ class AllProjectController extends Controller
             'allproject' => [
                 'id' => $id,
                 'nama_project' => $data['ta_project_pekerjaan'],
-                'deskripsi_project' => $data['ta_project_deskripsi'],
-                'qe' => $qeData['type'] ?? null,
+                // 'deskripsi_project' => $data['ta_project_deskripsi'],
+                // 'qe' => $qeData['type'] ?? null,
                 'foto' => $fotoData,
                 'pending' => $pendingData,
-                'tgl_upload' => $tglUpload,
-                'tgl_pengerjaan' => $tglPengerjaan,
-                'tgl_selesai' => $tglSelesai,
-                'status' => $data['ta_project_status'],
+                // 'tgl_upload' => $tglUpload,
+                // 'tgl_pengerjaan' => $tglPengerjaan,
+                // 'tgl_selesai' => $tglSelesai,
+                // 'status' => $data['ta_project_status'],
                 'total' => $data['ta_project_total'],
                 'detail' => $detail,
             ],
@@ -287,11 +287,9 @@ class AllProjectController extends Controller
     {
         if (!$timestamp) return null;
 
-        // kalau Firestore Timestamp, ambil seconds
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');
         } else {
-            // fallback kalau string/datetime biasa
             $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
         }
 

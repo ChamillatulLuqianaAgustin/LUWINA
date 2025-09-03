@@ -20,6 +20,9 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::prefix('superadmin')->group(function () {
     // user
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
+    Route::post('/user/store', [UserController::class, 'store'])->name('superadmin.user_store');
+    Route::post('/user/update/{id}', [UserController::class, 'update'])->name('superadmin.user_update');
+    Route::delete('/user/delete/{id}', [UserController::class, 'destroy'])->name('superadmin.user_destroy');
     // make project
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
     Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');

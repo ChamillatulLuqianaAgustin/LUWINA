@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\super_admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Google\Cloud\Firestore\FirestoreClient;
 use Carbon\Carbon;
 
@@ -19,10 +18,19 @@ class AccController extends Controller
 
     public function index()
     {
-        // GET FOTO
-        $foto_collection = $this->getFirestore()->collection('Foto_Evident')->documents();
+        $foto_doc = $this->fetchFotoData();
+        $pending_doc = $this->fetchPendingData();
+        $qe_doc = $this->fetchQEData();
+        list($acc_doc, $grandTotal) = $this->fetchAccProjects();
 
+        return view('super_admin.acc.acc_superadmin', compact('acc_doc', 'grandTotal'));
+    }
+
+    private function fetchFotoData()
+    {
+        $foto_collection = $this->getFirestore()->collection('Foto_Evident')->documents();
         $foto_doc = [];
+
         foreach ($foto_collection as $docf) {
             if ($docf->exists()) {
                 $foto_doc[] = [
@@ -32,13 +40,15 @@ class AccController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($foto_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+        return $foto_doc;
+    }
 
-        // GET PENDING
+    private function fetchPendingData()
+    {
         $pending_collection = $this->getFirestore()->collection('Pending')->documents();
-
         $pending_doc = [];
+
         foreach ($pending_collection as $docpe) {
             if ($docpe->exists()) {
                 $pending_doc[] = [
@@ -49,13 +59,15 @@ class AccController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($pending_doc, fn($e, $f) => (int)$e['id'] <=> (int)$f['id']);
+        return $pending_doc;
+    }
 
-        // GET QE
+    private function fetchQEData()
+    {
         $qe_collection = $this->getFirestore()->collection('QE')->documents();
-
         $qe_doc = [];
+
         foreach ($qe_collection as $docq) {
             if ($docq->exists()) {
                 $qe_doc[] = [
@@ -65,14 +77,16 @@ class AccController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($qe_doc, fn($g, $h) => (int)$g['id'] <=> (int)$h['id']);
+        return $qe_doc;
+    }
 
-        // GET ACC
+    private function fetchAccProjects()
+    {
         $acc_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $acc_doc = [];
         $tot = 0;
-        $grandTotal = 0;
+
         foreach ($acc_collection as $doca) {
             if ($doca->exists()) {
                 $data = $doca->data();
@@ -81,36 +95,13 @@ class AccController extends Controller
                     continue;
                 }
 
-                $accFotoRef = $data['ta_project_foto_id']; // Ambil referensi
-                $accPendingRef = $data['ta_project_pending_id']; // Ambil referensi
-                $accQERef = $data['ta_project_qe_id']; // Ambil referensi
+                $accFotoRef = $data['ta_project_foto_id'];
+                $accPendingRef = $data['ta_project_pending_id'];
+                $accQERef = $data['ta_project_qe_id'];
 
-                // Ambil data foto
-                $fotoData = null;
-                if ($accFotoRef) {
-                    $fotoDoc = $accFotoRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($fotoDoc->exists()) {
-                        $fotoData = $fotoDoc->data();
-                    }
-                }
-
-                // Ambil data pending
-                $pendingData = null;
-                if ($accPendingRef) {
-                    $pendingDoc = $accPendingRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($pendingDoc->exists()) {
-                        $pendingData = $pendingDoc->data();
-                    }
-                }
-
-                // Ambil data QE
-                $qeData = null;
-                if ($accQERef) {
-                    $qeDoc = $accQERef->snapshot(); // Ambil snapshot dari referensi
-                    if ($qeDoc->exists()) {
-                        $qeData = $qeDoc->data();
-                    }
-                }
+                $fotoData = $this->getReferenceData($accFotoRef);
+                $pendingData = $this->getReferenceData($accPendingRef);
+                $qeData = $this->getReferenceData($accQERef);
 
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
@@ -129,15 +120,20 @@ class AccController extends Controller
                     'total' => number_format($totalValue, 0, ',', '.'),
                 ];
 
-                $tot += (float) ($data['ta_project_total'] ?? 0);
-                $grandTotal = number_format($tot, 0, ',', '.');
+                $tot += $totalValue;
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
-        usort($acc_doc, fn($a, $b) => (int)$a['id'] <=> (int)$b['id']);
+        return [$acc_doc, number_format($tot, 0, ',', '.')];
+    }
 
-        return view('super_admin.acc.acc_superadmin', compact('acc_doc', 'grandTotal'));
+    private function getReferenceData($ref)
+    {
+        if ($ref && method_exists($ref, 'snapshot')) {
+            $doc = $ref->snapshot();
+            return $doc->exists() ? $doc->data() : null;
+        }
+        return null;
     }
 
     public function detail($id)
@@ -152,18 +148,18 @@ class AccController extends Controller
 
         $data = $doc->data();
 
-        // --- Ambil data project utama ---
-        $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
-        $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
-        $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
+        // Fetch main project data
+        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
         $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
         $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
-        // --- Ambil detail dari collection Detail_Project_TA ---
+        // Fetch detail from Detail_Project_TA
         $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef) // filter by referensi project
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
             ->documents();
 
         $detail = [];
@@ -175,9 +171,9 @@ class AccController extends Controller
 
             $row = $d->data();
 
-            // Ambil data designator dari Data_Project_TA
+            // Fetch designator data
             $designatorRef = $row['ta_detail_ta_id'];
-            $designatorData = $designatorRef->snapshot()->data();
+            $designatorData = $this->getReferenceData($designatorRef);
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
             $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
@@ -205,6 +201,7 @@ class AccController extends Controller
         $ppn = $total * 0.11;
         $grand = $total - $ppn;
 
+        // Update project total in Firestore
         $docRef->update([
             ['path' => 'ta_project_total', 'value' => $grand],
         ]);
@@ -240,11 +237,11 @@ class AccController extends Controller
     {
         if (!$timestamp) return null;
 
-        // kalau Firestore Timestamp, ambil seconds
+        // If Firestore Timestamp, get seconds
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');
         } else {
-            // fallback kalau string/datetime biasa
+            // Fallback for string/datetime
             $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
         }
 

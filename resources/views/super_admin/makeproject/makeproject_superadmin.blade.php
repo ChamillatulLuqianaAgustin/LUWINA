@@ -8,6 +8,11 @@
 @section('content')
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <div class="page">
 
@@ -65,22 +70,23 @@
                     style="min-width: 100%">
                     <thead style="text-align: center;">
                         <tr>
-                            <th style="min-width: 50px; border-top-left-radius: 10px;">NO</th>
-                            <th>DESIGNATOR</th>
+                            <th style="width: 30px; border-top-left-radius: 10px;">NO</th>
+                            <th style="width: 200px;">DESIGNATOR</th>
                             <th style="width: 300px;">URAIAN</th>
                             <th>SATUAN</th>
-                            <th>HARGA MATERIAL</th>
-                            <th>HARGA JASA</th>
-                            <th>VOLUME</th>
-                            <th>TOTAL MATERIAL</th>
-                            <th style="min-width: 50px; border-top-right-radius: 10px;">TOTAL JASA</th>
+                            <th style="width: 200px;">HARGA MATERIAL</th>
+                            <th style="width: 200px;">HARGA JASA</th>
+                            <th style="width: 60px;">VOLUME</th>
+                            <th style="width: 200px;">TOTAL MATERIAL</th>
+                            <th style="width: 200px; border-top-right-radius: 10px;">TOTAL JASA</th>
                         </tr>
                     </thead>
                     <tbody style="text-align: center;">
                         <tr>
-                            <td>1</td>
-                            <td style="width: 200px;">
-                                <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)">
+                            <td style="width: 30px;">1</td>
+                            {{-- <td style="width: 200px;">
+                                <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)"
+                                    disabled>
                                     <option value="" disabled selected hidden>Pilih Designator</option>
                                     @foreach ($project_ta_doc as $dsg)
                                         <option value="{{ $dsg['id'] }}"
@@ -89,18 +95,23 @@
                                         </option>
                                     @endforeach
                                 </select>
+                            </td> --}}
+                            <td style="width: 250px;">
+                                <input type="text" name="designator[]" required class="input-dsg"
+                                    placeholder="Masukkan Designator" oninput="filterDesignators(this)">
+                                <div class="suggestions" style="display: none;"></div>
                             </td>
-                            <td class="uraian" style="width: 300px;">
+                            <td class="uraian" style="width:300px;">
                                 <div class="uraian-overflow" title=""></div>
                             </td>
                             <td class="satuan"></td>
-                            <td class="harga_material"></td>
-                            <td class="harga_jasa"></td>
+                            <td style="width: 200px;" class="harga_material"></td>
+                            <td style="width: 200px;" class="harga_jasa"></td>
                             <td style="width: 60px;"><input type="number" name="volume[]" required class="vol-field"
                                     value="0">
                             </td>
-                            <td class="total_material"></td>
-                            <td class="total_jasa"></td>
+                            <td style="width: 200px;" class="total_material"></td>
+                            <td style="width: 200px;" class="total_jasa"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -259,12 +270,12 @@
             border-top-right-radius: 10px;
             font-family: 'Poppins', sans-serif;
             font-weight: normal !important;
-            table-layout: fixed;
+            /* table-layout: fixed; */
         }
 
         #data-table th,
         #data-table td {
-            /* border: 1px solid #ccc; */
+            border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
         }
@@ -278,21 +289,17 @@
             font-weight: 600 !important;
         }
 
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .select-dsg {
+        .input-dsg {
             width: 200px;
+            /* Match the width you want for the input */
             padding: 8px 8px 8px 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-family: 'Poppins', sans-serif;
             color: #84858C;
-            appearance: none;
-            background: url('/assets/arrow.png') no-repeat right 10px center;
-            background-size: 10px;
             border-color: #133995;
+            position: relative;
+            /* Position relative for absolute children */
         }
 
         .vol-field {
@@ -306,11 +313,18 @@
             border-color: #133995;
         }
 
-        .uraian .uraian-overflow {
+        .uraian-overflow {
             max-width: 300px;
+            width: 100%;
             white-space: nowrap;
             overflow-x: auto;
             overflow-y: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .uraian-overflow::-webkit-scrollbar {
+            display: none;
         }
 
         #summary-table {
@@ -357,10 +371,59 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        .suggestions {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: white;
+            position: absolute;
+            /* Make sure it appears under the input */
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            width: 200px;
+            /* Match the input width */
+            margin-top: 2px;
+            /* Space between input and suggestions */
+        }
+
+        .suggestion-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 
     <script>
         const dsgData = @json($project_ta_doc);
+        const uraianOptions = @json($uraianOptions);
+
+        function toggleDesignatorSelects() {
+            const qe = document.getElementById('qe').value;
+            const pekerjaan = document.getElementById('pekerjaan').value.trim();
+            const deskripsi = document.getElementById('deskripsi').value.trim();
+            const khs = document.getElementById('khs').value.trim();
+            const pelaksana = document.getElementById('pelaksana').value.trim();
+            const witel = document.getElementById('witel').value.trim();
+
+            const allFilled = qe && pekerjaan && deskripsi && khs && pelaksana && witel;
+
+            document.querySelectorAll('.select-dsg').forEach(select => {
+                select.disabled = !allFilled;
+            });
+        }
+
+        // Jalankan saat halaman load
+        document.addEventListener('DOMContentLoaded', toggleDesignatorSelects);
+
+        // Jalankan ulang setiap ada perubahan input
+        ['qe', 'pekerjaan', 'deskripsi', 'khs', 'pelaksana', 'witel'].forEach(id => {
+            document.getElementById(id).addEventListener('input', toggleDesignatorSelects);
+            document.getElementById(id).addEventListener('change', toggleDesignatorSelects);
+        });
 
         // Fungsi untuk menghitung total material dan jasa dalam satu baris
         function calculateRow(row) {
@@ -392,6 +455,7 @@
         document.querySelectorAll('#data-table tbody tr').forEach(row => attachVolumeListener(row));
 
         // Event listener untuk menambahkan baris baru
+        // Event listener untuk menambahkan baris baru
         document.getElementById('addRow').addEventListener('click', function() {
             const tableBody = document.querySelector('#data-table tbody');
             const rowCount = tableBody.rows.length + 1;
@@ -401,33 +465,40 @@
                 .join('');
 
             const newRow = `
-    <tr>
-        <td>${rowCount}</td>
-        <td style="width:200px;">
-            <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)">
-                <option value="" disabled selected hidden>Pilih Designator</option>
-                ${optionsHtml}
-            </select>
-        </td>
-        <td class="uraian" style="width:300px;">
-            <div class="uraian-overflow" title=""></div>
-        </td>
-        <td class="satuan"></td>
-        <td class="harga_material"></td>
-        <td class="harga_jasa"></td>
-        <td style="width:60px;"><input type="number" name="volume[]" class="vol-field" value="0"></td>
-        <td class="total_material"></td>
-        <td class="total_jasa"></td>
-    </tr>
-    `;
+<tr>
+    <td>${rowCount}</td>
+    <td style="width:200px;">
+        <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)">
+            <option value="" disabled selected hidden>Pilih Designator</option>
+            ${optionsHtml}
+        </select>
+    </td>
+    <td class="uraian" style="width:300px;">
+        <div class="uraian-overflow" title=""></div>
+    </td>
+    <td class="satuan"></td>
+    <td class="harga_material"></td>
+    <td class="harga_jasa"></td>
+    <td style="width:60px;"><input type="number" name="volume[]" class="vol-field" value="0"></td>
+    <td class="total_material"></td>
+    <td class="total_jasa"></td>
+</tr>
+`;
             tableBody.insertAdjacentHTML('beforeend', newRow);
 
-            // Mengaitkan listener untuk volume di baris baru
+            // Attach listener ke row baru
             attachVolumeListener(tableBody.lastElementChild);
 
-            // Enable tombol removeRow karena sekarang ada lebih dari 1 row
+            // 🔑 Inisialisasi Select2 untuk select di row baru
+            $(tableBody.lastElementChild).find('.select-dsg').select2({
+                placeholder: "Cari Designator...",
+                allowClear: true,
+                width: 'resolve'
+            });
+
             document.getElementById('removeRow').disabled = false;
         });
+
 
         // Event listener untuk menghapus baris terakhir
         document.getElementById('removeRow').addEventListener('click', function() {
@@ -450,16 +521,23 @@
                 const selectedDsg = dsgData.find(dsg => dsg.id == selectedId);
 
                 if (selectedDsg) {
+                    // isi uraian
                     const uraianBox = row.querySelector('.uraian-overflow');
                     uraianBox.textContent = selectedDsg.uraian;
                     uraianBox.setAttribute('title', selectedDsg.uraian);
 
+                    // isi satuan
                     row.querySelector('.satuan').textContent = selectedDsg.satuan;
-                    row.querySelector('.harga_material').textContent = selectedDsg.harga_material;
-                    row.querySelector('.harga_jasa').textContent = selectedDsg.harga_jasa;
 
-                    calculateRow(row); // Hitung total jika sudah pilih designator
-                    updateSummary(); // Panggil updateSummary() setelah mengubah harga
+                    // isi harga material & jasa (format angka)
+                    row.querySelector('.harga_material').textContent =
+                        Number(selectedDsg.harga_material).toLocaleString('id-ID');
+                    row.querySelector('.harga_jasa').textContent =
+                        Number(selectedDsg.harga_jasa).toLocaleString('id-ID');
+
+                    // hitung ulang total baris & ringkasan
+                    calculateRow(row);
+                    updateSummary();
                 }
             } else {
                 selectElement.style.color = '';
@@ -487,18 +565,6 @@
             // Enable tombol + dan - jika semua terisi
             document.getElementById('addRow').disabled = !allFilled;
             document.getElementById('removeRow').disabled = !allFilled;
-
-            // // Enable/disable select dan input dalam tabel
-            // const dsgFields = document.querySelectorAll('.select-dsg');
-            // const volumeFields = document.querySelectorAll('.vol-field');
-
-            // dsgFields.forEach(field => {
-            //     field.disabled = !allFilled;
-            // });
-
-            // volumeFields.forEach(field => {
-            //     field.disabled = !allFilled;
-            // });
 
             // Cek apakah field harga bisa diubah
             const hargaMaterials = document.querySelectorAll('.harga_material');
@@ -543,6 +609,66 @@
             document.querySelector('.summary-ppn').textContent = ppn.toLocaleString('id-ID');
             document.querySelector('.summary-after-ppn').textContent = totalAfterPpn.toLocaleString('id-ID');
         }
+
+        // Aktifkan Select2 untuk semua dropdown designator
+        document.addEventListener('DOMContentLoaded', function() {
+            $('.select-dsg').select2({
+                placeholder: "Cari Designator...",
+                allowClear: true,
+                width: 'resolve'
+            });
+        });
+
+        function filterDesignators(input) {
+            const value = input.value.toLowerCase();
+            const suggestionsContainer = input.nextElementSibling; // Get the suggestions div
+            suggestionsContainer.innerHTML = ''; // Clear previous suggestions
+
+            if (value) {
+                const filteredDesignators = dsgData.filter(dsg => dsg.designator.toLowerCase().includes(value));
+
+                if (filteredDesignators.length > 0) {
+                    suggestionsContainer.style.display = 'block'; // Show suggestions
+                    filteredDesignators.forEach(dsg => {
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.textContent = dsg.designator;
+                        suggestionItem.classList.add('suggestion-item');
+                        suggestionItem.onclick = () => selectDesignator(dsg, input, suggestionsContainer);
+                        suggestionsContainer.appendChild(suggestionItem);
+                    });
+                } else {
+                    // If no matches found
+                    suggestionsContainer.style.display = 'block';
+                    suggestionsContainer.innerHTML = '<div>Designator tidak ditemukan</div>';
+                }
+            } else {
+                suggestionsContainer.style.display = 'none'; // Hide suggestions when input is empty
+            }
+        }
+
+        function selectDesignator(dsg, input, suggestionsContainer) {
+            input.value = dsg.designator; // Set input value to selected designator
+            suggestionsContainer.style.display = 'none'; // Hide suggestions
+            const row = input.closest('tr');
+            const uraianBox = row.querySelector('.uraian-overflow');
+            uraianBox.textContent = dsg.uraian;
+            uraianBox.setAttribute('title', dsg.uraian);
+            row.querySelector('.satuan').textContent = dsg.satuan;
+            row.querySelector('.harga_material').textContent = Number(dsg.harga_material).toLocaleString('id-ID');
+            row.querySelector('.harga_jasa').textContent = Number(dsg.harga_jasa).toLocaleString('id-ID');
+
+            // Call calculateRow to update totals
+            calculateRow(row);
+            updateSummary();
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('input-dsg')) {
+                const suggestions = document.querySelectorAll('.suggestions');
+                suggestions.forEach(s => s.style.display = 'none');
+            }
+        });
 
         // Jalankan pertama kali saat halaman dimuat
         document.addEventListener('DOMContentLoaded', function() {

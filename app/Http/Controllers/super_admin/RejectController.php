@@ -19,10 +19,19 @@ class RejectController extends Controller
 
     public function index()
     {
-        // GET FOTO
-        $foto_collection = $this->getFirestore()->collection('Foto_Evident')->documents();
+        $foto_doc = $this->fetchFotoData();
+        $pending_doc = $this->fetchPendingData();
+        $qe_doc = $this->fetchQEData();
+        [$reject_doc, $grandTotal] = $this->fetchRejectData();
 
+        return view('super_admin.reject.reject_superadmin', compact('reject_doc', 'grandTotal'));
+    }
+
+    private function fetchFotoData()
+    {
+        $foto_collection = $this->getFirestore()->collection('Foto_Evident')->documents();
         $foto_doc = [];
+
         foreach ($foto_collection as $docf) {
             if ($docf->exists()) {
                 $foto_doc[] = [
@@ -32,13 +41,15 @@ class RejectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($foto_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+        return $foto_doc;
+    }
 
-        // GET PENDING
+    private function fetchPendingData()
+    {
         $pending_collection = $this->getFirestore()->collection('Pending')->documents();
-
         $pending_doc = [];
+
         foreach ($pending_collection as $docpe) {
             if ($docpe->exists()) {
                 $pending_doc[] = [
@@ -49,13 +60,15 @@ class RejectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($pending_doc, fn($e, $f) => (int)$e['id'] <=> (int)$f['id']);
+        return $pending_doc;
+    }
 
-        // GET QE
+    private function fetchQEData()
+    {
         $qe_collection = $this->getFirestore()->collection('QE')->documents();
-
         $qe_doc = [];
+
         foreach ($qe_collection as $docq) {
             if ($docq->exists()) {
                 $qe_doc[] = [
@@ -65,14 +78,16 @@ class RejectController extends Controller
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
         usort($qe_doc, fn($g, $h) => (int)$g['id'] <=> (int)$h['id']);
+        return $qe_doc;
+    }
 
-        // GET REJECT
+    private function fetchRejectData()
+    {
         $reject_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $reject_doc = [];
         $tot = 0;
-        $grandTotal = 0;
+
         foreach ($reject_collection as $docr) {
             if ($docr->exists()) {
                 $data = $docr->data();
@@ -81,36 +96,13 @@ class RejectController extends Controller
                     continue;
                 }
 
-                $rejectFotoRef = $data['ta_project_foto_id']; // Ambil referensi
-                $rejectPendingRef = $data['ta_project_pending_id']; // Ambil referensi
-                $rejectQERef = $data['ta_project_qe_id']; // Ambil referensi
+                $rejectFotoRef = $data['ta_project_foto_id'];
+                $rejectPendingRef = $data['ta_project_pending_id'];
+                $rejectQERef = $data['ta_project_qe_id'];
 
-                // Ambil data foto
-                $fotoData = null;
-                if ($rejectFotoRef) {
-                    $fotoDoc = $rejectFotoRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($fotoDoc->exists()) {
-                        $fotoData = $fotoDoc->data();
-                    }
-                }
-
-                // Ambil data pending
-                $pendingData = null;
-                if ($rejectPendingRef) {
-                    $pendingDoc = $rejectPendingRef->snapshot(); // Ambil snapshot dari referensi
-                    if ($pendingDoc->exists()) {
-                        $pendingData = $pendingDoc->data();
-                    }
-                }
-
-                // Ambil data QE
-                $qeData = null;
-                if ($rejectQERef) {
-                    $qeDoc = $rejectQERef->snapshot(); // Ambil snapshot dari referensi
-                    if ($qeDoc->exists()) {
-                        $qeData = $qeDoc->data();
-                    }
-                }
+                $fotoData = $this->getReferenceData($rejectFotoRef);
+                $pendingData = $this->getReferenceData($rejectPendingRef);
+                $qeData = $this->getReferenceData($rejectQERef);
 
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
@@ -130,14 +122,19 @@ class RejectController extends Controller
                 ];
 
                 $tot += (float) ($data['ta_project_total'] ?? 0);
-                $grandTotal = number_format($tot, 0, ',', '.');
             }
         }
 
-        // Urutkan berdasarkan ID (optional)
-        usort($reject_doc, fn($a, $b) => (int)$a['id'] <=> (int)$b['id']);
+        return [$reject_doc, number_format($tot, 0, ',', '.')];
+    }
 
-        return view('super_admin.reject.reject_superadmin', compact('reject_doc', 'grandTotal'));
+    private function getReferenceData($ref)
+    {
+        if ($ref && method_exists($ref, 'snapshot')) {
+            $doc = $ref->snapshot();
+            return $doc->exists() ? $doc->data() : null;
+        }
+        return null;
     }
 
     public function detail($id)
@@ -151,19 +148,16 @@ class RejectController extends Controller
         }
 
         $data = $doc->data();
-
-        // --- Ambil data project utama ---
-        $fotoData = $data['ta_project_foto_id'] ? $data['ta_project_foto_id']->snapshot()->data() : null;
-        $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
-        $qeData = $data['ta_project_qe_id'] ? $data['ta_project_qe_id']->snapshot()->data() : null;
+        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
         $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
         $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
-        // --- Ambil detail dari collection Detail_Project_TA ---
         $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef) // filter by referensi project
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
             ->documents();
 
         $detail = [];
@@ -174,10 +168,8 @@ class RejectController extends Controller
             if (!$d->exists()) continue;
 
             $row = $d->data();
-
-            // Ambil data designator dari Data_Project_TA
             $designatorRef = $row['ta_detail_ta_id'];
-            $designatorData = $designatorRef->snapshot()->data();
+            $designatorData = $this->getReferenceData($designatorRef);
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
             $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
@@ -240,11 +232,9 @@ class RejectController extends Controller
     {
         if (!$timestamp) return null;
 
-        // kalau Firestore Timestamp, ambil seconds
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');
         } else {
-            // fallback kalau string/datetime biasa
             $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
         }
 
