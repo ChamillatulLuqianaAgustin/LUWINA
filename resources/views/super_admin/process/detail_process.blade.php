@@ -29,11 +29,10 @@
 
         <!-- Nama Project + Table wrapper -->
         <div class="table-wrapper">
-
             <!-- Header Nama Project -->
             <div class="project-header">
                 <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="#" class="edit-project disabled">Edit Project</a>
+                <a href="{{ route('superadmin.process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
             </div>
 
             <!-- Tabel Detail -->
@@ -245,6 +244,22 @@
                 font-weight: 700 !important;
                 text-align: center;
                 border: none !important;
+            }
+
+            #data-table td {
+                overflow-x: auto;
+                overflow-y: hidden;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            #data-table td::-webkit-scrollbar {
+                display: none;
+            }
+
+            #data-table td:first-child,
+            #data-table th:first-child {
+                width: 50px;
             }
         </style>
 
