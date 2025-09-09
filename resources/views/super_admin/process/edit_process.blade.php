@@ -42,12 +42,12 @@
                             <th style="width: 150px;">DESIGNATOR</th>
                             <th style="width: 300px;"> URAIAN</th>
                             <th style="width: 100px;">SATUAN</th>
-                            <th>HARGA MATERIAL</th>
-                            <th>HARGA JASA</th>
+                            <th style="width: 150px;">HARGA MATERIAL</th>
+                            <th style="width: 150px;">HARGA JASA</th>
                             <th style="width: 100px;">VOLUME</th>
-                            <th>TOTAL MATERIAL</th>
-                            <th>TOTAL JASA</th>
-                            <th style="width: 50px;"></th>
+                            <th style="width: 150px;">TOTAL MATERIAL</th>
+                            <th style="width: 150px;">TOTAL JASA</th>
+                            <th style="width: 50px;">DELETE</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,11 +84,14 @@
                                 <td class="total_material">{{ $item->total_material }}</td>
                                 <td class="total_jasa">{{ $item->total_jasa }}</td>
                                 <td>
-                                    @if(!empty($item->id))
-                                        <button type="button" class="btn-delete" onclick="deleteDetail('{{ $item->id }}')">
-                                            <img src="{{ asset('assets/sampah.png') }}" alt="Delete" width="18">
+                                    <form action="{{ route('superadmin.process_destroy', $item->id) }}" method="POST" 
+                                        class="form-delete">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="background:none;border:none;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
                                         </button>
-                                    @endif
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
@@ -298,6 +301,8 @@
     }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     const dsgData = @json($project_ta_doc);
 
@@ -354,15 +359,15 @@
         });
 
         const total = totalMaterial + totalJasa;
-        const ppn = total * 0.11;
+        const ppn = Math.round(total * 0.11);
         const grand = total + ppn;
 
         document.querySelector('#data-table tfoot').innerHTML = `
-            <tr><th colspan="7">MATERIAL</th><th colspan="2">${totalMaterial.toLocaleString('id-ID')}</th><th></th></tr>
-            <tr><th colspan="7">JASA</th><th colspan="2">${totalJasa.toLocaleString('id-ID')}</th><th></th></tr>
-            <tr><th colspan="7">TOTAL</th><th colspan="2">${total.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">Material</th><th colspan="2">${totalMaterial.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">Jasa</th><th colspan="2">${totalJasa.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">Total</th><th colspan="2">${total.toLocaleString('id-ID')}</th><th></th></tr>
             <tr><th colspan="7">PPN (11%)</th><th colspan="2">${ppn.toLocaleString('id-ID')}</th><th></th></tr>
-            <tr><th colspan="7">TOTAL SETELAH PPN</th><th colspan="2">${grand.toLocaleString('id-ID')}</th><th></th></tr>
+            <tr><th colspan="7">Total Setelah PPN</th><th colspan="2">${grand.toLocaleString('id-ID')}</th><th></th></tr>
         `;
     }
 
@@ -373,6 +378,44 @@
         });
         updateSummary();
     });
-</script>
+
+    // SweetAlert untuk Delete
+document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function () {
+        let id = this.dataset.id;
+
+        Swal.fire({
+            title: 'Yakin?',
+            text: "Material ini akan dihapus permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#133995',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let form = document.createElement('form');
+                form.action = `/superadmin/process/detail/${id}`;
+                form.method = 'POST';
+
+                let token = document.createElement('input');
+                token.type = 'hidden';
+                token.name = '_token';
+                token.value = '{{ csrf_token() }}';
+
+                let method = document.createElement('input');
+                method.type = 'hidden';
+                method.name = '_method';
+                method.value = 'DELETE';
+
+                form.appendChild(token);
+                form.appendChild(method);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+});
 
 @endsection

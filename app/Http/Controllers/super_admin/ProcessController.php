@@ -378,19 +378,18 @@ class ProcessController extends Controller
             ->with('success', 'Project berhasil diperbarui');
     }
 
-    public function delete($id)
+    public function destroy($id)
     {
         $firestore = $this->getFirestore();
-        $docRef = $firestore->collection('Detail_Project_TA')->document($id);
-        $doc = $docRef->snapshot();
 
-        if (!$doc->exists()) {
-            return redirect()->back()->with('error', 'Detail project tidak ditemukan');
+        try {
+            // hapus dokumen berdasarkan ID di Detail_Project_TA
+            $firestore->collection('Detail_Project_TA')->document($id)->delete();
+
+            return redirect()->back()->with('success', 'Material berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus material: ' . $e->getMessage());
         }
-
-        $docRef->delete();
-
-        return redirect()->back()->with('success', 'Detail project berhasil dihapus');
     }
 
     private function formatDate($timestamp)

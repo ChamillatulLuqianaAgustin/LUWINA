@@ -57,7 +57,7 @@
                             </td>
                             <td>
                                 <form action="{{ route('superadmin.user_destroy', $user['id']) }}" method="POST"
-                                    onsubmit="return confirm('Yakin hapus user ini?')">
+                                    class="form-delete">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" style="background:none;border:none;cursor:pointer;">
@@ -237,6 +237,10 @@
             box-shadow: 0 0 5px rgba(19, 57, 149, 0.3);
         }
 
+        .table-responsive {
+            overflow-x: auto;
+        }
+
         #data-table {
             border-collapse: collapse;
             width: 100%;
@@ -411,6 +415,8 @@
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         document.getElementById("searchInput").addEventListener("keyup", function() {
             let filter = this.value.toLowerCase();
@@ -501,6 +507,39 @@
                 addUserModal.style.display = "none";
             }
         });
+
+        // SweetAlert untuk Delete
+        document.querySelectorAll('.form-delete').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin?',
+                    text: "User ini akan dihapus permanen!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
     </script>
+
+    @if(session('success'))
+    <script>
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: "{{ session('success') }}",
+            timer: 2000,
+            showConfirmButton: false
+        });
+    </script>
+    @endif
 
 @endsection

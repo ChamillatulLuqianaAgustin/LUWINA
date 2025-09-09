@@ -33,8 +33,8 @@ Route::prefix('superadmin')->group(function () {
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
     Route::get('/process/edit/{id}', [ProcessController::class, 'edit'])->name('superadmin.process_edit');
-    Route::delete('/process/delete/{id}', [ProcessController::class, 'delete'])->name('superadmin.process_delete');
     Route::put('/process/update/{id}', [ProcessController::class, 'update'])->name('superadmin.process_update');
+    Route::delete('/process/delete/{id}', [ProcessController::class, 'destroy'])->name('superadmin.process_destroy');
     // acc
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/acc/detail/{id}', [AccController::class, 'detail'])->name('superadmin.acc_detail');

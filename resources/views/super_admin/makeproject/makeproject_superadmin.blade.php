@@ -97,9 +97,11 @@
                                 </select>
                             </td> --}}
                             <td style="width: 250px;">
-                                <input type="text" name="designator[]" required class="input-dsg"
-                                    placeholder="Masukkan Designator" oninput="filterDesignators(this)">
-                                <div class="suggestions" style="display: none;"></div>
+                                <div style="position: relative;">
+                                    <input type="text" name="designator[]" required class="input-dsg"
+                                        placeholder="Masukkan Designator" oninput="filterDesignators(this)">
+                                    <div class="suggestions" style="display: none;"></div>
+                                </div>
                             </td>
                             <td class="uraian" style="width:300px;">
                                 <div class="uraian-overflow" title=""></div>
@@ -265,7 +267,7 @@
         #data-table {
             border-collapse: collapse;
             width: 100%;
-            overflow: hidden;
+            overflow: visible;
             border-top-left-radius: 10px;
             border-top-right-radius: 10px;
             font-family: 'Poppins', sans-serif;
@@ -374,17 +376,17 @@
 
         .suggestions {
             border: 1px solid #ccc;
+            top: 100%;
+            left: 0;
+            width: 100%;
             border-radius: 6px;
             background: white;
             position: absolute;
-            /* Make sure it appears under the input */
             z-index: 1000;
             max-height: 150px;
             overflow-y: auto;
-            width: 200px;
-            /* Match the input width */
-            margin-top: 2px;
-            /* Space between input and suggestions */
+            display: none;
+            box-sizing: border-box;
         }
 
         .suggestion-item {
@@ -395,6 +397,11 @@
         .suggestion-item:hover {
             background-color: #f0f0f0;
         }
+
+        .select-dsg {
+            width: 200px !important; /* sesuai dengan lebar cell */
+        }
+
     </style>
 
     <script>
@@ -493,7 +500,7 @@
             $(tableBody.lastElementChild).find('.select-dsg').select2({
                 placeholder: "Cari Designator...",
                 allowClear: true,
-                width: 'resolve'
+                width: '100%'
             });
 
             document.getElementById('removeRow').disabled = false;
@@ -615,20 +622,24 @@
             $('.select-dsg').select2({
                 placeholder: "Cari Designator...",
                 allowClear: true,
-                width: 'resolve'
+                width: '100%'
             });
         });
 
         function filterDesignators(input) {
             const value = input.value.toLowerCase();
-            const suggestionsContainer = input.nextElementSibling; // Get the suggestions div
-            suggestionsContainer.innerHTML = ''; // Clear previous suggestions
+            const suggestionsContainer = input.nextElementSibling;
+            suggestionsContainer.innerHTML = '';
+
+            const rect = input.getBoundingClientRect();
+            // suggestionsContainer.style.top = rect.bottom + 'px';
+            // suggestionsContainer.style.left = rect.left + 'px';
+            suggestionsContainer.style.width = rect.width + 'px';
 
             if (value) {
                 const filteredDesignators = dsgData.filter(dsg => dsg.designator.toLowerCase().includes(value));
-
                 if (filteredDesignators.length > 0) {
-                    suggestionsContainer.style.display = 'block'; // Show suggestions
+                    suggestionsContainer.style.display = 'block';
                     filteredDesignators.forEach(dsg => {
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = dsg.designator;
@@ -637,12 +648,11 @@
                         suggestionsContainer.appendChild(suggestionItem);
                     });
                 } else {
-                    // If no matches found
                     suggestionsContainer.style.display = 'block';
                     suggestionsContainer.innerHTML = '<div>Designator tidak ditemukan</div>';
                 }
             } else {
-                suggestionsContainer.style.display = 'none'; // Hide suggestions when input is empty
+                suggestionsContainer.style.display = 'none';
             }
         }
 
