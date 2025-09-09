@@ -56,8 +56,11 @@
                                 {{ $acc['tgl_pengerjaan'] }}</td>
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['tgl_selesai'] }}</td>
-                            <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $acc['status'] }}</td>
+                            <td>
+                                <span style="color: #28a745; font-weight:600;">
+                                    {{ $acc['status'] }}
+                                </span>
+                            </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['total'] }}</td>
                             <td>

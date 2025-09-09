@@ -20,10 +20,20 @@
 
             <!-- Tombol ACC / Reject -->
             <div class="action-buttons">
-                <button class="btn-action btn-acc">
-                    <i class="fa fa-check" style="margin-right: 8px;"></i> ACC</button>
-                <button class="btn-action btn-reject">
-                    <i class="fa fa-times" style="margin-right: 8px;"></i> Reject</button>
+                <form action="{{ route('superadmin.process.acc', $process['id']) }}" method="POST" style="display:inline;">
+                @csrf
+                <button type="submit" class="btn-action btn-acc">
+                    <i class="fa fa-check" style="margin-right: 8px;"></i> ACC
+                </button>
+            </form>
+
+            <!-- Reject -->
+            <form action="{{ route('superadmin.process.reject', $process['id']) }}" method="POST" style="display:inline;">
+                @csrf
+                <button type="submit" class="btn-action btn-reject">
+                    <i class="fa fa-times" style="margin-right: 8px;"></i> Reject
+                </button>
+            </form>
             </div>
         </div>
 

@@ -392,6 +392,42 @@ class ProcessController extends Controller
         }
     }
 
+    public function acc($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.process')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update status jadi ACC
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'ACC'],
+        ]);
+
+        return redirect()->route('superadmin.acc')->with('success', 'Project berhasil di-ACC');
+    }
+
+    public function reject($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.process')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update status jadi REJECT
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'REJECT'],
+        ]);
+
+        return redirect()->route('superadmin.reject')->with('success', 'Project berhasil di-Reject');
+    }
+
     private function formatDate($timestamp)
     {
         if (!$timestamp) return null;
