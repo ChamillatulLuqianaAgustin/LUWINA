@@ -25,7 +25,7 @@ Route::prefix('superadmin')->group(function () {
     Route::delete('/user/delete/{id}', [UserController::class, 'destroy'])->name('superadmin.user_destroy');
     // make project
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
-    Route::post('/', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
+    Route::post('/makeproject', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
     // all peoject
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
     Route::get('/allproject/detail/{id}', [AllProjectController::class, 'detail'])->name('superadmin.allproject_detail');

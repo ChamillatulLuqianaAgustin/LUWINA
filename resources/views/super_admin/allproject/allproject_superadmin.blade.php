@@ -96,7 +96,8 @@
                                 {{ $project['total_formatted'] }}</td>
                             <td>
                                 <a href="{{ route('superadmin.allproject_detail', $project['id']) }}" title="Lihat Detail">
-                                <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail"
+                                        style="width:20px;height:20px;">
                             </td>
                         </tr>
                     @endforeach
@@ -119,6 +120,23 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            flatpickr("#date_range", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "id",
+                onClose: function(selectedDates, dateStr, instance) {
+                    if (selectedDates.length === 2) {
+                        const start = selectedDates[0].toISOString().split('T')[0];
+                        const end = selectedDates[1].toISOString().split('T')[0];
+
+                        // Redirect ke URL dengan query param (atau bisa pakai AJAX)
+                        window.location.href = `?start=${start}&end=${end}`;
+                    }
+                }
+            });
+        });
+
         // Inisialisasi Flatpickr Range
         document.addEventListener("DOMContentLoaded", function() {
             flatpickr("#date_range", {
@@ -391,7 +409,7 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        
+
         #data-table td::-webkit-scrollbar {
             display: none;
         }
