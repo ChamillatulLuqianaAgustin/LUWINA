@@ -17,15 +17,16 @@ class ProcessController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $foto_doc = $this->fetchFotoData();
+        $foto_doc    = $this->fetchFotoData();
         $pending_doc = $this->fetchPendingData();
-        $qe_doc = $this->fetchQEData();
-        [$process_doc, $grandTotal] = $this->fetchProcessData();
+        $qe_doc      = $this->fetchQEData();
+        [$process_doc, $grandTotal] = $this->fetchProcessData($request);
 
         return view('super_admin.process.process_superadmin', compact('process_doc', 'grandTotal'));
     }
+
 
     private function fetchFotoData()
     {
@@ -82,11 +83,15 @@ class ProcessController extends Controller
         return $qe_doc;
     }
 
-    private function fetchProcessData()
+    private function fetchProcessData($request)
     {
         $process_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $process_doc = [];
         $tot = 0;
+
+        // Ambil filter dari query string
+        $startDate = $request->query('start');
+        $endDate   = $request->query('end');
 
         foreach ($process_collection as $docp) {
             if ($docp->exists()) {
@@ -96,32 +101,36 @@ class ProcessController extends Controller
                     continue;
                 }
 
-                $processFotoRef = $data['ta_project_foto_id'];
-                $processPendingRef = $data['ta_project_pending_id'];
-                $processQERef = $data['ta_project_qe_id'];
+                // Ambil tanggal upload
+                $tglUploadRaw = $data['ta_project_waktu_upload'] ?? null;
+                $tglUpload    = $this->formatDate($tglUploadRaw);
 
-                $fotoData = $this->getReferenceData($processFotoRef);
-                $pendingData = $this->getReferenceData($processPendingRef);
-                $qeData = $this->getReferenceData($processQERef);
+                // Filter kalau ada query tanggal
+                if ($startDate && $endDate) {
+                    if ($tglUpload < $startDate || $tglUpload > $endDate) {
+                        continue; // skip data di luar range
+                    }
+                }
 
-                $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-                $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
-                $totalValue = (float) ($data['ta_project_total'] ?? 0);
+                $tglSelesai    = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+                $totalValue    = (float) ($data['ta_project_total'] ?? 0);
+
+                $qeData = $this->getReferenceData($data['ta_project_qe_id']);
 
                 $process_doc[] = [
-                    'id' => $docp->id(),
-                    'nama_project' => $data['ta_project_pekerjaan'],
+                    'id'               => $docp->id(),
+                    'nama_project'     => $data['ta_project_pekerjaan'],
                     'deskripsi_project' => $data['ta_project_deskripsi'],
-                    'qe' => $qeData ? $qeData['type'] : null,
-                    'tgl_upload' => $tglUpload,
-                    'tgl_pengerjaan' => $tglPengerjaan,
-                    'tgl_selesai' => $tglSelesai,
-                    'status' => $data['ta_project_status'],
-                    'total' => number_format($totalValue, 0, ',', '.'),
+                    'qe'               => $qeData ? $qeData['type'] : null,
+                    'tgl_upload'       => $tglUpload,
+                    'tgl_pengerjaan'   => $tglPengerjaan,
+                    'tgl_selesai'      => $tglSelesai,
+                    'status'           => $data['ta_project_status'],
+                    'total'            => number_format($totalValue, 0, ',', '.'),
                 ];
 
-                $tot += (float) ($data['ta_project_total'] ?? 0);
+                $tot += $totalValue;
             }
         }
 
@@ -221,7 +230,7 @@ class ProcessController extends Controller
             'process' => [
                 'id'               => $id,
                 'nama_project'     => $data['ta_project_pekerjaan'],
-                'deskripsi_project'=> $data['ta_project_deskripsi'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
                 'qe'               => $qeData['type'] ?? null,
                 'foto'             => $fotoData,
                 'pending'          => $pendingData,
@@ -247,7 +256,7 @@ class ProcessController extends Controller
         }
 
         $data = $doc->data();
-        
+
         $detailDocs = $firestore->collection('Detail_Project_TA')
             ->where('ta_detail_all_id', '=', $docRef)
             ->documents();
@@ -278,46 +287,31 @@ class ProcessController extends Controller
 
         $totals = $this->hitungTotal($detailDocs);
 
-        $qeCollection = $firestore->collection('QE')->documents();
-        $qeOptions = [];
-        foreach ($qeCollection as $qe) {
-            if ($qe->exists()) {
-                $qeOptions[] = [
-                    'id'    => $qe->id(),
-                    'label' => $qe->data()['type'],
-                ];
-            }
-        }
-
-        $projectTaDocs = $firestore->collection('Data_Project_TA')->documents();
+        // Ambil data referensi designator buat dropdown
         $project_ta_doc = [];
-        foreach ($projectTaDocs as $dsg) {
-            if ($dsg->exists()) {
+        $project_ta_collection = $firestore->collection('TA')->documents();
+        foreach ($project_ta_collection as $ta) {
+            if ($ta->exists()) {
                 $project_ta_doc[] = [
-                    'id'             => $dsg->id(),
-                    'designator'     => $dsg->data()['ta_designator'],
-                    'uraian'         => $dsg->data()['ta_uraian_pekerjaan'],
-                    'satuan'         => $dsg->data()['ta_satuan'],
-                    'harga_material' => $dsg->data()['ta_harga_material'],
-                    'harga_jasa'     => $dsg->data()['ta_harga_jasa'],
+                    'id'            => $ta->id(),
+                    'designator'    => $ta->data()['ta_designator'] ?? '',
+                    'uraian'        => $ta->data()['ta_uraian_pekerjaan'] ?? '',
+                    'satuan'        => $ta->data()['ta_satuan'] ?? '',
+                    'harga_material' => $ta->data()['ta_harga_material'] ?? 0,
+                    'harga_jasa'    => $ta->data()['ta_harga_jasa'] ?? 0,
                 ];
             }
         }
 
         return view('super_admin.process.edit_process', [
             'process' => [
-                'id'          => $id,
-                'nama_project'=> $data['ta_project_pekerjaan'],
-                'deskripsi_project'=> $data['ta_project_deskripsi'],
-                'qe'          => $data['ta_project_qe_id']?->id(),
-                'khs'         => $data['ta_project_khs'] ?? '',
-                'pelaksana'   => $data['ta_project_pelaksana'] ?? '',
-                'witel'       => $data['ta_project_witel'] ?? '',
-                'detail'      => $detail,
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'detail'           => $detail,
             ],
-            'qeOptions'      => $qeOptions,
-            'project_ta_doc' => $project_ta_doc,
             'totals'         => $totals,
+            'project_ta_doc' => $project_ta_doc,
         ]);
     }
 
@@ -430,7 +424,9 @@ class ProcessController extends Controller
 
     private function formatDate($timestamp)
     {
-        if (!$timestamp) return null;
+        if (!$timestamp) {
+            return "-";
+        };
 
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');

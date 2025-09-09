@@ -17,12 +17,12 @@ class RejectController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $foto_doc = $this->fetchFotoData();
         $pending_doc = $this->fetchPendingData();
         $qe_doc = $this->fetchQEData();
-        [$reject_doc, $grandTotal] = $this->fetchRejectData();
+        [$reject_doc, $grandTotal] = $this->fetchRejectData($request);
 
         return view('super_admin.reject.reject_superadmin', compact('reject_doc', 'grandTotal'));
     }
@@ -82,11 +82,14 @@ class RejectController extends Controller
         return $qe_doc;
     }
 
-    private function fetchRejectData()
+    private function fetchRejectData($request)
     {
         $reject_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $reject_doc = [];
         $tot = 0;
+
+        $startDate = $request->query('start');
+        $endDate   = $request->query('end');
 
         foreach ($reject_collection as $docr) {
             if ($docr->exists()) {
@@ -96,32 +99,36 @@ class RejectController extends Controller
                     continue;
                 }
 
-                $rejectFotoRef = $data['ta_project_foto_id'];
-                $rejectPendingRef = $data['ta_project_pending_id'];
-                $rejectQERef = $data['ta_project_qe_id'];
+                // Ambil tanggal upload
+                $tglUploadRaw = $data['ta_project_waktu_upload'] ?? null;
+                $tglUpload    = $this->formatDate($tglUploadRaw);
 
-                $fotoData = $this->getReferenceData($rejectFotoRef);
-                $pendingData = $this->getReferenceData($rejectPendingRef);
-                $qeData = $this->getReferenceData($rejectQERef);
+                // Filter kalau ada query tanggal
+                if ($startDate && $endDate) {
+                    if ($tglUpload < $startDate || $tglUpload > $endDate) {
+                        continue; // skip data di luar range
+                    }
+                }
 
-                $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
                 $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-                $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
-                $totalValue = (float) ($data['ta_project_total'] ?? 0);
+                $tglSelesai    = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+                $totalValue    = (float) ($data['ta_project_total'] ?? 0);
+
+                $qeData = $this->getReferenceData($data['ta_project_qe_id']);
 
                 $reject_doc[] = [
-                    'id' => $docr->id(),
-                    'nama_project' => $data['ta_project_pekerjaan'],
+                    'id'               => $docr->id(),
+                    'nama_project'     => $data['ta_project_pekerjaan'],
                     'deskripsi_project' => $data['ta_project_deskripsi'],
-                    'qe' => $qeData ? $qeData['type'] : null,
-                    'tgl_upload' => $tglUpload,
-                    'tgl_pengerjaan' => $tglPengerjaan,
-                    'tgl_selesai' => $tglSelesai,
-                    'status' => $data['ta_project_status'],
-                    'total' => number_format($totalValue, 0, ',', '.'),
+                    'qe'               => $qeData ? $qeData['type'] : null,
+                    'tgl_upload'       => $tglUpload,
+                    'tgl_pengerjaan'   => $tglPengerjaan,
+                    'tgl_selesai'      => $tglSelesai,
+                    'status'           => $data['ta_project_status'],
+                    'total'            => number_format($totalValue, 0, ',', '.'),
                 ];
 
-                $tot += (float) ($data['ta_project_total'] ?? 0);
+                $tot += $totalValue;
             }
         }
 
@@ -230,7 +237,9 @@ class RejectController extends Controller
 
     private function formatDate($timestamp)
     {
-        if (!$timestamp) return null;
+        if (!$timestamp) {
+            return "-";
+        };
 
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');

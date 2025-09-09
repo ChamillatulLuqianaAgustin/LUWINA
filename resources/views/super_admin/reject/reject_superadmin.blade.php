@@ -57,17 +57,16 @@
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $reject['tgl_selesai'] }}</td>
                             <td>
-                                <td>
-                                    <span style="color: #dc3545; font-weight:600;">
-                                        {{ $reject['status'] }}
-                                    </span>
-                                </td>
+                                <span style="color: #dc3545; font-weight:600;">
+                                    {{ $reject['status'] }}
+                                </span>
                             </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $reject['total'] }}</td>
                             <td>
                                 <a href="{{ route('superadmin.reject_detail', $reject['id']) }}" title="Lihat Detail">
-                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail"
+                                        style="width:20px;height:20px;">
                                 </a>
                             </td>
                         </tr>
@@ -91,7 +90,16 @@
             flatpickr("#date_range", {
                 mode: "range",
                 dateFormat: "Y-m-d",
-                locale: "id"
+                locale: "id",
+                onClose: function(selectedDates) {
+                    if (selectedDates.length === 2) {
+                        const start = selectedDates[0].toISOString().split('T')[0];
+                        const end = selectedDates[1].toISOString().split('T')[0];
+
+                        // Redirect otomatis dengan query param
+                        window.location.href = `?start=${start}&end=${end}`;
+                    }
+                }
             });
         });
     </script>

@@ -132,24 +132,15 @@
                 mode: "range",
                 dateFormat: "Y-m-d",
                 locale: "id",
-                onClose: function(selectedDates, dateStr, instance) {
+                onClose: function(selectedDates) {
                     if (selectedDates.length === 2) {
                         const start = selectedDates[0].toISOString().split('T')[0];
                         const end = selectedDates[1].toISOString().split('T')[0];
 
-                        // Redirect ke URL dengan query param (atau bisa pakai AJAX)
+                        // 🚨 Redirect otomatis tanpa tombol submit
                         window.location.href = `?start=${start}&end=${end}`;
                     }
                 }
-            });
-        });
-
-        // Inisialisasi Flatpickr Range
-        document.addEventListener("DOMContentLoaded", function() {
-            flatpickr("#date_range", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "id"
             });
         });
 

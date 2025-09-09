@@ -74,18 +74,50 @@ class MakeProjectController extends Controller
 
     public function store(Request $request)
     {
-        // // Validate the incoming request data
-        // $validatedData = $request->validate([
-        //     'qe' => 'required|string|max:255',
-        //     'pekerjaan' => 'required|string|max:255',
-        //     'deskripsi' => 'required|string|max:255',
-        //     'nomor_khs' => 'required|string|max:255',
-        //     'pelaksana' => 'required|string|max:255',
-        //     'wilayah' => 'required|string|max:255',
-        // ]);
+        $firestore = $this->getFirestore();
 
-        // // Logic to store the project in Firestore would go here
+        // 1. Simpan ke All_Project_TA
+        $allProjectRef = $firestore->collection('All_Project_TA')->add([
+            'ta_project_deskripsi'        => $request->deskripsi,
+            'ta_project_foto_id'          => null,
+            'ta_project_khs'              => $request->khs,
+            'ta_project_pekerjaan'        => $request->pekerjaan,
+            'ta_project_pelaksana'        => $request->pelaksana,
+            'ta_project_pending_id'       => null,
+            'ta_project_qe_id' => $firestore->collection('QE')->document($request->qe),
+            'ta_project_status'           => 'PROCESS',
+            'ta_project_total'            => (float) $request->summary_after_ppn,
+            'ta_project_waktu_pengerjaan' => null,
+            'ta_project_waktu_selesai'    => null,
+            'ta_project_waktu_upload'     => now(),
+            'ta_project_witel'            => $request->witel,
+        ]);
 
-        // return redirect()->route('project.index')->with('success', 'Project created successfully!');
+        $allProjectId = $allProjectRef->id();
+
+        // 2. Simpan ke Detail_Project_TA
+        foreach ($request->designator as $i => $designator) {
+            if (empty($designator)) continue;
+
+            $dataProjectQuery = $firestore->collection('Data_Project_TA')
+                ->where('ta_designator', '=', $designator)
+                ->limit(1)
+                ->documents();
+
+            $dataProjectId = null;
+            foreach ($dataProjectQuery as $doc) {
+                $dataProjectId = $doc->id();
+            }
+
+            if (!$dataProjectId) continue;
+
+            $firestore->collection('Detail_Project_TA')->add([
+                'ta_detail_all_id' => $firestore->collection('All_Project_TA')->document($allProjectId),
+                'ta_detail_ta_id'  => $firestore->collection('Data_Project_TA')->document($dataProjectId),
+                'ta_detail_volume' => (int) ($request->volume[$i] ?? 0),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Project berhasil ditambahkan');
     }
 }

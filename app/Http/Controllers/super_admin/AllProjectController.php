@@ -5,6 +5,7 @@ namespace App\Http\Controllers\super_admin;
 use App\Http\Controllers\Controller;
 use Google\Cloud\Firestore\FirestoreClient;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AllProjectController extends Controller
 {
@@ -71,7 +72,7 @@ class AllProjectController extends Controller
         return $qe_doc;
     }
 
-    private function fetchAllProjects()
+    private function fetchAllProjects($start = null, $end = null)
     {
         $project_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $project_doc = [];
@@ -80,18 +81,37 @@ class AllProjectController extends Controller
         foreach ($project_collection as $docp) {
             if ($docp->exists()) {
                 $data = $docp->data();
-                $projectFotoRef = $data['ta_project_foto_id'];
-                $projectPendingRef = $data['ta_project_pending_id'];
-                $projectQERef = $data['ta_project_qe_id'];
 
-                $fotoData = $this->getReferenceData($projectFotoRef);
-                $pendingData = $this->getReferenceData($projectPendingRef);
-                $qeData = $this->getReferenceData($projectQERef);
+                // Ambil timestamp mentah
+                $rawUpload = $data['ta_project_waktu_upload'] ?? null;
+                $rawPengerjaan = $data['ta_project_waktu_pengerjaan'] ?? null;
+                $rawSelesai = $data['ta_project_waktu_selesai'] ?? null;
 
-                $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
-                $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-                $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+                // Konversi ke string tanggal untuk tampilan
+                $tglUpload = $this->formatDate($rawUpload);
+                $tglPengerjaan = $this->formatDate($rawPengerjaan);
+                $tglSelesai = $this->formatDate($rawSelesai);
+
                 $totalValue = (float) ($data['ta_project_total'] ?? 0);
+
+                // 🚨 FILTER disini (gunakan rawUpload langsung)
+                if ($start && $end && $rawUpload) {
+                    if (method_exists($rawUpload, 'get')) {
+                        $uploadDate = Carbon::instance($rawUpload->get());
+                    } else {
+                        $uploadDate = Carbon::parse($rawUpload);
+                    }
+
+                    $startDate = Carbon::parse($start)->startOfDay();
+                    $endDate   = Carbon::parse($end)->endOfDay();
+
+                    if (!($uploadDate->between($startDate, $endDate))) {
+                        continue; // skip kalau di luar range
+                    }
+                }
+
+                $projectQERef = $data['ta_project_qe_id'];
+                $qeData = $this->getReferenceData($projectQERef);
 
                 $project_doc[] = [
                     'id' => $docp->id(),
@@ -122,13 +142,18 @@ class AllProjectController extends Controller
         return null;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         // Fetch data using separate functions
         $foto_doc = $this->fetchFotoData();
         $pending_doc = $this->fetchPendingData();
         $qe_doc = $this->fetchQEData();
-        list($project_doc, $grandTotal) = $this->fetchAllProjects();
+
+        // ambil query param dari URL (?start=...&end=...)
+        $start = $request->query('start');
+        $end   = $request->query('end');
+
+        list($project_doc, $grandTotal) = $this->fetchAllProjects($start, $end);
 
         // Prepare data for charts
         $totalProject = count($project_doc);
@@ -285,7 +310,9 @@ class AllProjectController extends Controller
 
     private function formatDate($timestamp)
     {
-        if (!$timestamp) return null;
+        if (!$timestamp) {
+            return "-";
+        };
 
         if (is_object($timestamp) && method_exists($timestamp, 'get')) {
             $timestamp = $timestamp->get()->format('Y-m-d');

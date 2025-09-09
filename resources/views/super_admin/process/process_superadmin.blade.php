@@ -62,7 +62,8 @@
                                 {{ $process['total'] }}</td>
                             <td>
                                 <a href="{{ route('superadmin.process_detail', $process['id']) }}" title="Lihat Detail">
-                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail" style="width:20px;height:20px;">
+                                    <img src="{{ asset('assets/detail.png') }}" alt="Detail"
+                                        style="width:20px;height:20px;">
                                 </a>
                             </td>
                         </tr>
@@ -86,7 +87,16 @@
             flatpickr("#date_range", {
                 mode: "range",
                 dateFormat: "Y-m-d",
-                locale: "id"
+                locale: "id",
+                onClose: function(selectedDates) {
+                    if (selectedDates.length === 2) {
+                        const start = selectedDates[0].toISOString().split('T')[0];
+                        const end = selectedDates[1].toISOString().split('T')[0];
+
+                        // 🚨 Redirect otomatis tanpa tombol submit
+                        window.location.href = `?start=${start}&end=${end}`;
+                    }
+                }
             });
         });
     </script>

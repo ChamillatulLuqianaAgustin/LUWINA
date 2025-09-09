@@ -21,7 +21,7 @@
 
             <div class="form-group">
                 <div class="flex-container">
-                    <label for="qe" class="label-qe">QE:</label>
+                    <label for="qe" X>QE:</label>
                     <select id="qe" name="qe" required class="select-field" onchange="changeFontColor(this)">
                         <option value="" disabled selected hidden>Pilih Quality Enhancement (QE)</option>
                         @foreach ($qeOptions as $qe)
@@ -30,7 +30,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <button type="button" class="btn-make-project">Make Project</button>
+                    <button type="submit" class="btn-make-project">Make Project</button>
                 </div>
             </div>
 
@@ -84,18 +84,6 @@
                     <tbody style="text-align: center;">
                         <tr>
                             <td style="width: 30px;">1</td>
-                            {{-- <td style="width: 200px;">
-                                <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)"
-                                    disabled>
-                                    <option value="" disabled selected hidden>Pilih Designator</option>
-                                    @foreach ($project_ta_doc as $dsg)
-                                        <option value="{{ $dsg['id'] }}"
-                                            {{ old('dsg') == $dsg['id'] ? 'selected' : '' }}>
-                                            {{ $dsg['designator'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </td> --}}
                             <td style="width: 250px;">
                                 <div style="position: relative;">
                                     <input type="text" name="designator[]" required class="input-dsg"
@@ -399,9 +387,9 @@
         }
 
         .select-dsg {
-            width: 200px !important; /* sesuai dengan lebar cell */
+            width: 200px !important;
+            /* sesuai dengan lebar cell */
         }
-
     </style>
 
     <script>
@@ -472,25 +460,26 @@
                 .join('');
 
             const newRow = `
-<tr>
-    <td>${rowCount}</td>
-    <td style="width:200px;">
-        <select name="designator[]" required class="select-dsg" onchange="changeFontColor(this)">
-            <option value="" disabled selected hidden>Pilih Designator</option>
-            ${optionsHtml}
-        </select>
-    </td>
-    <td class="uraian" style="width:300px;">
-        <div class="uraian-overflow" title=""></div>
-    </td>
-    <td class="satuan"></td>
-    <td class="harga_material"></td>
-    <td class="harga_jasa"></td>
-    <td style="width:60px;"><input type="number" name="volume[]" class="vol-field" value="0"></td>
-    <td class="total_material"></td>
-    <td class="total_jasa"></td>
-</tr>
-`;
+                <tr>
+                    <td>${rowCount}</td>
+                    <td style="width: 250px;">
+                        <div style="position: relative;">
+                            <input type="text" name="designator[]" required class="input-dsg"
+                                placeholder="Masukkan Designator" oninput="filterDesignators(this)">
+                            <div class="suggestions" style="display: none;"></div>
+                        </div>
+                    </td>
+                    <td class="uraian" style="width:300px;">
+                        <div class="uraian-overflow" title=""></div>
+                    </td>
+                    <td class="satuan"></td>
+                    <td class="harga_material"></td>
+                    <td class="harga_jasa"></td>
+                    <td style="width:60px;"><input type="number" name="volume[]" class="vol-field" value="0"></td>
+                    <td class="total_material"></td>
+                    <td class="total_jasa"></td>
+                </tr>
+            `;
             tableBody.insertAdjacentHTML('beforeend', newRow);
 
             // Attach listener ke row baru
