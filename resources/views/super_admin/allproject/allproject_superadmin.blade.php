@@ -91,7 +91,14 @@
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['tgl_selesai'] }}</td>
                             <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $project['status'] }}</td>
+                                @if ($project['status'] === 'ACC')
+                                    <span style="color: #28a745; font-weight: 600;">{{ $project['status'] }}</span>
+                                @elseif ($project['status'] === 'REJECT')
+                                    <span style="color: #dc3545; font-weight: 600;">{{ $project['status'] }}</span>
+                                @else
+                                    <span>{{ $project['status'] }}</span>
+                                @endif
+                            </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['total_formatted'] }}</td>
                             <td>
