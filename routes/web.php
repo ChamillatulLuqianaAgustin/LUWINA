@@ -40,6 +40,9 @@ Route::prefix('superadmin')->group(function () {
     // acc
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/acc/detail/{id}', [AccController::class, 'detail'])->name('superadmin.acc_detail');
+    Route::post('/acc/{id}/kerjakan', [AccController::class, 'kerjakan'])->name('superadmin.acc.kerjakan');
+    Route::post('/acc/{id}/done', [AccController::class, 'storeFoto'])->name('superadmin.acc.storeFoto');
+    Route::post('/acc/{id}/pending', [AccController::class, 'pending'])->name('superadmin.acc.pending');
     // reject
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');
     Route::get('/reject/detail/{id}', [RejectController::class, 'detail'])->name('superadmin.reject_detail');
