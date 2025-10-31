@@ -28,7 +28,7 @@
                 </form>
 
             <!-- Reject -->
-            <form action="{{ route('superadmin.process.reject', $process['id']) }}" method="POST" style="display:inline;">
+            <form id="formReject" action="{{ route('superadmin.process.reject', $process['id']) }}" method="POST" style="display:inline;">
                 @csrf
                 <button type="submit" class="btn-action btn-reject">
                     <i class="fa fa-times" style="margin-right: 8px;"></i> Reject
