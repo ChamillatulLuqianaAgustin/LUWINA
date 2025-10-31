@@ -4,7 +4,11 @@ namespace App\Http\Controllers\super_admin;
 
 use App\Http\Controllers\Controller;
 use Google\Cloud\Firestore\FirestoreClient;
+use Google\Cloud\Core\Timestamp as FireTimestamp;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class AccController extends Controller
 {
@@ -33,10 +37,18 @@ class AccController extends Controller
 
         foreach ($foto_collection as $docf) {
             if ($docf->exists()) {
-                $foto_doc[] = [
-                    'id' => $docf->id(),
-                    'foto' => $docf->data()['foto_path'],
-                ];
+                $paths = $docf->data()['foto_path'] ?? [];
+
+                if (!is_array($paths)) {
+                    $paths = [$paths];
+                }
+
+                foreach ($paths as $path) {
+                    $foto_doc[] = [
+                        'id' => $docf->id(),
+                        'foto' => $path,
+                    ];
+                }
             }
         }
 
@@ -148,14 +160,60 @@ class AccController extends Controller
 
         $data = $doc->data();
 
-        // Fetch main project data
-        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
-        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
-        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
+        // --- Foto evident (ambil semua dokumen by project_id)
+        $fotoDocs = $firestore->collection('Foto_Evident')
+            ->where('project_id', '=', $id)
+            ->documents();
 
-        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
-        $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+        $fotoData = [
+            'sebelum' => [],
+            'proses' => [],
+            'sesudah' => [],
+        ];
+
+        foreach ($fotoDocs as $docFoto) {
+            if ($docFoto->exists()) {
+                $dataFoto = $docFoto->data()['foto_path'] ?? [];
+
+                if (is_object($dataFoto)) {
+                    $dataFoto = json_decode(json_encode($dataFoto), true);
+                }
+
+                foreach (['sebelum', 'proses', 'sesudah'] as $step) {
+                    if (!empty($dataFoto[$step])) {
+                        $fotoData[$step] = array_merge($fotoData[$step], $dataFoto[$step]);
+                    }
+                }
+            }
+            // dd($docFoto->data());
+        }
+
+        $acc['foto'] = $fotoData;
+
+        // --- Pending (ambil semua dokumen by project_id)
+        $pendingDocs = $firestore->collection('Pending')
+            ->where('project_id', '=', $id)->documents();
+        $pendingData = [];
+        foreach ($pendingDocs as $pd) {
+            if (!$pd->exists()) continue;
+            $dataPd = $pd->data();
+            $kets = $dataPd['pending_keterangan'] ?? null;
+            $waktus = $dataPd['pending_waktu'] ?? null;
+
+            if (is_array($kets)) {
+                foreach ($kets as $i => $ket) {
+                    $pendingData[] = [
+                        'tgl_pending' => is_array($waktus) ? ($waktus[$i] ?? $waktus[0] ?? '-') : ($waktus ?? '-'),
+                        'keterangan'  => $ket ?? '-',
+                    ];
+                }
+            } else {
+                $pendingData[] = [
+                    'tgl_pending' => $waktus ?? '-',
+                    'keterangan'  => $kets ?? '-',
+                ];
+            }
+        }
 
         // Fetch detail from Detail_Project_TA
         $detailDocs = $firestore->collection('Detail_Project_TA')
@@ -214,37 +272,178 @@ class AccController extends Controller
             'grand' => $grand,
         ];
 
+        // // 🔍 DEBUG CEK DATA FOTO DAN PENDING
+        // dd([
+        //     'id_project' => $id,
+        //     'fotoData' => $fotoData,
+        //     'pendingData' => $pendingData,
+        // ]);
+
+
         return view('super_admin.acc.detail_acc', [
             'acc' => [
-                'id' => $id,
-                'nama_project' => $data['ta_project_pekerjaan'],
-                'deskripsi_project' => $data['ta_project_deskripsi'],
-                'qe' => $qeData['type'] ?? null,
-                'foto' => $fotoData,
-                'pending' => $pendingData,
-                'tgl_upload' => $tglUpload,
-                'tgl_pengerjaan' => $tglPengerjaan,
-                'tgl_selesai' => $tglSelesai,
-                'status' => $data['ta_project_status'],
-                'total' => $data['ta_project_total'],
-                'detail' => $detail,
+                'id'              => $id,
+                'nama_project'    => $data['ta_project_pekerjaan'],
+                'deskripsi_project'=> $data['ta_project_deskripsi'],
+                'qe'              => $data['ta_project_qe_id'] ?? null,
+                'foto'            => $fotoData,
+                'pending'         => $pendingData,
+                'tgl_upload'      => $this->formatDate($data['ta_project_waktu_upload'] ?? null),
+                'tgl_pengerjaan'  => $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null),
+                'tgl_selesai'     => $this->formatDate($data['ta_project_waktu_selesai'] ?? null),
+                'status'          => $data['ta_project_status'],
+                'total'           => $data['ta_project_total'],
+                'detail'          => $detail,
             ],
             'totals' => $totals,
         ]);
     }
 
-    private function formatDate($timestamp)
+    public function kerjakan($id)
     {
-        if (!$timestamp) return null;
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
 
-        // If Firestore Timestamp, get seconds
-        if (is_object($timestamp) && method_exists($timestamp, 'get')) {
-            $timestamp = $timestamp->get()->format('Y-m-d');
-        } else {
-            // Fallback for string/datetime
-            $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
+        // cek apakah dokumen ada
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.acc')
+                            ->with('error', 'Project tidak ditemukan');
         }
 
-        return $timestamp;
+        // gunakan Firestore Timestamp agar konsisten dengan data Firestore
+        $now = new FireTimestamp(new \DateTime());
+
+        $docRef->update([
+            ['path' => 'ta_project_waktu_pengerjaan', 'value' => $now],
+        ]);
+
+        return redirect()->route('superadmin.acc_detail', $id)
+                        ->with('success', 'Tanggal pengerjaan berhasil diset.');
     }
+
+    public function storeFoto(Request $request, $id)
+    {
+        $firestore = $this->getFirestore();
+
+        // cari dokumen foto berdasarkan project_id
+        $fotoDocs = $firestore->collection('Foto_Evident')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        // kalau belum ada dokumen untuk project ini → buat baru
+        $docRef = null;
+        foreach ($fotoDocs as $doc) {
+            if ($doc->exists()) {
+                $docRef = $firestore->collection('Foto_Evident')->document($doc->id());
+                break;
+            }
+        }
+
+        if (!$docRef) {
+            // bikin dokumen baru
+            $docRef = $firestore->collection('Foto_Evident')->add([
+                'project_id' => $id,
+                'foto_path'  => [
+                    'sebelum' => [],
+                    'proses' => [],
+                    'sesudah' => [],
+                ],
+                'uploaded_at' => new FireTimestamp(new \DateTime())
+            ]);
+            $docRef = $firestore->collection('Foto_Evident')->document($docRef->id());
+        }
+
+        // ambil data lama biar ga kehapus
+        $fotoData = $docRef->snapshot()->data()['foto_path'] ?? [
+            'sebelum' => [],
+            'proses'  => [],
+            'sesudah' => [],
+        ];
+
+        // upload per kategori
+        foreach (['sebelum', 'proses', 'sesudah'] as $tipe) {
+            $inputName = 'foto_' . $tipe;
+            if ($request->hasFile($inputName)) {
+                foreach ($request->file($inputName) as $file) {
+                    $path = $file->store("uploads/foto/{$tipe}", 'public');
+                    $fotoData[$tipe][] = asset('storage/' . $path);
+                }
+            }
+        }
+
+        // update data di Firestore
+        $docRef->update([
+            ['path' => 'foto_path', 'value' => $fotoData],
+            ['path' => 'uploaded_at', 'value' => new FireTimestamp(new \DateTime())],
+        ]);
+
+        // 🚀 Tambahan: update project utama supaya "Done" hanya bisa sekali
+        $projectRef = $firestore->collection('All_Project_TA')->document($id);
+        $projectDoc = $projectRef->snapshot();
+
+        if ($projectDoc->exists()) {
+            // Jika belum selesai → set tanggal selesai
+            $data = $projectDoc->data();
+            if (empty($data['ta_project_waktu_selesai'])) {
+                $projectRef->update([
+                    ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Foto evident berhasil diupload.');
+    }
+
+    public function pending(Request $request, $id)
+    {
+        $request->validate([
+            'tgl_pending'   => 'required|array|min:1',
+            'tgl_pending.*' => 'required|date',
+            'keterangan'    => 'required|array|min:1',
+            'keterangan.*'  => 'required|string|max:255',
+        ]);
+
+        $firestore = $this->getFirestore();
+
+        foreach ($request->keterangan as $i => $ket) {
+            $tgl = $request->tgl_pending[$i] ?? $request->tgl_pending[0] ?? now()->format('Y-m-d');
+
+            $pendingRef = $firestore->collection('Pending')->add([
+                'pending_keterangan' => $ket,
+                'pending_waktu'      => $tgl,
+                'project_id'         => $id,
+                'created_at'         => new FireTimestamp(new \DateTime())
+            ]);
+        }
+
+        return back()->with('success', 'Project berhasil dipending');
+    }
+
+    private function formatDate($timestamp)
+{
+    // Jika null, kosong, atau tidak valid
+    if (empty($timestamp) || $timestamp === '0000-00-00') {
+        return '-';
+    }
+
+    try {
+        // Firestore Timestamp
+        if ($timestamp instanceof \Google\Cloud\Core\Timestamp) {
+            return $timestamp->get()->format('Y-m-d');
+        }
+
+        // DateTime / Carbon instance
+        if ($timestamp instanceof \DateTimeInterface) {
+            return Carbon::instance($timestamp)->format('Y-m-d');
+        }
+
+        // String valid (cek parseable)
+        $date = Carbon::parse($timestamp);
+        return $date->format('Y-m-d');
+    } catch (\Exception $e) {
+        // Kalau parsing gagal, tampilkan "-"
+        return '-';
+    }
+}
 }
