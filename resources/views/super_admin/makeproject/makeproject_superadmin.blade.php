@@ -20,18 +20,16 @@
             @csrf
 
             <div class="form-group">
-                <div class="flex-container">
-                    <label for="qe" X>QE:</label>
-                    <select id="qe" name="qe" required class="select-field" onchange="changeFontColor(this)">
-                        <option value="" disabled selected hidden>Pilih Quality Enhancement (QE)</option>
-                        @foreach ($qeOptions as $qe)
-                            <option value="{{ $qe['id'] }}" {{ old('qe') == $qe['id'] ? 'selected' : '' }}>
-                                {{ $qe['label'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn-make-project">Make Project</button>
-                </div>
+                <label for="qe" class="label-qe">QE:</label>
+                <select id="qe" name="qe" required class="select-field" onchange="changeFontColor(this)">
+                    <option value="" disabled selected hidden>Pilih Quality Enhancement (QE)</option>
+                    @foreach ($qeOptions as $qe)
+                        <option value="{{ $qe['id'] }}" {{ old('qe') == $qe['id'] ? 'selected' : '' }}>
+                            {{ $qe['label'] }}
+                        </option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn-make-project" id="btnSubmit">Make Project</button>
             </div>
 
             <div class="form-group">
@@ -174,6 +172,7 @@
             font-weight: 500;
             border: 1.5px solid transparent;
             transition: background-color 0.3s;
+            margin-left: auto;
         }
 
         .btn-make-project:hover {
@@ -210,14 +209,24 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
-            /* Space between form groups */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        /* Custom margins for labels */
+        .form-qe {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
         .label-qe {
-            margin-right: 104.6px;
-            /* Specific margin for QE label */
+            width: 120px;
+            color: #133995;
+            font-family: 'Poppins', sans-serif;
+            margin-left: 3px;
         }
 
         .label-pekerjaan {
@@ -391,6 +400,8 @@
             /* sesuai dengan lebar cell */
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         const dsgData = @json($project_ta_doc);
@@ -682,6 +693,71 @@
         document.querySelectorAll('select[required], input[required]').forEach(el => {
             el.addEventListener('input', checkFormCompletion);
             el.addEventListener('change', checkFormCompletion);
+        });
+
+        // Sweetalert
+        document.addEventListener('DOMContentLoaded', function () {
+            const makeBtn = document.getElementById('btnSubmit');
+            const form = document.querySelector('.form-project');
+
+            if (makeBtn && form) {
+                makeBtn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+
+                    const actionUrl = form.action;
+                    const formData = new FormData(form);
+
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Pastikan semua data project sudah benar sebelum dikirim.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#133995',
+                        cancelButtonColor: '#C8170D',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Ya, buat project!',
+                        reverseButtons: true
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            makeBtn.disabled = true; // cegah klik dobel
+
+                            try {
+                                const res = await fetch(actionUrl, {
+                                    method: 'POST',
+                                    body: formData
+                                });
+
+                                const data = await res.json();
+
+                                if (!res.ok || !data.success) {
+                                    throw new Error(data.message || 'Terjadi kesalahan saat menyimpan data.');
+                                }
+
+                                // ✅ Jika sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: data.message,
+                                    confirmButtonColor: '#133995'
+                                }).then(() => {
+                                    // Redirect ke halaman Process
+                                    window.location.href = "{{ route('superadmin.process') }}";
+                                });
+
+                            } catch (err) {
+                                console.error(err);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: err.message || 'Terjadi kesalahan saat membuat project.'
+                                });
+                            } finally {
+                                makeBtn.disabled = false;
+                            }
+                        }
+                    });
+                });
+            }
         });
     </script>
 
