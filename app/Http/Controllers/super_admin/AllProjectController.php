@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Google\Cloud\Firestore\FirestoreClient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Imports\TaImport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AllProjectController extends Controller
 {
@@ -207,8 +210,101 @@ class AllProjectController extends Controller
             'grandTotal',
             'chartTotalProjectData',
             'chartQEData',
-            'chartPieData'
+            'chartPieData',
+            'qe_doc'
         ));
+    }
+
+    public function create(Request $request)
+    {
+        try {
+            $firestore = $this->getFirestore();
+
+            // 🔒 Validasi input
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls',
+                'qe' => 'required|string',
+                'status' => 'required|string',
+                'deskripsi' => 'required|string',
+            ]);
+
+            // 1️⃣ Jalankan import Excel
+            $rows = Excel::toCollection(new TAImport, $request->file('file'))[0];
+            $import = new TAImport();
+            $import->collection($rows);
+
+            // dd([
+            //     'headerData' => $import->headerData,
+            //     'detailData' => $import->detailData,
+            // ]);
+
+            $header = $import->headerData;
+            $details = $import->detailData;
+
+            // 2️⃣ Ambil reference QE dari Firestore
+            $qe_collection = $firestore->collection('QE');
+            $qe_doc = $qe_collection->where('type', '=', $request->qe)->documents();
+
+            $qe_ref = null;
+            foreach ($qe_doc as $doc) {
+                if ($doc->exists()) {
+                    $qe_ref = $qe_collection->document($doc->id());
+                    break;
+                }
+            }
+
+            if (!$qe_ref) {
+                return back()->with('error', 'QE tidak ditemukan.');
+            }
+
+            // 3️⃣ Simpan ke All_Project_TA
+            $allProjectRef = $firestore->collection('All_Project_TA')->add([
+                'ta_project_qe_id'        => $qe_ref,
+                'ta_project_pekerjaan'    => $header['ta_project_pekerjaan'],
+                'ta_project_deskripsi'    => $request->deskripsi,
+                'ta_project_khs'          => $header['ta_project_khs'],
+                'ta_project_pelaksana'    => $header['ta_project_pelaksana'],
+                'ta_project_witel'        => $header['ta_project_witel'],
+                'ta_project_foto_id'      => null,
+                'ta_project_pending_id'   => null,
+                'ta_project_status'       => $request->status,
+                'ta_project_total'        => 0,
+                'ta_project_waktu_pengerjaan' => null,
+                'ta_project_waktu_selesai'    => null,
+                'ta_project_waktu_upload'     => Carbon::now(),
+            ]);
+
+            // 4️⃣ Simpan ke Detail_Project_TA (hanya baris valid sesuai TAImport)
+            $dataProjectCollection = $firestore->collection('Data_Project_TA');
+            foreach ($details as $detail) {
+                $designator = $detail['designator'];
+                $volume = $detail['volume'];
+
+                // 🔍 Cari dokumen designator di Data_Project_TA
+                $dataTA = $dataProjectCollection->where('ta_designator', '=', $designator)->documents();
+                $dataRef = null;
+                foreach ($dataTA as $d) {
+                    if ($d->exists()) {
+                        $dataRef = $dataProjectCollection->document($d->id());
+                        break;
+                    }
+                }
+
+                // Lewati kalau tidak ditemukan
+                if (!$dataRef) continue;
+
+                // 🔹 Tambahkan ke Detail_Project_TA
+                $firestore->collection('Detail_Project_TA')->add([
+                    'ta_detail_all_id' => $allProjectRef,
+                    'ta_detail_ta_id'  => $dataRef,
+                    'ta_detail_volume' => $volume,
+                ]);
+            }
+
+            return back()->with('success', 'Data project berhasil diupload!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function detail($id)
@@ -274,7 +370,7 @@ class AllProjectController extends Controller
 
         $total = $totalMaterial + $totalJasa;
         $ppn = $total * 0.11;
-        $grand = $total - $ppn;
+        $grand = $total + $ppn;
 
         // Update project total in Firestore
         $docRef->update([
@@ -321,5 +417,30 @@ class AllProjectController extends Controller
         }
 
         return $timestamp;
+    }
+
+    public function downloadPDF(Request $request)
+    {
+        $start = $request->query('start');
+        $end   = $request->query('end');
+
+        list($project_doc, $grandTotal) = $this->fetchAllProjects($start, $end);
+
+        // 🔧 Gunakan format parser yang konsisten
+        if ($start && $end) {
+            $startFormatted = Carbon::createFromFormat('Y-m-d', $start)->translatedFormat('j M Y');
+            $endFormatted   = Carbon::createFromFormat('Y-m-d', $end)->translatedFormat('j M Y');
+            $title = "All Project TA ({$startFormatted} - {$endFormatted})";
+        } else {
+            $title = "All Project TA - " . now()->translatedFormat('j M Y');
+        }
+
+        $pdf = Pdf::loadView('super_admin.allproject.download_superadmin', [
+            'project_doc' => $project_doc,
+            'grandTotal' => $grandTotal,
+            'title' => $title,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('All_Project_' . now()->format('Y-m-d') . '.pdf');
     }
 }

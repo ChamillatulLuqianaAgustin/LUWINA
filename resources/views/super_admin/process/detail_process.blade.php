@@ -60,10 +60,12 @@
                             <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
+                            <th style="width: 50px;">DELETE</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($process['detail'] ?? [] as $index => $item)
+                            {{-- @dd($item) --}}
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $item->designator }}</td>
@@ -74,29 +76,43 @@
                                 <td>{{ $item->volume }}</td>
                                 <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
+                                <td>
+                                    <form
+                                        action="{{ route('superadmin.process_destroy', ['id' => $process['id'], 'detailId' => $item->id]) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus material ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            style="border:none;background:none;padding:0;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                style="width:20px;height:20px;">
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
                             <th colspan="7" class="text-end">Material</th>
-                            <th colspan="2">{{ number_format($totals['material'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">Jasa</th>
-                            <th colspan="2">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">Total</th>
-                            <th colspan="2">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">PPN (11%)</th>
-                            <th colspan="2">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">Total Setelah PPN</th>
-                            <th colspan="2">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                         </tr>
                     </tfoot>
                 </table>

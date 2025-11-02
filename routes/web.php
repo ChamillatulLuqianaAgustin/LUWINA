@@ -13,7 +13,7 @@ use App\Http\Controllers\super_admin\RejectController;
 
 // Route Login Page
 Route::get('/', [AuthController::class, 'index'])->name('login');
-Route::post('/login-proses', [AuthController::class, 'proses_login'])->name('login-proses'); 
+Route::post('/login-proses', [AuthController::class, 'proses_login'])->name('login-proses');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Super Admin
@@ -26,15 +26,18 @@ Route::prefix('superadmin')->group(function () {
     // make project
     Route::get('/makeproject', [MakeProjectController::class, 'index'])->name('superadmin.makeproject');
     Route::post('/makeproject', [MakeProjectController::class, 'store'])->name('superadmin.makeproject_store');
-    // all peoject
+    // all project
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
+    Route::post('/allproject', [AllProjectController::class, 'create'])->name('superadmin.allproject_create');
     Route::get('/allproject/detail/{id}', [AllProjectController::class, 'detail'])->name('superadmin.allproject_detail');
+    Route::get('/allproject/download', [AllProjectController::class, 'downloadPDF'])->name('superadmin.allproject_download');
     // Process
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
+    Route::delete('/process/detail/{id}/destroy/{detailId}', [ProcessController::class, 'destroy'])
+    ->name('superadmin.process_destroy');
     Route::get('/process/edit/{id}', [ProcessController::class, 'edit'])->name('superadmin.process_edit');
     Route::put('/process/update/{id}', [ProcessController::class, 'update'])->name('superadmin.process_update');
-    Route::delete('/process/delete/{id}', [ProcessController::class, 'destroy'])->name('superadmin.process_destroy');
     Route::post('/process/{id}/acc', [ProcessController::class, 'acc'])->name('superadmin.process.acc');
     Route::post('/process/{id}/reject', [ProcessController::class, 'reject'])->name('superadmin.process.reject');
     // acc

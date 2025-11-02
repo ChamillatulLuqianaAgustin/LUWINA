@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Google\Cloud\Firestore\FirestoreClient;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ProcessController extends Controller
 {
@@ -137,6 +138,35 @@ class ProcessController extends Controller
         return [$process_doc, number_format($tot, 0, ',', '.')];
     }
 
+    private function fetchProjectTaData()
+    {
+        return Cache::remember('project_ta_doc', 3600, function () {
+            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+
+            $project_ta_doc = [];
+            $uraianOptions = [];
+            foreach ($project_ta_collection as $docd) {
+                if ($docd->exists()) {
+                    $project_ta_doc[] = [
+                        'id' => $docd->id(),
+                        'designator' => $docd->data()['ta_designator'],
+                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['ta_satuan'],
+                        'harga_material' => $docd->data()['ta_harga_material'],
+                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                    ];
+                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                }
+            }
+
+            $uraianOptions = array_values(array_unique($uraianOptions));
+            sort($uraianOptions);
+            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+
+            return [$project_ta_doc, $uraianOptions];
+        });
+    }
+
     private function getReferenceData($ref)
     {
         if ($ref) {
@@ -187,10 +217,10 @@ class ProcessController extends Controller
 
         $data = $doc->data();
 
-        // --- Ambil data project utama ---
-        $fotoData    = $data['ta_project_foto_id']    ? $data['ta_project_foto_id']->snapshot()->data()    : null;
-        $pendingData = $data['ta_project_pending_id'] ? $data['ta_project_pending_id']->snapshot()->data() : null;
-        $qeData      = $data['ta_project_qe_id']      ? $data['ta_project_qe_id']->snapshot()->data()      : null;
+        // --- Ambil data project utama pakai getReferenceData() ---
+        $fotoData    = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData      = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
         $tglUpload     = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
@@ -213,6 +243,7 @@ class ProcessController extends Controller
             $volume        = $row['ta_detail_volume'] ?? 0;
 
             $detail[] = (object)[
+                'id'             => $d->id(),
                 'designator'     => $designatorData['ta_designator'] ?? '',
                 'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
                 'satuan'         => $designatorData['ta_satuan'] ?? '',
@@ -257,6 +288,7 @@ class ProcessController extends Controller
 
         $data = $doc->data();
 
+        // --- Ambil detail project ---
         $detailDocs = $firestore->collection('Detail_Project_TA')
             ->where('ta_detail_all_id', '=', $docRef)
             ->documents();
@@ -287,21 +319,8 @@ class ProcessController extends Controller
 
         $totals = $this->hitungTotal($detailDocs);
 
-        // Ambil data referensi designator buat dropdown
-        $project_ta_doc = [];
-        $project_ta_collection = $firestore->collection('TA')->documents();
-        foreach ($project_ta_collection as $ta) {
-            if ($ta->exists()) {
-                $project_ta_doc[] = [
-                    'id'            => $ta->id(),
-                    'designator'    => $ta->data()['ta_designator'] ?? '',
-                    'uraian'        => $ta->data()['ta_uraian_pekerjaan'] ?? '',
-                    'satuan'        => $ta->data()['ta_satuan'] ?? '',
-                    'harga_material' => $ta->data()['ta_harga_material'] ?? 0,
-                    'harga_jasa'    => $ta->data()['ta_harga_jasa'] ?? 0,
-                ];
-            }
-        }
+        // --- Ambil data referensi designator pakai helper ---
+        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
 
         return view('super_admin.process.edit_process', [
             'process' => [
@@ -315,75 +334,118 @@ class ProcessController extends Controller
         ]);
     }
 
+    public function destroy($id, $detailId)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
+        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
+        $detailDoc = $detailRef->snapshot();
+
+        if (!$detailDoc->exists()) {
+            return redirect()
+                ->route('superadmin.process_detail', $id)
+                ->with('error', 'Data detail tidak ditemukan.');
+        }
+
+        // Hapus dokumen dari Firestore
+        $detailRef->delete();
+
+        // Hitung ulang total project setelah penghapusan
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // Update total di dokumen induk
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $totals['grand']]
+        ]);
+
+        return redirect()
+            ->route('superadmin.process_detail', $id)
+            ->with('success', 'Material berhasil dihapus.');
+    }
+
     public function update(Request $request, $id)
     {
         $firestore = $this->getFirestore();
         $docRef = $firestore->collection('All_Project_TA')->document($id);
-
         $doc = $docRef->snapshot();
+
         if (!$doc->exists()) {
             return redirect()->route('superadmin.process')->with('error', 'Project tidak ditemukan');
         }
 
-        // update nama project
+        // Update project name
         $docRef->update([
             ['path' => 'ta_project_pekerjaan', 'value' => $request->nama_project],
         ]);
 
-        // update detail
+        // Existing details
+        $existingDetails = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        // Map for existing details
+        $existingMap = [];
+        foreach ($existingDetails as $detail) {
+            $existingMap[$detail->id()] = $detail; // Using document ID as the key
+        }
+
+        // Data from the form
         $designators = $request->input('designator', []);
-        $volumes     = $request->input('volume', []);
-        $detailCollection = $firestore->collection('Detail_Project_TA');
+        $volumes = $request->input('volume', []);
+        $detailIds = $request->input('detail_id', []); // Associated detail IDs
 
-        foreach ($designators as $index => $dsgId) {
+        foreach ($designators as $index => $dsg) {
             $volume = (int)($volumes[$index] ?? 0);
-            if ($dsgId && $volume > 0) {
-                $designatorRef = $firestore->collection('Data_Project_TA')->document($dsgId);
+            $detailId = $detailIds[$index] ?? null;
 
-                // cek apakah sudah ada detail yg sama
-                $existing = $detailCollection
-                    ->where('ta_detail_all_id', '=', $docRef)
-                    ->where('ta_detail_ta_id', '=', $designatorRef)
-                    ->documents();
+            // Fetch the designator reference based on user input
+            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
 
-                if (count(iterator_to_array($existing)) > 0) {
-                    foreach ($existing as $exist) {
-                        $detailCollection->document($exist->id())->update([
-                            ['path' => 'ta_detail_volume', 'value' => $volume],
+            if ($dsg && $volume > 0) {
+                if ($detailId && isset($existingMap[$detailId])) {
+                    // Update existing detail
+                    $detailRef = $existingMap[$detailId];
+
+                    // Update volume
+                    $detailRef->reference()->update([
+                        ['path' => 'ta_detail_volume', 'value' => $volume],
+                    ]);
+
+                    // Update designator if it has changed
+                    if (count($designatorDoc) > 0) {
+                        $detailRef->reference()->update([
+                            ['path' => 'ta_detail_ta_id', 'value' => $designatorDoc[0]->reference()], // Save as reference
                         ]);
                     }
                 } else {
-                    $detailCollection->add([
-                        'ta_detail_all_id' => $docRef,
-                        'ta_detail_ta_id'  => $designatorRef,
-                        'ta_detail_volume' => $volume,
-                    ]);
+                    // Add new detail if not exists
+                    if (count($designatorDoc) > 0) {
+                        $firestore->collection('Detail_Project_TA')->add([
+                            'ta_detail_all_id' => $docRef,
+                            'ta_detail_ta_id' => $designatorDoc[0]->reference(), // Save as reference
+                            'ta_detail_volume' => $volume,
+                        ]);
+                    }
                 }
             }
         }
 
-        $detailDocs = $detailCollection->where('ta_detail_all_id', '=', $docRef)->documents();
+        // Update total after changes
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
         $totals = $this->hitungTotal($detailDocs);
-
         $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
 
         return redirect()
             ->route('superadmin.process_detail', $id)
             ->with('success', 'Project berhasil diperbarui');
-    }
-
-    public function destroy($id)
-    {
-        $firestore = $this->getFirestore();
-
-        try {
-            // hapus dokumen berdasarkan ID di Detail_Project_TA
-            $firestore->collection('Detail_Project_TA')->document($id)->delete();
-
-            return redirect()->back()->with('success', 'Material berhasil dihapus');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menghapus material: ' . $e->getMessage());
-        }
     }
 
     public function acc($id)

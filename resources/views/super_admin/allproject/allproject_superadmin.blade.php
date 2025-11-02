@@ -15,7 +15,7 @@
     <div class="page">
         <!-- Add project -->
         <div class="top-controls">
-            <a href="{{ url('/superadmin/makeproject') }}" class="btn-primary-custom">+ Add Project</a>
+            <button type="button" class="btn-add-project">+ Add Project</button>
 
             <div class="controls-right">
                 <!-- Input Tanggal -->
@@ -24,9 +24,13 @@
                     <input type="text" id="date_range" class="form-control" placeholder="Pilih rentang tanggal">
                 </div>
                 <!-- Download -->
-                <button class="btn-primary-custom">
+                {{-- <a href="{{ route('superadmin.allproject_download') }}" class="btn-primary-custom" target="_blank">
                     <i class="fa-solid fa-download"></i> Download All
-                </button>
+                </a> --}}
+                <a href="{{ route('superadmin.allproject_download', ['start' => request('start'), 'end' => request('end')]) }}"
+                    class="btn-primary-custom" target="_blank">
+                    <i class="fa-solid fa-download"></i> Download All
+                </a>
             </div>
         </div>
 
@@ -119,6 +123,47 @@
         </div>
     </div>
 
+    <!-- Pop-Up Add Project -->
+    <div id="addProjectModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3 class="title">Add Project</h3>
+            <form class="addProjectForm" id="addProjectForm" action="{{ route('superadmin.allproject_create') }}"
+                method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="file" name="file" required>
+                <div class="row mb-3">
+                    <div class="form-status">
+                        <label class="label-status">Status:</label>
+                        <select name="status" class="select-field" required>
+                            <option value="" disabled selected hidden>Pilih Status Project</option>
+                            <option value="PROCESS" style="color:#696A71;">PROCESS</option>
+                            <option value="ACC" style="color:#34C759;">ACC</option>
+                            <option value="REJECT" style="color:#C8170D;">REJECT</option>
+                        </select>
+                    </div>
+
+                    <div class="form-qe">
+                        <label class="label-qe">QE:</label>
+                        <select name="qe" class="select-field" required>
+                            <option value="" disabled selected hidden>Pilih Jenis QE</option>
+                            @foreach ($qe_doc as $qe)
+                                <option value="{{ $qe['qe'] }}">{{ $qe['qe'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-deskripsi">
+                        <label class="label-deskripsi">Deskripsi:</label>
+                        <input type="text" name="deskripsi" class="input-field"
+                            placeholder="Masukkan deskripsi project" required>
+                    </div>
+
+                </div>
+                <button type="submit" class="btn-save">Save</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Script Chart.JS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -134,14 +179,48 @@
                 locale: "id",
                 onClose: function(selectedDates) {
                     if (selectedDates.length === 2) {
-                        const start = selectedDates[0].toISOString().split('T')[0];
-                        const end = selectedDates[1].toISOString().split('T')[0];
+                        // ✅ Ambil tanggal sesuai zona waktu lokal
+                        const pad = n => String(n).padStart(2, '0');
+                        const start =
+                            `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
+                        const end =
+                            `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
 
-                        // 🚨 Redirect otomatis tanpa tombol submit
-                        window.location.href = `?start=${start}&end=${end}`;
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('start', start);
+                        params.set('end', end);
+                        window.location.search = params.toString();
                     }
                 }
             });
+
+            // 🔗 Update link download PDF sesuai filter
+            const downloadBtn = document.querySelector('.btn-primary-custom');
+            const params = new URLSearchParams(window.location.search);
+            const start = params.get('start');
+            const end = params.get('end');
+
+            if (start && end && downloadBtn) {
+                downloadBtn.href = "{{ route('superadmin.allproject_download') }}" + `?start=${start}&end=${end}`;
+            }
+        });
+
+        // Ambil elemen modal Add Project
+        const addProjectModal = document.getElementById("addProjectModal");
+
+        // Tombol Add User
+        const addProjectBtn = document.querySelector(".btn-add-project");
+
+        // Tampilkan modal saat tombol Add Project diklik
+        addProjectBtn.addEventListener("click", function() {
+            addProjectModal.style.display = "block";
+        });
+
+        // Tutup modal jika klik di luar area modal
+        window.addEventListener("click", function(event) {
+            if (event.target === addProjectModal) {
+                addProjectModal.style.display = "none";
+            }
         });
 
         const blue = '#133995';
@@ -308,6 +387,31 @@
             margin-right: 6px;
         }
 
+        .btn-add-project {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #133995;
+            color: #fff !important;
+            border: none;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .btn-add-project:hover {
+            background-color: #fff;
+            color: #133995 !important;
+            border: 1px solid #CFD0D2;
+            text-decoration: none;
+        }
+
+        .btn-add-project i {
+            margin-right: 6px;
+        }
+
         /* Bagian Chart */
         .charts-row {
             margin-top: 20px;
@@ -433,6 +537,104 @@
             .chart-wrap canvas {
                 height: 300px !important;
             }
+        }
+
+        /* Style untuk modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            border-radius: 10px;
+            margin: 9% auto;
+            padding: 20px;
+            width: 25%;
+        }
+
+        .addProjectForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 45px;
+            color: #133995;
+        }
+
+        .select-field {
+            width: 245px;
+            padding: 8px 8px 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            color: #84858C;
+            appearance: none;
+            background: url('/assets/arrow.png') no-repeat right 10px center;
+            background-size: 10px;
+            border-color: #133995;
+        }
+
+        .input-field {
+            width: 228px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            color: #84858C;
+            border-color: #133995;
+        }
+
+        /* Custom margins for labels */
+        .label-status {
+            margin-right: 50px;
+            color: #133995;
+        }
+
+        .label-qe {
+            margin-right: 80px;
+            color: #133995;
+        }
+
+        .label-deskripsi {
+            margin-right: 30px;
+            color: #133995;
+        }
+
+        .form-status,
+        .form-qe,
+        .form-deskripsi {
+            margin-bottom: 20px;
+        }
+
+        .btn-save {
+            background-color: #133995;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 7px 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            border: 1.5px solid transparent;
+            transition: background-color 0.3s;
+        }
+
+        .btn-save:hover {
+            background-color: white;
+            color: #133995;
+            border-color: #CFD0D2;
         }
     </style>
 

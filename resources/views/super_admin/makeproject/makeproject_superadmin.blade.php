@@ -461,7 +461,6 @@
         document.querySelectorAll('#data-table tbody tr').forEach(row => attachVolumeListener(row));
 
         // Event listener untuk menambahkan baris baru
-        // Event listener untuk menambahkan baris baru
         document.getElementById('addRow').addEventListener('click', function() {
             const tableBody = document.querySelector('#data-table tbody');
             const rowCount = tableBody.rows.length + 1;
