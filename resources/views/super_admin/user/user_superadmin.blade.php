@@ -508,38 +508,58 @@
             }
         });
 
-        // SweetAlert untuk Delete
+        // SweetAlert untuk Hapus User
         document.querySelectorAll('.form-delete').forEach(form => {
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
+
                 Swal.fire({
-                    title: 'Yakin?',
-                    text: "User ini akan dihapus permanen!",
+                    title: 'Apakah Anda yakin?',
+                    text: 'User ini akan dihapus dan tidak dapat dikembalikan lagi.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#133995',
-                    cancelButtonColor: '#d33',
+                    cancelButtonColor: '#C8170D',
+                    cancelButtonText: 'Cancel',
                     confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
+                    reverseButtons: true
+                }).then(async (result) => {
                     if (result.isConfirmed) {
-                        form.submit();
+                        try {
+                            const actionUrl = form.action;
+                            const formData = new FormData(form);
+
+                            // Kirim request DELETE pakai fetch
+                            const res = await fetch(actionUrl, {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            if (!res.ok) throw new Error('Gagal menghapus user');
+
+                            // Tampilkan alert sukses setelah berhasil
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'User berhasil dihapus.',
+                                confirmButtonColor: '#133995'
+                            }).then(() => {
+                                // Reload halaman setelah klik OK
+                                window.location.reload();
+                            });
+
+                        } catch (err) {
+                            console.error(err);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: 'Terjadi kesalahan saat menghapus user.'
+                            });
+                        }
                     }
                 });
             });
         });
     </script>
-
-    @if(session('success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil',
-            text: "{{ session('success') }}",
-            timer: 2000,
-            showConfirmButton: false
-        });
-    </script>
-    @endif
 
 @endsection

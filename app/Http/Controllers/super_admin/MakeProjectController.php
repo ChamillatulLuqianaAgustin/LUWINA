@@ -76,48 +76,62 @@ class MakeProjectController extends Controller
     {
         $firestore = $this->getFirestore();
 
-        // 1. Simpan ke All_Project_TA
-        $allProjectRef = $firestore->collection('All_Project_TA')->add([
-            'ta_project_deskripsi'        => $request->deskripsi,
-            'ta_project_foto_id'          => null,
-            'ta_project_khs'              => $request->khs,
-            'ta_project_pekerjaan'        => $request->pekerjaan,
-            'ta_project_pelaksana'        => $request->pelaksana,
-            'ta_project_pending_id'       => null,
-            'ta_project_qe_id' => $firestore->collection('QE')->document($request->qe),
-            'ta_project_status'           => 'PROCESS',
-            'ta_project_total'            => (float) $request->summary_after_ppn,
-            'ta_project_waktu_pengerjaan' => null,
-            'ta_project_waktu_selesai'    => null,
-            'ta_project_waktu_upload'     => now(),
-            'ta_project_witel'            => $request->witel,
-        ]);
+        try {
+            // 1. Simpan ke All_Project_TA
+            $allProjectRef = $firestore->collection('All_Project_TA')->add([
+                'ta_project_deskripsi'        => $request->deskripsi,
+                'ta_project_foto_id'          => null,
+                'ta_project_khs'              => $request->khs,
+                'ta_project_pekerjaan'        => $request->pekerjaan,
+                'ta_project_pelaksana'        => $request->pelaksana,
+                'ta_project_pending_id'       => null,
+                'ta_project_qe_id'            => $firestore->collection('QE')->document($request->qe),
+                'ta_project_status'           => 'PROCESS',
+                'ta_project_total'            => (float) $request->summary_after_ppn,
+                'ta_project_waktu_pengerjaan' => null,
+                'ta_project_waktu_selesai'    => null,
+                'ta_project_waktu_upload'     => now(),
+                'ta_project_witel'            => $request->witel,
+            ]);
 
-        $allProjectId = $allProjectRef->id();
+            $allProjectId = $allProjectRef->id();
 
-        // 2. Simpan ke Detail_Project_TA
-        foreach ($request->designator as $i => $designator) {
-            if (empty($designator)) continue;
+            // 2. Simpan ke Detail_Project_TA
+            foreach ($request->designator as $i => $designator) {
+                if (empty($designator)) continue;
 
-            $dataProjectQuery = $firestore->collection('Data_Project_TA')
-                ->where('ta_designator', '=', $designator)
-                ->limit(1)
-                ->documents();
+                $dataProjectQuery = $firestore->collection('Data_Project_TA')
+                    ->where('ta_designator', '=', $designator)
+                    ->limit(1)
+                    ->documents();
 
-            $dataProjectId = null;
-            foreach ($dataProjectQuery as $doc) {
-                $dataProjectId = $doc->id();
+                $dataProjectId = null;
+                foreach ($dataProjectQuery as $doc) {
+                    $dataProjectId = $doc->id();
+                }
+
+                if (!$dataProjectId) continue;
+
+                $firestore->collection('Detail_Project_TA')->add([
+                    'ta_detail_all_id' => $firestore->collection('All_Project_TA')->document($allProjectId),
+                    'ta_detail_ta_id'  => $firestore->collection('Data_Project_TA')->document($dataProjectId),
+                    'ta_detail_volume' => (int) ($request->volume[$i] ?? 0),
+                ]);
             }
 
-            if (!$dataProjectId) continue;
+            // ✅ Kembalikan response JSON biar fetch tahu sukses
+            return response()->json([
+                'success' => true,
+                'message' => 'Project berhasil dibuat!',
+                'project_id' => $allProjectId
+            ], 200);
 
-            $firestore->collection('Detail_Project_TA')->add([
-                'ta_detail_all_id' => $firestore->collection('All_Project_TA')->document($allProjectId),
-                'ta_detail_ta_id'  => $firestore->collection('Data_Project_TA')->document($dataProjectId),
-                'ta_detail_volume' => (int) ($request->volume[$i] ?? 0),
-            ]);
+        } catch (\Exception $e) {
+            // ❌ Jika ada error, kirim JSON error
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        return redirect()->back()->with('success', 'Project berhasil ditambahkan');
     }
 }

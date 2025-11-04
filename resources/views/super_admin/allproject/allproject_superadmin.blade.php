@@ -127,10 +127,30 @@
     <div id="addProjectModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3 class="title">Add Project</h3>
-            <form class="addProjectForm" id="addProjectForm" action="{{ route('superadmin.allproject_create') }}"
+
+            <form class="addProjectForm" id="addProjectForm"
+                action="{{ route('superadmin.allproject_create') }}"
                 method="POST" enctype="multipart/form-data">
                 @csrf
-                <input type="file" name="file" required>
+
+                <!-- Drop Zone Upload File Excel -->
+                <div id="dropZoneExcel" class="form-upload" 
+                    style="border: 2px dashed #ccc; border-radius: 10px; padding: 20px; 
+                        text-align: center; margin-bottom: 20px; width: 100%;">
+
+                    <input type="file" name="file" id="excelFile" accept=".xls,.xlsx,.csv" hidden required>
+
+                    <label for="excelFile" style="cursor:pointer; display:block; color:#595961;">
+                        <i class="fa fa-cloud-upload-alt" style="font-size:24px; margin-bottom:8px;"></i><br>
+                        <span>Upload File Excel Project<br>(.xls / .xlsx / .csv up to 10MB)</span>
+                    </label>
+                    <br>
+                    <button type="button" id="browseExcelBtn" class="btn-browse">Browse</button>
+
+                    <div id="filePreview" class="file-preview" 
+                        style="margin-top: 10px; color: #133995; font-size: 13px; font-weight: 500;"></div>
+                </div>
+
                 <div class="row mb-3">
                     <div class="form-status">
                         <label class="label-status">Status:</label>
@@ -157,8 +177,8 @@
                         <input type="text" name="deskripsi" class="input-field"
                             placeholder="Masukkan deskripsi project" required>
                     </div>
-
                 </div>
+
                 <button type="submit" class="btn-save">Save</button>
             </form>
         </div>
@@ -203,6 +223,10 @@
             if (start && end && downloadBtn) {
                 downloadBtn.href = "{{ route('superadmin.allproject_download') }}" + `?start=${start}&end=${end}`;
             }
+
+            document.getElementById("browseExcelBtn").addEventListener("click", function () {
+                document.getElementById("excelFile").click();
+            });
         });
 
         // Ambil elemen modal Add Project
@@ -559,6 +583,23 @@
             width: 25%;
         }
 
+        .btn-browse {
+            background: #fff;
+                color: #133995;
+                padding: 10px 24px;
+                border-radius: 8px;
+                font-family: 'Poppins', sans-serif;
+                min-width: 120px;
+                text-align: center;
+                border: 2px solid #CFD0D2;
+                cursor: pointer;
+                transition: 0.2s;
+        }
+
+        .btn-browse:hover {
+            opacity: 0.9;
+        }
+
         .addProjectForm {
             display: flex;
             flex-direction: column;
@@ -635,6 +676,18 @@
             background-color: white;
             color: #133995;
             border-color: #CFD0D2;
+        }
+
+        .form-upload {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+
+            /* Ubah dari max-width ke lebar penuh parent form */
+            width: 100%;
+            box-sizing: border-box;
         }
     </style>
 
