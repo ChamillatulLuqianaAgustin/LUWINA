@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use App\Imports\TaImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Cache;
 
 class RejectController extends Controller
 {
@@ -148,6 +149,35 @@ class RejectController extends Controller
         }
 
         return [$reject_doc, number_format($tot, 0, ',', '.')];
+    }
+
+    private function fetchProjectTaData()
+    {
+        return Cache::remember('project_ta_doc', 3600, function () {
+            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+
+            $project_ta_doc = [];
+            $uraianOptions = [];
+            foreach ($project_ta_collection as $docd) {
+                if ($docd->exists()) {
+                    $project_ta_doc[] = [
+                        'id' => $docd->id(),
+                        'designator' => $docd->data()['ta_designator'],
+                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['ta_satuan'],
+                        'harga_material' => $docd->data()['ta_harga_material'],
+                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                    ];
+                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                }
+            }
+
+            $uraianOptions = array_values(array_unique($uraianOptions));
+            sort($uraianOptions);
+            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+
+            return [$project_ta_doc, $uraianOptions];
+        });
     }
 
     private function getReferenceData($ref)
@@ -302,7 +332,7 @@ class RejectController extends Controller
         $totals = $this->hitungTotal($detailDocs);
 
         // --- Ambil data referensi designator pakai helper ---
-        [$project_ta_doc, $uraianOptions] = $this->fetchRejectData();
+        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
 
         return view('super_admin.reject.edit_reject', [
             'reject' => [

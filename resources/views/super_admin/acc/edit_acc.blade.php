@@ -223,6 +223,7 @@
             }
 
             .table-responsive {
+                overflow: visible !important;
                 overflow-x: auto;
             }
 
@@ -326,16 +327,35 @@
             }
 
             .suggestions {
-                position: absolute;
-                z-index: 9999;
-                background: white;
+                /* position: fixed !important; */
+                /* biar lepas dari tabel */
+                top: auto;
+                left: auto;
+                background-color: #fff;
                 border: 1px solid #ccc;
                 border-radius: 6px;
+                width: 250px;
                 max-height: 150px;
                 overflow-y: auto;
-                display: none;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+                overflow-x: hidden;
+                X box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+                z-index: 1056;
+                white-space: normal;
+                word-wrap: break-word;
+                margin-top: 0;
             }
+
+            #suggestions-box {
+                position: absolute;
+                margin-top: 0;
+                /* hilangkan jarak vertikal */
+                top: 100%;
+                /* langsung nempel di bawah input */
+                left: 0;
+                width: 100%;
+                z-index: 1000;
+            }
+
 
             .suggestion-item {
                 padding: 8px;
@@ -463,44 +483,39 @@
 
             function filterDesignators(input) {
                 const value = input.value.toLowerCase();
-                let suggestionsContainer = document.getElementById("global-suggestions");
-
-                // kalau belum ada, buat baru
+                let suggestionsContainer = document.getElementById('global-suggestions');
                 if (!suggestionsContainer) {
-                    suggestionsContainer = document.createElement("div");
-                    suggestionsContainer.id = "global-suggestions";
-                    suggestionsContainer.className = "suggestions";
+                    suggestionsContainer = document.createElement('div');
+                    suggestionsContainer.id = 'global-suggestions';
+                    suggestionsContainer.className = 'suggestions';
                     document.body.appendChild(suggestionsContainer);
                 }
 
-                suggestionsContainer.innerHTML = "";
+                suggestionsContainer.innerHTML = '';
+                const rect = input.getBoundingClientRect();
+                suggestionsContainer.style.position = 'absolute';
+                suggestionsContainer.style.top = rect.bottom + window.scrollY + 'px';
+                suggestionsContainer.style.left = rect.left + window.scrollX + 'px';
+                suggestionsContainer.style.width = rect.width + 'px';
+                suggestionsContainer.style.display = 'block';
 
                 if (value) {
-                    const filteredDesignators = dsgData.filter(dsg =>
-                        dsg.designator.toLowerCase().includes(value)
-                    );
-
+                    const filteredDesignators = dsgData.filter(dsg => dsg.designator.toLowerCase().includes(value));
                     if (filteredDesignators.length > 0) {
+                        suggestionsContainer.style.display = 'block';
                         filteredDesignators.forEach(dsg => {
-                            const suggestionItem = document.createElement("div");
+                            const suggestionItem = document.createElement('div');
                             suggestionItem.textContent = dsg.designator;
-                            suggestionItem.classList.add("suggestion-item");
+                            suggestionItem.classList.add('suggestion-item');
                             suggestionItem.onclick = () => selectDesignator(dsg, input, suggestionsContainer);
                             suggestionsContainer.appendChild(suggestionItem);
                         });
                     } else {
-                        suggestionsContainer.innerHTML = "<div class='suggestion-item'>Designator tidak ditemukan</div>";
+                        suggestionsContainer.style.display = 'block';
+                        suggestionsContainer.innerHTML = '<div>Designator tidak ditemukan</div>';
                     }
-
-                    // ambil posisi input di layar
-                    const rect = input.getBoundingClientRect();
-                    suggestionsContainer.style.left = rect.left + "px";
-                    suggestionsContainer.style.top = rect.bottom + window.scrollY + "px";
-                    suggestionsContainer.style.width = rect.width + "px";
-                    suggestionsContainer.style.display = "block";
-
                 } else {
-                    suggestionsContainer.style.display = "none";
+                    suggestionsContainer.style.display = 'none';
                 }
             }
 
