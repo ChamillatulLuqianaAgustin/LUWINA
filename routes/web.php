@@ -35,18 +35,34 @@ Route::prefix('superadmin')->group(function () {
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
     Route::get('/process/detail/{id}', [ProcessController::class, 'detail'])->name('superadmin.process_detail');
     Route::delete('/process/detail/{id}/destroy/{detailId}', [ProcessController::class, 'destroy'])
-    ->name('superadmin.process_destroy');
+        ->name('superadmin.process_destroy');
     Route::get('/process/edit/{id}', [ProcessController::class, 'edit'])->name('superadmin.process_edit');
     Route::put('/process/update/{id}', [ProcessController::class, 'update'])->name('superadmin.process_update');
+    Route::delete('/superadmin/process/{id}/destroy', [ProcessController::class, 'destroyProject'])
+        ->name('superadmin.process_destroy_project');
     Route::post('/process/{id}/acc', [ProcessController::class, 'acc'])->name('superadmin.process.acc');
     Route::post('/process/{id}/reject', [ProcessController::class, 'reject'])->name('superadmin.process.reject');
     // acc
     Route::get('/acc', [AccController::class, 'index'])->name('superadmin.acc');
     Route::get('/acc/detail/{id}', [AccController::class, 'detail'])->name('superadmin.acc_detail');
+    Route::delete('/acc/detail/{id}/destroy/{detailId}', [AccController::class, 'destroy'])
+        ->name('superadmin.acc_destroy');
+    Route::get('/acc/edit/{id}', [AccController::class, 'edit'])->name('superadmin.acc_edit');
+    Route::put('/acc/update/{id}', [AccController::class, 'update'])->name('superadmin.acc_update');
+    Route::delete('/superadmin/acc/{id}/destroy', [AccController::class, 'destroyProject'])
+        ->name('superadmin.acc_destroy_project');
     Route::post('/acc/{id}/kerjakan', [AccController::class, 'kerjakan'])->name('superadmin.acc.kerjakan');
     Route::post('/acc/{id}/done', [AccController::class, 'storeFoto'])->name('superadmin.acc.storeFoto');
     Route::post('/acc/{id}/pending', [AccController::class, 'pending'])->name('superadmin.acc.pending');
     // reject
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');
     Route::get('/reject/detail/{id}', [RejectController::class, 'detail'])->name('superadmin.reject_detail');
+    Route::delete('/reject/detail/{id}/destroy/{detailId}', [RejectController::class, 'destroy'])
+        ->name('superadmin.reject_destroy');
+    Route::get('/reject/edit/{id}', [RejectController::class, 'edit'])->name('superadmin.reject_edit');
+    Route::put('/reject/update/{id}', [RejectController::class, 'update'])->name('superadmin.reject_update');
+    Route::delete('/superadmin/acc/{id}/destroy', [RejectController::class, 'destroyProject'])
+        ->name('superadmin.reject_destroy_project');
+    Route::post('/reject/{id}/upload-revisi', [RejectController::class, 'updateRevisi'])
+        ->name('superadmin.reject_upload_revisi');
 });

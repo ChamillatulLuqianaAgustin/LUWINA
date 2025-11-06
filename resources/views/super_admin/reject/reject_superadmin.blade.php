@@ -93,11 +93,17 @@
                 locale: "id",
                 onClose: function(selectedDates) {
                     if (selectedDates.length === 2) {
-                        const start = selectedDates[0].toISOString().split('T')[0];
-                        const end = selectedDates[1].toISOString().split('T')[0];
+                        // ✅ Ambil tanggal sesuai zona waktu lokal
+                        const pad = n => String(n).padStart(2, '0');
+                        const start =
+                            `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
+                        const end =
+                            `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
 
-                        // Redirect otomatis dengan query param
-                        window.location.href = `?start=${start}&end=${end}`;
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('start', start);
+                        params.set('end', end);
+                        window.location.search = params.toString();
                     }
                 }
             });

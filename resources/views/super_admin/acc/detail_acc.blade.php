@@ -20,8 +20,9 @@
 
                 <!-- Tombol Kerjakan -->
                 <div class="action-buttons">
-                    @if($acc['tgl_pengerjaan'] == '-' || empty($acc['tgl_pengerjaan']))
-                        <form id="formKerjakan" action="{{ route('superadmin.acc.kerjakan', $acc['id']) }}" method="POST" style="display:inline;">
+                    @if ($acc['tgl_pengerjaan'] == '-' || empty($acc['tgl_pengerjaan']))
+                        <form id="formKerjakan" action="{{ route('superadmin.acc.kerjakan', $acc['id']) }}" method="POST"
+                            style="display:inline;">
                             @csrf
                             <button type="button" id="btnKerjakan" class="btn-action btn-kerjakan">
                                 Kerjakan
@@ -39,7 +40,7 @@
                 <!-- Header Nama Project -->
                 <div class="project-header">
                     <span class="project-title">{{ $acc['nama_project'] ?? 'Nama project belum ada' }}</span>
-                    <a href="#" class="edit-project disabled">Edit Project</a>
+                    <a href="{{ route('superadmin.acc_edit', $acc['id']) }}" class="edit-project">Edit Project</a>
                 </div>
 
                 {{-- <div style="margin: 10px 0; padding: 0 16px;">
@@ -62,6 +63,7 @@
                                 <th style="width: 100px;">VOLUME</th>
                                 <th>TOTAL MATERIAL</th>
                                 <th>TOTAL JASA</th>
+                                <th style="width: 50px;">DELETE</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -76,33 +78,61 @@
                                     <td>{{ $item->volume }}</td>
                                     <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                     <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
+                                    <td>
+                                        <form
+                                            action="{{ route('superadmin.acc_destroy', ['id' => $acc['id'], 'detailId' => $item->id]) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Apakah Anda yakin ingin menghapus material ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                style="border:none;background:none;padding:0;cursor:pointer;">
+                                                <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                    style="width:20px;height:20px;">
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr>
                                 <th colspan="7" class="text-end">MATERIAL</th>
-                                <th colspan="2">{{ number_format($totals['material'], 0, ',', '.') }}</th>
+                                <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                             </tr>
                             <tr>
                                 <th colspan="7" class="text-end">JASA</th>
-                                <th colspan="2">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
+                                <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                             </tr>
                             <tr>
                                 <th colspan="7" class="text-end">TOTAL</th>
-                                <th colspan="2">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                                <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                             </tr>
                             <tr>
                                 <th colspan="7" class="text-end">PPN</th>
-                                <th colspan="2">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
+                                <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                             </tr>
                             <tr>
                                 <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
-                                <th colspan="2">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
+                                <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
+            </div>
+
+            <!-- Tombol Delete Data Project -->
+            <div id="deleteProject" style="margin-top: 20px; text-align: left;">
+                <form action="{{ route('superadmin.acc_destroy_project', $acc['id']) }}" method="POST"
+                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus seluruh data project ini beserta detail materialnya?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                        style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
+                font-weight: 500;">
+                        <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -112,11 +142,13 @@
                 <h3 id="modalTitle" style="text-align:center; color:#133995;">Upload Foto Evident Sebelum Pengerjaan</h3>
                 <p id="modalDesc" style="text-align:center;">Silahkan unggah foto evident <b>sebelum</b> pengerjaan</p>
 
-                <form method="POST" action="{{ route('superadmin.acc.storeFoto', $acc['id']) }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('superadmin.acc.storeFoto', $acc['id']) }}"
+                    enctype="multipart/form-data">
                     @csrf
 
                     <!-- Drop Zone / Upload -->
-                    <div id="dropZone" style="border:2px dashed #ccc; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px;">
+                    <div id="dropZone"
+                        style="border:2px dashed #ccc; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px;">
                         <input type="file" name="foto_sebelum[]" id="imagesSebelum" multiple accept="image/*" hidden>
                         <input type="file" name="foto_proses[]" id="imagesProses" multiple accept="image/*" hidden>
                         <input type="file" name="foto_sesudah[]" id="imagesSesudah" multiple accept="image/*" hidden>
@@ -129,22 +161,27 @@
                     </div>
 
                     <!-- Preview Gambar per Step -->
-                    <div id="previewSebelum" class="previewImages" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-                    <div id="previewProses" class="previewImages" style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-                    <div id="previewSesudah" class="previewImages" style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+                    <div id="previewSebelum" class="previewImages"
+                        style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+                    <div id="previewProses" class="previewImages"
+                        style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+                    <div id="previewSesudah" class="previewImages"
+                        style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
 
                     <!-- Tombol Navigasi -->
                     <div style="display:flex; justify-content:space-between; margin-top:20px;">
                         <!-- Container kiri -->
                         <div id="leftBtns">
                             <button type="button" id="cancelBtn" class="modal-btn cancel">Cancel</button>
-                            <button type="button" id="prevBtn" class="modal-btn prev" style="display:none;">Previous</button>
+                            <button type="button" id="prevBtn" class="modal-btn prev"
+                                style="display:none;">Previous</button>
                         </div>
 
                         <!-- Container kanan -->
                         <div id="rightBtns">
                             <button type="button" id="nextBtn" class="modal-btn next">Next</button>
-                            <button type="submit" id="uploadBtn" class="modal-btn upload" style="display:none;">Upload</button>
+                            <button type="submit" id="uploadBtn" class="modal-btn upload"
+                                style="display:none;">Upload</button>
                         </div>
                     </div>
                 </form>
@@ -166,10 +203,12 @@
                     <div id="keteranganContainer">
                         <div class="input-group horizontal">
                             <div class="tgl-wrapper">
-                                <input type="text" name="tgl_pending[]" class="form-control tgl-pending" placeholder="Tanggal" readonly>
+                                <input type="text" name="tgl_pending[]" class="form-control tgl-pending"
+                                    placeholder="Tanggal" readonly>
                                 <i class="fa fa-calendar calendar-icon"></i>
                             </div>
-                            <input type="text" name="keterangan[]" class="form-control" placeholder="Tulis keterangan">
+                            <input type="text" name="keterangan[]" class="form-control"
+                                placeholder="Tulis keterangan">
                         </div>
                     </div>
 
@@ -196,76 +235,76 @@
         </div>
 
         <!-- Foto Evident -->
-        @if(!empty($acc['tgl_pengerjaan']) && $acc['tgl_pengerjaan'] != '-')
-        <div class="rekap-section mt-6">
-            <h3 class="section-title">Foto Evident:</h3>
-            <div class="rekap-box">
-                <div class="foto-group">
-                    <div class="foto-title">Sebelum</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['sebelum'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
+        @if (!empty($acc['tgl_pengerjaan']) && $acc['tgl_pengerjaan'] != '-')
+            <div class="rekap-section mt-6">
+                <h3 class="section-title">Foto Evident:</h3>
+                <div class="rekap-box">
+                    <div class="foto-group">
+                        <div class="foto-title">Sebelum</div>
+                        <div class="foto-list">
+                            @forelse($acc['foto']['sebelum'] ?? [] as $foto)
+                                <img src="{{ $foto }}" class="foto-item">
+                            @empty
+                                <span>-</span>
+                            @endforelse
+                        </div>
                     </div>
-                </div>
 
-                <div class="foto-group">
-                    <div class="foto-title">Proses</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['proses'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
+                    <div class="foto-group">
+                        <div class="foto-title">Proses</div>
+                        <div class="foto-list">
+                            @forelse($acc['foto']['proses'] ?? [] as $foto)
+                                <img src="{{ $foto }}" class="foto-item">
+                            @empty
+                                <span>-</span>
+                            @endforelse
+                        </div>
                     </div>
-                </div>
 
-                <div class="foto-group">
-                    <div class="foto-title">Sesudah</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['sesudah'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
+                    <div class="foto-group">
+                        <div class="foto-title">Sesudah</div>
+                        <div class="foto-list">
+                            @forelse($acc['foto']['sesudah'] ?? [] as $foto)
+                                <img src="{{ $foto }}" class="foto-item">
+                            @empty
+                                <span>-</span>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         @endif
 
         <!-- Keterangan Pending -->
-        @if(!empty($acc['tgl_pengerjaan']) && $acc['tgl_pengerjaan'] != '-')
-        <div class="rekap-section mt-6">
-            <h3 class="section-title">Keterangan Pending:</h3>
-            <div class="rekap-box">
-                <table class="pending-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;">NO</th>
-                            <th style="width: 200px;">Waktu Pending</th>
-                            <th>Keterangan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($acc['pending'] ?? [] as $index => $pending)
+        @if (!empty($acc['tgl_pengerjaan']) && $acc['tgl_pengerjaan'] != '-')
+            <div class="rekap-section mt-6">
+                <h3 class="section-title">Keterangan Pending:</h3>
+                <div class="rekap-box">
+                    <table class="pending-table">
+                        <thead>
                             <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $pending['tgl_pending'] ?? '-' }}</td>
-                                <td>{{ $pending['keterangan'] ?? '-' }}</td>
+                                <th style="width: 50px;">NO</th>
+                                <th style="width: 200px;">Waktu Pending</th>
+                                <th>Keterangan</th>
                             </tr>
-                        @endforeach
-                        @if(empty($acc['pending']))
-                            <tr>
-                                <td colspan="3" class="text-center">Belum ada data pending</td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($acc['pending'] ?? [] as $index => $pending)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $pending['tgl_pending'] ?? '-' }}</td>
+                                    <td>{{ $pending['keterangan'] ?? '-' }}</td>
+                                </tr>
+                            @endforeach
+                            @if (empty($acc['pending']))
+                                <tr>
+                                    <td colspan="3" class="text-center">Belum ada data pending</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
         @endif
 
         <style>
@@ -455,32 +494,32 @@
                 width: 50px;
             }
 
-            .modal { 
-                display:none; 
-                position:fixed; 
-                z-index:999; 
-                left:0; 
-                top:0; 
-                width:100%; 
-                height:100%; 
-                background:rgba(0,0,0,0.4); 
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
             }
 
-            .modal-content { 
-                background:#fff; 
-                border-radius:10px; 
-                margin:5% auto; 
-                padding:20px; 
-                width:50%; 
-                max-width:600px; 
+            .modal-content {
+                background: #fff;
+                border-radius: 10px;
+                margin: 5% auto;
+                padding: 20px;
+                width: 50%;
+                max-width: 600px;
             }
 
-            .previewImages img { 
-                width:120px; 
-                height:120px; 
-                object-fit:cover; 
-                border-radius:8px; 
-                border:1px solid #ddd; 
+            .previewImages img {
+                width: 120px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+                border: 1px solid #ddd;
             }
 
             .modal-btn {
@@ -727,7 +766,7 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 const doneModal = document.getElementById("doneModal");
                 const btnDone = document.getElementById("btnDone");
                 const browseBtn = document.getElementById("browseBtn");
@@ -785,7 +824,7 @@
                     doneModal.style.display = "none";
                 });
 
-                let step = 1; 
+                let step = 1;
                 let imagesSebelum = [];
                 let imagesProses = [];
                 let imagesSesudah = [];
@@ -941,7 +980,7 @@
                 }
 
                 // Upload
-                uploadBtn.addEventListener('click', async function (e) {
+                uploadBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
 
                     const form = uploadBtn.closest('form');
@@ -967,71 +1006,75 @@
                             const actionUrl = form.action;
                             const csrfToken = form.querySelector('input[name="_token"]').value;
 
-                    // Tambahkan semua file dari masing-masing array
-                    imagesSebelum.forEach(file => formData.append('foto_sebelum[]', file));
-                    imagesProses.forEach(file => formData.append('foto_proses[]', file));
-                    imagesSesudah.forEach(file => formData.append('foto_sesudah[]', file));
+                            // Tambahkan semua file dari masing-masing array
+                            imagesSebelum.forEach(file => formData.append('foto_sebelum[]',
+                                file));
+                            imagesProses.forEach(file => formData.append('foto_proses[]',
+                                file));
+                            imagesSesudah.forEach(file => formData.append('foto_sesudah[]',
+                                file));
 
-                    uploadBtn.disabled = true; // biar ga double klik
+                            uploadBtn.disabled = true; // biar ga double klik
 
-                    try {
-                        const res = await fetch(actionUrl, {
-                            method: 'POST',
-                            body: formData,
-                        });
+                            try {
+                                const res = await fetch(actionUrl, {
+                                    method: 'POST',
+                                    body: formData,
+                                });
 
-                        if (!res.ok) throw new Error('Upload gagal');
+                                if (!res.ok) throw new Error('Upload gagal');
 
-                        // Tutup modal DONE otomatis
-                        doneModal.style.display = "none";
+                                // Tutup modal DONE otomatis
+                                doneModal.style.display = "none";
 
-                        // Ambil ulang isi foto evident tanpa reload seluruh halaman
-                        const parser = new DOMParser();
-                        const html = await (await fetch(window.location.href)).text();
-                        const newDoc = parser.parseFromString(html, 'text/html');
+                                // Ambil ulang isi foto evident tanpa reload seluruh halaman
+                                const parser = new DOMParser();
+                                const html = await (await fetch(window.location.href)).text();
+                                const newDoc = parser.parseFromString(html, 'text/html');
 
-                        const oldSection = document.querySelector('.rekap-section.mt-6'); // bagian foto evident lama
-                        const newSection = newDoc.querySelector('.rekap-section.mt-6');
+                                const oldSection = document.querySelector(
+                                    '.rekap-section.mt-6'); // bagian foto evident lama
+                                const newSection = newDoc.querySelector('.rekap-section.mt-6');
 
-                        if (oldSection && newSection) {
-                            oldSection.innerHTML = newSection.innerHTML;
+                                if (oldSection && newSection) {
+                                    oldSection.innerHTML = newSection.innerHTML;
+                                }
+
+                                // Reset file array
+                                imagesSebelum = [];
+                                imagesProses = [];
+                                imagesSesudah = [];
+                                previewSebelum.innerHTML = "";
+                                previewProses.innerHTML = "";
+                                previewSesudah.innerHTML = "";
+
+                                // Notifikasi sukses tanpa reload
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Foto evident berhasil diupload dan disimpan!',
+                                    confirmButtonColor: '#133995'
+                                });
+
+                            } catch (err) {
+                                console.error(err);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal Upload!',
+                                    text: 'Terjadi kesalahan saat upload foto.'
+                                });
+                            } finally {
+                                uploadBtn.disabled = false;
+                            }
                         }
+                    });
 
-                        // Reset file array
-                        imagesSebelum = [];
-                        imagesProses = [];
-                        imagesSesudah = [];
-                        previewSebelum.innerHTML = "";
-                        previewProses.innerHTML = "";
-                        previewSesudah.innerHTML = "";
-
-                        // Notifikasi sukses tanpa reload
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Foto evident berhasil diupload dan disimpan!',
-                            confirmButtonColor: '#133995'
-                        });
-
-                    } catch (err) {
-                        console.error(err);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal Upload!',
-                            text: 'Terjadi kesalahan saat upload foto.'
-                        });
-                    } finally {
-                        uploadBtn.disabled = false;
-                    }
-                }
-            });
-
-            // Sembunyikan tombol Pending & Done setelah upload berhasil
-            const btnPending = document.getElementById('btnPending');
-            const btnDone = document.getElementById('btnDone');
-            if (btnPending) btnPending.style.display = 'none';
-            if (btnDone) btnDone.style.display = 'none';
-            });
+                    // Sembunyikan tombol Pending & Done setelah upload berhasil
+                    const btnPending = document.getElementById('btnPending');
+                    const btnDone = document.getElementById('btnDone');
+                    if (btnPending) btnPending.style.display = 'none';
+                    if (btnDone) btnDone.style.display = 'none';
+                });
 
                 // Pending
                 const pendingModal = document.getElementById("pendingModal");
@@ -1070,7 +1113,7 @@
                 if (firstDateInput) setToday(firstDateInput);
 
                 // Klik icon kalender -> set hari ini
-                container.addEventListener("click", function (e) {
+                container.addEventListener("click", function(e) {
                     if (e.target.classList.contains("calendar-icon")) {
                         const input = e.target.closest(".tgl-wrapper").querySelector(".tgl-pending");
                         setToday(input);

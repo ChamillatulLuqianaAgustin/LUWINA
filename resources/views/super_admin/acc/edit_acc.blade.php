@@ -1,5 +1,5 @@
 @extends('layouts.super_admin.template_superadmin')
-@section('title', 'Edit Process')
+@section('title', 'Edit ACC')
 
 @section('header')
     @include('layouts.super_admin.header_superadmin')
@@ -13,13 +13,13 @@
     <div class="page">
         <!-- Tombol Back -->
         <div class="action-bar">
-            <a href="{{ route('superadmin.process_detail', $process['id']) }}" class="btn-back">
+            <a href="{{ route('superadmin.acc_detail', $acc['id']) }}" class="btn-back">
                 <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Back
             </a>
         </div>
 
         <!-- Form Edit -->
-        <form action="{{ route('superadmin.process_update', $process['id']) }}" method="POST">
+        <form action="{{ route('superadmin.acc_update', $acc['id']) }}" method="POST">
             @csrf
             @method('PUT')
             <!-- Nama Project + Table wrapper -->
@@ -27,7 +27,7 @@
                 <!-- Header Nama Project -->
                 <div class="project-header">
                     <input type="text" name="nama_project" class="input-edit-project"
-                        value="{{ old('nama_project', $process['nama_project']) }}" required>
+                        value="{{ old('nama_project', $acc['nama_project']) }}" required>
                     <button type="submit" class="btn-done">Done</button>
                 </div>
 
@@ -49,7 +49,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($process['detail'] ?? [] as $index => $item)
+                            @foreach ($acc['detail'] ?? [] as $index => $item)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td style="width: 150px;">

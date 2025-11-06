@@ -334,41 +334,6 @@ class ProcessController extends Controller
         ]);
     }
 
-    public function destroy($id, $detailId)
-    {
-        $firestore = $this->getFirestore();
-
-        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
-        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
-        $detailDoc = $detailRef->snapshot();
-
-        if (!$detailDoc->exists()) {
-            return redirect()
-                ->route('superadmin.process_detail', $id)
-                ->with('error', 'Data detail tidak ditemukan.');
-        }
-
-        // Hapus dokumen dari Firestore
-        $detailRef->delete();
-
-        // Hitung ulang total project setelah penghapusan
-        $docRef = $firestore->collection('All_Project_TA')->document($id);
-        $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef)
-            ->documents();
-
-        $totals = $this->hitungTotal($detailDocs);
-
-        // Update total di dokumen induk
-        $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $totals['grand']]
-        ]);
-
-        return redirect()
-            ->route('superadmin.process_detail', $id)
-            ->with('success', 'Material berhasil dihapus.');
-    }
-
     public function update(Request $request, $id)
     {
         $firestore = $this->getFirestore();
@@ -446,6 +411,71 @@ class ProcessController extends Controller
         return redirect()
             ->route('superadmin.process_detail', $id)
             ->with('success', 'Project berhasil diperbarui');
+    }
+
+    public function destroy($id, $detailId)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
+        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
+        $detailDoc = $detailRef->snapshot();
+
+        if (!$detailDoc->exists()) {
+            return redirect()
+                ->route('superadmin.process_detail', $id)
+                ->with('error', 'Data detail tidak ditemukan.');
+        }
+
+        // Hapus dokumen dari Firestore
+        $detailRef->delete();
+
+        // Hitung ulang total project setelah penghapusan
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // Update total di dokumen induk
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $totals['grand']]
+        ]);
+
+        return redirect()
+            ->route('superadmin.process_detail', $id)
+            ->with('success', 'Material berhasil dihapus.');
+    }
+
+    public function destroyProject($id)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen project utama
+        $projectRef = $firestore->collection('All_Project_TA')->document($id);
+        $projectSnap = $projectRef->snapshot();
+
+        if (!$projectSnap->exists()) {
+            return redirect()->back()->with('error', 'Data project tidak ditemukan.');
+        }
+
+        // Ambil semua detail project yang terhubung
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $projectRef)
+            ->documents();
+
+        // Hapus semua detail project
+        foreach ($detailDocs as $detail) {
+            if ($detail->exists()) {
+                $firestore->collection('Detail_Project_TA')->document($detail->id())->delete();
+            }
+        }
+
+        // Hapus data project utama
+        $projectRef->delete();
+
+        return redirect()->route('superadmin.process')->with('success', 'Data project dan seluruh detail material berhasil dihapus.');
     }
 
     public function acc($id)

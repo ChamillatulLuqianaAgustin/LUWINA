@@ -20,12 +20,15 @@ class AccController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $start = $request->query('start');
+        $end = $request->query('end');
+
         $foto_doc = $this->fetchFotoData();
         $pending_doc = $this->fetchPendingData();
         $qe_doc = $this->fetchQEData();
-        list($acc_doc, $grandTotal) = $this->fetchAccProjects();
+        list($acc_doc, $grandTotal) = $this->fetchAccProjects($start, $end);
 
         return view('super_admin.acc.acc_superadmin', compact('acc_doc', 'grandTotal'));
     }
@@ -93,7 +96,7 @@ class AccController extends Controller
         return $qe_doc;
     }
 
-    private function fetchAccProjects()
+    private function fetchAccProjects($start = null, $end = null)
     {
         $acc_collection = $this->getFirestore()->collection('All_Project_TA')->documents();
         $acc_doc = [];
@@ -105,6 +108,25 @@ class AccController extends Controller
 
                 if (($data['ta_project_status'] ?? '') !== 'ACC') {
                     continue;
+                }
+
+                // Ambil tanggal upload
+                $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+
+                // Jika user memilih rentang tanggal → filter
+                if ($start && $end) {
+                    try {
+                        $uploadDate = Carbon::parse($tglUpload);
+                        $startDate = Carbon::parse($start);
+                        $endDate = Carbon::parse($end);
+
+                        // Jika tglUpload di luar rentang, skip
+                        if ($uploadDate->lt($startDate) || $uploadDate->gt($endDate)) {
+                            continue;
+                        }
+                    } catch (\Exception $e) {
+                        continue; // kalau parsing gagal, skip aja
+                    }
                 }
 
                 $accFotoRef = $data['ta_project_foto_id'];
@@ -146,6 +168,35 @@ class AccController extends Controller
             return $doc->exists() ? $doc->data() : null;
         }
         return null;
+    }
+
+    private function hitungTotal($detailDocs)
+    {
+        $totalMaterial = 0;
+        $totalJasa     = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+            $volume         = $row['ta_detail_volume'] ?? 0;
+
+            $totalMaterial += ($designatorData['ta_harga_material'] ?? 0) * $volume;
+            $totalJasa     += ($designatorData['ta_harga_jasa'] ?? 0) * $volume;
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn   = $total * 0.11;
+        $grand = $total + $ppn;
+
+        return [
+            'material' => $totalMaterial,
+            'jasa'     => $totalJasa,
+            'total'    => $total,
+            'ppn'      => $ppn,
+            'grand'    => $grand,
+        ];
     }
 
     public function detail($id)
@@ -221,8 +272,6 @@ class AccController extends Controller
             ->documents();
 
         $detail = [];
-        $totalMaterial = 0;
-        $totalJasa = 0;
 
         foreach ($detailDocs as $d) {
             if (!$d->exists()) continue;
@@ -237,40 +286,20 @@ class AccController extends Controller
             $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
             $volume = $row['ta_detail_volume'] ?? 0;
 
-            $totalM = $hargaMaterial * $volume;
-            $totalJ = $hargaJasa * $volume;
-
-            $totalMaterial += $totalM;
-            $totalJasa += $totalJ;
-
             $detail[] = (object)[
+                'id' => $d->id(),
                 'designator' => $designatorData['ta_designator'] ?? '',
                 'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
                 'satuan' => $designatorData['ta_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa' => $hargaJasa,
                 'volume' => $volume,
-                'total_material' => $totalM,
-                'total_jasa' => $totalJ,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa' => $hargaJasa * $volume,
             ];
         }
 
-        $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total - $ppn;
-
-        // Update project total in Firestore
-        $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $grand],
-        ]);
-
-        $totals = [
-            'material' => $totalMaterial,
-            'jasa' => $totalJasa,
-            'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
-        ];
+        $totals = $this->hitungTotal($detailDocs);
 
         // // 🔍 DEBUG CEK DATA FOTO DAN PENDING
         // dd([
@@ -284,7 +313,7 @@ class AccController extends Controller
             'acc' => [
                 'id'              => $id,
                 'nama_project'    => $data['ta_project_pekerjaan'],
-                'deskripsi_project'=> $data['ta_project_deskripsi'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
                 'qe'              => $data['ta_project_qe_id'] ?? null,
                 'foto'            => $fotoData,
                 'pending'         => $pendingData,
@@ -299,6 +328,208 @@ class AccController extends Controller
         ]);
     }
 
+    public function edit($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.acc')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Ambil detail project ---
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $detail = [];
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume        = $row['ta_detail_volume'] ?? 0;
+
+            $detail[] = (object)[
+                'id'             => $d->id(),
+                'designator'     => $designatorData['ta_designator'] ?? '',
+                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa'     => $hargaJasa,
+                'volume'         => $volume,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa'     => $hargaJasa * $volume,
+            ];
+        }
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // --- Ambil data referensi designator pakai helper ---
+        [$project_ta_doc, $uraianOptions] = $this->fetchAccProjects();
+
+        return view('super_admin.acc.edit_acc', [
+            'acc' => [
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'detail'           => $detail,
+            ],
+            'totals'         => $totals,
+            'project_ta_doc' => $project_ta_doc,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('superadmin.acc')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update project name
+        $docRef->update([
+            ['path' => 'ta_project_pekerjaan', 'value' => $request->nama_project],
+        ]);
+
+        // Existing details
+        $existingDetails = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        // Map for existing details
+        $existingMap = [];
+        foreach ($existingDetails as $detail) {
+            $existingMap[$detail->id()] = $detail; // Using document ID as the key
+        }
+
+        // Data from the form
+        $designators = $request->input('designator', []);
+        $volumes = $request->input('volume', []);
+        $detailIds = $request->input('detail_id', []); // Associated detail IDs
+
+        foreach ($designators as $index => $dsg) {
+            $volume = (int)($volumes[$index] ?? 0);
+            $detailId = $detailIds[$index] ?? null;
+
+            // Fetch the designator reference based on user input
+            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+
+            if ($dsg && $volume > 0) {
+                if ($detailId && isset($existingMap[$detailId])) {
+                    // Update existing detail
+                    $detailRef = $existingMap[$detailId];
+
+                    // Update volume
+                    $detailRef->reference()->update([
+                        ['path' => 'ta_detail_volume', 'value' => $volume],
+                    ]);
+
+                    // Update designator if it has changed
+                    if (count($designatorDoc) > 0) {
+                        $detailRef->reference()->update([
+                            ['path' => 'ta_detail_ta_id', 'value' => $designatorDoc[0]->reference()], // Save as reference
+                        ]);
+                    }
+                } else {
+                    // Add new detail if not exists
+                    if (count($designatorDoc) > 0) {
+                        $firestore->collection('Detail_Project_TA')->add([
+                            'ta_detail_all_id' => $docRef,
+                            'ta_detail_ta_id' => $designatorDoc[0]->reference(), // Save as reference
+                            'ta_detail_volume' => $volume,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Update total after changes
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+        $totals = $this->hitungTotal($detailDocs);
+        $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
+
+        return redirect()
+            ->route('superadmin.acc_detail', $id)
+            ->with('success', 'Project berhasil diperbarui');
+    }
+
+    public function destroy($id, $detailId)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
+        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
+        $detailDoc = $detailRef->snapshot();
+
+        if (!$detailDoc->exists()) {
+            return redirect()
+                ->route('superadmin.acc_detail', $id)
+                ->with('error', 'Data detail tidak ditemukan.');
+        }
+
+        // Hapus dokumen dari Firestore
+        $detailRef->delete();
+
+        // Hitung ulang total project setelah penghapusan
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // Update total di dokumen induk
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $totals['grand']]
+        ]);
+
+        return redirect()
+            ->route('superadmin.acc_detail', $id)
+            ->with('success', 'Material berhasil dihapus.');
+    }
+
+    public function destroyProject($id)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen project utama
+        $projectRef = $firestore->collection('All_Project_TA')->document($id);
+        $projectSnap = $projectRef->snapshot();
+
+        if (!$projectSnap->exists()) {
+            return redirect()->back()->with('error', 'Data project tidak ditemukan.');
+        }
+
+        // Ambil semua detail project yang terhubung
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $projectRef)
+            ->documents();
+
+        // Hapus semua detail project
+        foreach ($detailDocs as $detail) {
+            if ($detail->exists()) {
+                $firestore->collection('Detail_Project_TA')->document($detail->id())->delete();
+            }
+        }
+
+        // Hapus data project utama
+        $projectRef->delete();
+
+        return redirect()->route('superadmin.acc')->with('success', 'Data project dan seluruh detail material berhasil dihapus.');
+    }
+
     public function kerjakan($id)
     {
         $firestore = $this->getFirestore();
@@ -308,7 +539,7 @@ class AccController extends Controller
         $doc = $docRef->snapshot();
         if (!$doc->exists()) {
             return redirect()->route('superadmin.acc')
-                            ->with('error', 'Project tidak ditemukan');
+                ->with('error', 'Project tidak ditemukan');
         }
 
         // gunakan Firestore Timestamp agar konsisten dengan data Firestore
@@ -319,7 +550,7 @@ class AccController extends Controller
         ]);
 
         return redirect()->route('superadmin.acc_detail', $id)
-                        ->with('success', 'Tanggal pengerjaan berhasil diset.');
+            ->with('success', 'Tanggal pengerjaan berhasil diset.');
     }
 
     public function storeFoto(Request $request, $id)
@@ -421,29 +652,29 @@ class AccController extends Controller
     }
 
     private function formatDate($timestamp)
-{
-    // Jika null, kosong, atau tidak valid
-    if (empty($timestamp) || $timestamp === '0000-00-00') {
-        return '-';
-    }
-
-    try {
-        // Firestore Timestamp
-        if ($timestamp instanceof \Google\Cloud\Core\Timestamp) {
-            return $timestamp->get()->format('Y-m-d');
+    {
+        // Jika null, kosong, atau tidak valid
+        if (empty($timestamp) || $timestamp === '0000-00-00') {
+            return '-';
         }
 
-        // DateTime / Carbon instance
-        if ($timestamp instanceof \DateTimeInterface) {
-            return Carbon::instance($timestamp)->format('Y-m-d');
-        }
+        try {
+            // Firestore Timestamp
+            if ($timestamp instanceof \Google\Cloud\Core\Timestamp) {
+                return $timestamp->get()->format('Y-m-d');
+            }
 
-        // String valid (cek parseable)
-        $date = Carbon::parse($timestamp);
-        return $date->format('Y-m-d');
-    } catch (\Exception $e) {
-        // Kalau parsing gagal, tampilkan "-"
-        return '-';
+            // DateTime / Carbon instance
+            if ($timestamp instanceof \DateTimeInterface) {
+                return Carbon::instance($timestamp)->format('Y-m-d');
+            }
+
+            // String valid (cek parseable)
+            $date = Carbon::parse($timestamp);
+            return $date->format('Y-m-d');
+        } catch (\Exception $e) {
+            // Kalau parsing gagal, tampilkan "-"
+            return '-';
+        }
     }
-}
 }

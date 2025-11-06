@@ -20,20 +20,22 @@
 
             <!-- Tombol ACC / Reject -->
             <div class="action-buttons">
-                <form id="formAcc" action="{{ route('superadmin.process.acc', $process['id']) }}" method="POST" style="display:inline;">
+                <form id="formAcc" action="{{ route('superadmin.process.acc', $process['id']) }}" method="POST"
+                    style="display:inline;">
                     @csrf
                     <button type="submit" class="btn-action btn-acc">
                         <i class="fa fa-check" style="margin-right: 8px;"></i> ACC
                     </button>
                 </form>
 
-            <!-- Reject -->
-            <form id="formReject" action="{{ route('superadmin.process.reject', $process['id']) }}" method="POST" style="display:inline;">
-                @csrf
-                <button type="submit" class="btn-action btn-reject">
-                    <i class="fa fa-times" style="margin-right: 8px;"></i> Reject
-                </button>
-            </form>
+                <!-- Reject -->
+                <form id="formReject" action="{{ route('superadmin.process.reject', $process['id']) }}" method="POST"
+                    style="display:inline;">
+                    @csrf
+                    <button type="submit" class="btn-action btn-reject">
+                        <i class="fa fa-times" style="margin-right: 8px;"></i> Reject
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -117,6 +119,20 @@
                     </tfoot>
                 </table>
             </div>
+        </div>
+
+        <!-- Tombol Delete Data Project -->
+        <div id="deleteProject" style="margin-top: 20px; text-align: left;">
+            <form action="{{ route('superadmin.process_destroy_project', $process['id']) }}" method="POST"
+                onsubmit="return confirm('Apakah Anda yakin ingin menghapus seluruh data project ini beserta detail materialnya?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                    style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
+                font-weight: 500;">
+                    <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
+                </button>
+            </form>
         </div>
 
         <style>
@@ -292,51 +308,51 @@
     @endsection
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const accForm = document.getElementById('formAcc');
-    const rejectForm = document.getElementById('formReject');
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const accForm = document.getElementById('formAcc');
+            const rejectForm = document.getElementById('formReject');
 
-    if (accForm) {
-        accForm.addEventListener("submit", function(e) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: 'Anda akan ACC project ini.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#22973F',
-                cancelButtonColor: '#C8170D',
-                confirmButtonText: 'Ya, ACC!',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    accForm.submit();
-                }
-            });
-        });
-    }
+            if (accForm) {
+                accForm.addEventListener("submit", function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Anda akan ACC project ini.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#22973F',
+                        cancelButtonColor: '#C8170D',
+                        confirmButtonText: 'Ya, ACC!',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            accForm.submit();
+                        }
+                    });
+                });
+            }
 
-    if (rejectForm) {
-        rejectForm.addEventListener("submit", function(e) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: 'Anda akan menolak (Reject) project ini.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#C8170D',
-                cancelButtonColor: '#133995',
-                confirmButtonText: 'Ya, Reject!',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    rejectForm.submit();
-                }
-            });
+            if (rejectForm) {
+                rejectForm.addEventListener("submit", function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Anda akan menolak (Reject) project ini.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#C8170D',
+                        cancelButtonColor: '#133995',
+                        confirmButtonText: 'Ya, Reject!',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            rejectForm.submit();
+                        }
+                    });
+                });
+            }
         });
-    }
-});
-</script>
+    </script>
