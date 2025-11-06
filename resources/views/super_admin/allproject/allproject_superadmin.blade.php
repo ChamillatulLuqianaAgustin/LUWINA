@@ -191,21 +191,21 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // === SEMUA EVENT ADA DI SINI ===
+
             flatpickr("#date_range", {
                 mode: "range",
                 dateFormat: "Y-m-d",
                 locale: "id",
                 onClose: function(selectedDates) {
                     if (selectedDates.length === 2) {
-                        // ✅ Ambil tanggal sesuai zona waktu lokal
                         const pad = n => String(n).padStart(2, '0');
-                        const start =
-                            `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
-                        const end =
-                            `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
-
+                        const start = `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
+                        const end = `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
                         const params = new URLSearchParams(window.location.search);
                         params.set('start', start);
                         params.set('end', end);
@@ -219,32 +219,112 @@
             const params = new URLSearchParams(window.location.search);
             const start = params.get('start');
             const end = params.get('end');
-
             if (start && end && downloadBtn) {
                 downloadBtn.href = "{{ route('superadmin.allproject_download') }}" + `?start=${start}&end=${end}`;
             }
 
-            document.getElementById("browseExcelBtn").addEventListener("click", function () {
+            // === BAGIAN MODAL ADD PROJECT ===
+            const addProjectModal = document.getElementById("addProjectModal");
+            const addProjectBtn = document.querySelector(".btn-add-project");
+            const addProjectForm = document.getElementById("addProjectForm");
+            const saveBtn = document.querySelector(".btn-save");
+
+            addProjectBtn.addEventListener("click", function() {
+                addProjectModal.style.display = "block";
+            });
+
+            window.addEventListener("click", function(event) {
+                if (event.target === addProjectModal) {
+                    addProjectModal.style.display = "none";
+                }
+            });
+
+            // === BROWSE FILE HANDLER ===
+            document.getElementById("browseExcelBtn").addEventListener("click", function() {
                 document.getElementById("excelFile").click();
             });
-        });
 
-        // Ambil elemen modal Add Project
-        const addProjectModal = document.getElementById("addProjectModal");
+            document.getElementById("excelFile").addEventListener("change", function(event) {
+                const fileInput = event.target;
+                const preview = document.getElementById("filePreview");
+                if (fileInput.files && fileInput.files.length > 0) {
+                    const fileName = fileInput.files[0].name;
+                    preview.textContent = `📁 ${fileName}`;
+                } else {
+                    preview.textContent = "";
+                }
+            });
 
-        // Tombol Add User
-        const addProjectBtn = document.querySelector(".btn-add-project");
+            // === SWEET ALERT KONFIRMASI SAAT KLIK SAVE ===
+            saveBtn.addEventListener("click", async function(e) {
+                e.preventDefault();
+                const formData = new FormData(addProjectForm);
+                const actionUrl = addProjectForm.getAttribute("action");
 
-        // Tampilkan modal saat tombol Add Project diklik
-        addProjectBtn.addEventListener("click", function() {
-            addProjectModal.style.display = "block";
-        });
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Pastikan semua data project sudah benar sebelum dikirim.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#C8170D',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonText: 'Ya, buat project!',
+                    reverseButtons: true
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        // 1️⃣ Tutup modal add project
+                        addProjectModal.style.display = "none";
 
-        // Tutup modal jika klik di luar area modal
-        window.addEventListener("click", function(event) {
-            if (event.target === addProjectModal) {
-                addProjectModal.style.display = "none";
-            }
+                        // 2️⃣ Tampilkan loading SweetAlert
+                        Swal.fire({
+                            title: 'Sedang memproses...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        saveBtn.disabled = true;
+                        try {
+                            const res = await fetch(actionUrl, { method: "POST", body: formData });
+                            const data = await res.json();
+
+                            if (!res.ok || !data.success)
+                                throw new Error(data.message || "Terjadi kesalahan saat menyimpan data.");
+
+                            // 3️⃣ Tutup loading dan tampilkan alert berhasil
+                            Swal.fire({
+                                icon: "success",
+                                title: "Berhasil!",
+                                text: data.message,
+                                confirmButtonColor: "#133995"
+                            }).then(() => {
+                                // 4️⃣ Redirect sesuai status yang dipilih
+                                const status = formData.get("status");
+                                if (status === "PROCESS") {
+                                    window.location.href = "{{ route('superadmin.process') }}"; // misal halaman default PROCESS
+                                } else if (status === "ACC") {
+                                    window.location.href = "{{ route('superadmin.acc') }}";
+                                } else if (status === "REJECT") {
+                                    window.location.href = "{{ route('superadmin.reject') }}";
+                                } else {
+                                    window.location.reload();
+                                }
+                            });
+                        } catch (err) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Gagal!",
+                                text: err.message
+                            });
+                        } finally {
+                            saveBtn.disabled = false;
+                        }
+                    }
+                });
+            });
         });
 
         const blue = '#133995';
@@ -578,7 +658,7 @@
         .modal-content {
             background-color: #fefefe;
             border-radius: 10px;
-            margin: 9% auto;
+            margin: 5% auto;
             padding: 20px;
             width: 25%;
         }

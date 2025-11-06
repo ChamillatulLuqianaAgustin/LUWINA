@@ -301,9 +301,15 @@ class AllProjectController extends Controller
                 ]);
             }
 
-            return back()->with('success', 'Data project berhasil diupload!');
+            return response()->json([
+                'success' => true,
+                'message' => 'Data project berhasil diupload!'
+            ]);
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 
