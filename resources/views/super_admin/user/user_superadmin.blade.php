@@ -508,43 +508,125 @@
             }
         });
 
-        // SweetAlert untuk Hapus User
+        // SWEETALERT UNTUK ADD USER
+        document.getElementById("addUserForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const addUserModal = document.getElementById("addUserModal");
+            const saveBtn = this.querySelector(".btn-save");
+            const actionUrl = this.action;
+            const formData = new FormData(this);
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: 'Pastikan semua data user sudah benar sebelum disimpan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#133995',
+                cancelButtonColor: '#C8170D',
+                cancelButtonText: 'Cancel',
+                confirmButtonText: 'Ya, tambahkan user!',
+                reverseButtons: true
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    // 1️⃣ Tutup modal Add User
+                    addUserModal.style.display = "none";
+
+                    // 2️⃣ Tampilkan loading SweetAlert
+                    Swal.fire({
+                        title: 'Sedang menambahkan user...',
+                        text: 'Mohon tunggu sebentar.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    saveBtn.disabled = true;
+
+                    try {
+                        const res = await fetch(actionUrl, { method: "POST", body: formData });
+                        const data = await res.json().catch(() => ({})); // antisipasi jika response bukan JSON
+
+                        if (!res.ok || (data.success === false)) {
+                            throw new Error(data.message || "Terjadi kesalahan saat menambahkan user.");
+                        }
+
+                        // 3️⃣ Tutup loading dan tampilkan alert berhasil
+                        Swal.fire({
+                            icon: "success",
+                            title: "Berhasil!",
+                            text: data.message || "User berhasil ditambahkan.",
+                            confirmButtonColor: "#133995"
+                        }).then(() => {
+                            window.location.reload();
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire({
+                            icon: "error",
+                            title: "Gagal!",
+                            text: err.message || "Terjadi kesalahan saat menambahkan user.",
+                            confirmButtonColor: "#C8170D"
+                        });
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                }
+            });
+        });
+
+        // SWEETALERT UNTUK DELETE USER
         document.querySelectorAll('.form-delete').forEach(form => {
-            form.addEventListener('submit', async function(e) {
+            form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
                 Swal.fire({
                     title: 'Apakah Anda yakin?',
-                    text: 'User ini akan dihapus dan tidak dapat dikembalikan lagi.',
+                    text: 'User ini akan dihapus secara permanen dan tidak dapat dikembalikan.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#133995',
                     cancelButtonColor: '#C8170D',
                     cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus!',
+                    confirmButtonText: 'Ya, hapus user!',
                     reverseButtons: true
                 }).then(async (result) => {
                     if (result.isConfirmed) {
+                        // 1️⃣ Tampilkan loading 
+                        Swal.fire({
+                            title: 'Sedang menghapus user...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
                         try {
                             const actionUrl = form.action;
                             const formData = new FormData(form);
+                            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                            // Kirim request DELETE pakai fetch
                             const res = await fetch(actionUrl, {
                                 method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': token },
                                 body: formData
                             });
 
-                            if (!res.ok) throw new Error('Gagal menghapus user');
+                            const data = await res.json().catch(() => ({}));
 
-                            // Tampilkan alert sukses setelah berhasil
+                            if (!res.ok || data.success === false)
+                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus user.');
+
+                            // 2️⃣ Tutup loading & tampilkan alert sukses
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil!',
-                                text: 'User berhasil dihapus.',
+                                text: data.message || 'User berhasil dihapus.',
                                 confirmButtonColor: '#133995'
                             }).then(() => {
-                                // Reload halaman setelah klik OK
                                 window.location.reload();
                             });
 
@@ -553,11 +635,80 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gagal!',
-                                text: 'Terjadi kesalahan saat menghapus user.'
+                                text: err.message || 'Terjadi kesalahan saat menghapus user.',
+                                confirmButtonColor: '#C8170D'
                             });
                         }
                     }
                 });
+            });
+        });
+
+        // SWEETALERT UNTUK EDIT USER
+        document.getElementById("editUserForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const editUserModal = document.getElementById("editUserModal");
+            const saveBtn = this.querySelector(".btn-save");
+            const actionUrl = this.action;
+            const formData = new FormData(this);
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: 'Perubahan data user akan disimpan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#133995',
+                cancelButtonColor: '#C8170D',
+                cancelButtonText: 'Cancel',
+                confirmButtonText: 'Ya, simpan perubahan!',
+                reverseButtons: true
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    // 1️⃣ Tutup modal edit user
+                    editUserModal.style.display = "none";
+
+                    // 2️⃣ Tampilkan loading
+                    Swal.fire({
+                        title: 'Sedang menyimpan perubahan...',
+                        text: 'Mohon tunggu sebentar.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    saveBtn.disabled = true;
+
+                    try {
+                        const res = await fetch(actionUrl, { method: "POST", body: formData });
+                        const data = await res.json().catch(() => ({})); // antisipasi jika bukan JSON
+
+                        if (!res.ok || data.success === false)
+                            throw new Error(data.message || "Terjadi kesalahan saat menyimpan perubahan user.");
+
+                        // 3️⃣ Tutup loading & tampilkan alert sukses
+                        Swal.fire({
+                            icon: "success",
+                            title: "Berhasil!",
+                            text: data.message || "Perubahan data user berhasil disimpan.",
+                            confirmButtonColor: "#133995"
+                        }).then(() => {
+                            window.location.reload();
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire({
+                            icon: "error",
+                            title: "Gagal!",
+                            text: err.message || "Terjadi kesalahan saat menyimpan perubahan user.",
+                            confirmButtonColor: "#C8170D"
+                        });
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                }
             });
         });
     </script>
