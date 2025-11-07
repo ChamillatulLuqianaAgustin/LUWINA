@@ -431,6 +431,23 @@
             document.getElementById(id).addEventListener('change', toggleDesignatorSelects);
         });
 
+        document.addEventListener('DOMContentLoaded', function() {
+            const qeSelect = document.getElementById('qe');
+
+            qeSelect.addEventListener('change', function() {
+                if (this.value) {
+                    // Tetap gunakan warna abu-abu
+                    this.style.color = '#84858C';
+                } else {
+                    // Warna placeholder
+                    this.style.color = '#84858C';
+                }
+            });
+
+            // Set warna awal
+            qeSelect.style.color = '#84858C';
+        });
+
         // Fungsi untuk menghitung total material dan jasa dalam satu baris
         function calculateRow(row) {
             const volume = parseFloat(row.querySelector('.vol-field').value) || 0;
@@ -695,12 +712,12 @@
         });
 
         // Sweetalert
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const makeBtn = document.getElementById('btnSubmit');
             const form = document.querySelector('.form-project');
 
             if (makeBtn && form) {
-                makeBtn.addEventListener('click', async function (e) {
+                makeBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
 
                     const actionUrl = form.action;
@@ -729,7 +746,8 @@
                                 const data = await res.json();
 
                                 if (!res.ok || !data.success) {
-                                    throw new Error(data.message || 'Terjadi kesalahan saat menyimpan data.');
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat menyimpan data.');
                                 }
 
                                 // ✅ Jika sukses
@@ -740,7 +758,8 @@
                                     confirmButtonColor: '#133995'
                                 }).then(() => {
                                     // Redirect ke halaman Process
-                                    window.location.href = "{{ route('superadmin.process') }}";
+                                    window.location.href =
+                                        "{{ route('superadmin.process') }}";
                                 });
 
                             } catch (err) {
@@ -748,7 +767,8 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Gagal!',
-                                    text: err.message || 'Terjadi kesalahan saat membuat project.'
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat membuat project.'
                                 });
                             } finally {
                                 makeBtn.disabled = false;
