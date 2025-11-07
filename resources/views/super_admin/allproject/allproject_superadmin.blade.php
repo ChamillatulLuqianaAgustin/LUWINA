@@ -128,13 +128,12 @@
         <div class="modal-content">
             <h3 class="title">Add Project</h3>
 
-            <form class="addProjectForm" id="addProjectForm"
-                action="{{ route('superadmin.allproject_create') }}"
+            <form class="addProjectForm" id="addProjectForm" action="{{ route('superadmin.allproject_create') }}"
                 method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <!-- Drop Zone Upload File Excel -->
-                <div id="dropZoneExcel" class="form-upload" 
+                <div id="dropZoneExcel" class="form-upload"
                     style="border: 2px dashed #ccc; border-radius: 10px; padding: 20px; 
                         text-align: center; margin-bottom: 20px; width: 100%;">
 
@@ -147,7 +146,7 @@
                     <br>
                     <button type="button" id="browseExcelBtn" class="btn-browse">Browse</button>
 
-                    <div id="filePreview" class="file-preview" 
+                    <div id="filePreview" class="file-preview"
                         style="margin-top: 10px; color: #133995; font-size: 13px; font-weight: 500;"></div>
                 </div>
 
@@ -204,8 +203,10 @@
                 onClose: function(selectedDates) {
                     if (selectedDates.length === 2) {
                         const pad = n => String(n).padStart(2, '0');
-                        const start = `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
-                        const end = `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
+                        const start =
+                            `${selectedDates[0].getFullYear()}-${pad(selectedDates[0].getMonth() + 1)}-${pad(selectedDates[0].getDate())}`;
+                        const end =
+                            `${selectedDates[1].getFullYear()}-${pad(selectedDates[1].getMonth() + 1)}-${pad(selectedDates[1].getDate())}`;
                         const params = new URLSearchParams(window.location.search);
                         params.set('start', start);
                         params.set('end', end);
@@ -288,11 +289,15 @@
 
                         saveBtn.disabled = true;
                         try {
-                            const res = await fetch(actionUrl, { method: "POST", body: formData });
+                            const res = await fetch(actionUrl, {
+                                method: "POST",
+                                body: formData
+                            });
                             const data = await res.json();
 
                             if (!res.ok || !data.success)
-                                throw new Error(data.message || "Terjadi kesalahan saat menyimpan data.");
+                                throw new Error(data.message ||
+                                    "Terjadi kesalahan saat menyimpan data.");
 
                             // 3️⃣ Tutup loading dan tampilkan alert berhasil
                             Swal.fire({
@@ -304,11 +309,14 @@
                                 // 4️⃣ Redirect sesuai status yang dipilih
                                 const status = formData.get("status");
                                 if (status === "PROCESS") {
-                                    window.location.href = "{{ route('superadmin.process') }}"; // misal halaman default PROCESS
+                                    window.location.href =
+                                        "{{ route('superadmin.process') }}"; // misal halaman default PROCESS
                                 } else if (status === "ACC") {
-                                    window.location.href = "{{ route('superadmin.acc') }}";
+                                    window.location.href =
+                                        "{{ route('superadmin.acc') }}";
                                 } else if (status === "REJECT") {
-                                    window.location.href = "{{ route('superadmin.reject') }}";
+                                    window.location.href =
+                                        "{{ route('superadmin.reject') }}";
                                 } else {
                                     window.location.reload();
                                 }
@@ -517,12 +525,23 @@
         }
 
         /* Bagian Chart */
+        /* .charts-row {
+                                        margin-top: 20px;
+                                        display: grid;
+                                        grid-template-columns: 2fr 1fr;
+                                        gap: 18px;
+                                        margin-bottom: 22px;
+                                    } */
+
         .charts-row {
             margin-top: 20px;
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 18px;
+            align-items: stretch;
             margin-bottom: 22px;
+            min-height: 460px;
+            /* Bikin tinggi kedua kolom sejajar */
         }
 
         .card {
@@ -535,19 +554,42 @@
             box-sizing: border-box;
         }
 
+        /* .card.left {
+                                    height: 420px;
+                                } */
+
         .card.left {
-            height: 420px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 460px;
         }
+
+        /* .right-column {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 18px;
+                                height: 420px;
+                            } */
 
         .right-column {
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
             gap: 18px;
-            height: 420px;
+            min-height: 460px;
         }
+
+        /* .right-column .card {
+                            flex: 1;
+                            padding: 12px;
+                        } */
 
         .right-column .card {
             flex: 1;
+            display: flex;
+            flex-direction: column;
             padding: 12px;
         }
 
@@ -558,11 +600,25 @@
             margin-bottom: 10px;
         }
 
+        /* .chart-wrap {
+                        flex: 1;
+                        min-height: 0;
+                        display: flex;
+                    } */
+
         .chart-wrap {
-            flex: 1;
-            min-height: 0;
+            flex-grow: 1;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
         }
+
+        /* .chart-wrap canvas {
+                    width: 100% !important;
+                    height: 100% !important;
+                    display: block;
+                } */
 
         .chart-wrap canvas {
             width: 100% !important;
@@ -630,16 +686,9 @@
                 grid-template-columns: 1fr;
             }
 
+            .card.left,
             .right-column {
                 height: auto;
-            }
-
-            .card.left {
-                height: auto;
-            }
-
-            .chart-wrap canvas {
-                height: 300px !important;
             }
         }
 
@@ -665,15 +714,15 @@
 
         .btn-browse {
             background: #fff;
-                color: #133995;
-                padding: 10px 24px;
-                border-radius: 8px;
-                font-family: 'Poppins', sans-serif;
-                min-width: 120px;
-                text-align: center;
-                border: 2px solid #CFD0D2;
-                cursor: pointer;
-                transition: 0.2s;
+            color: #133995;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            min-width: 120px;
+            text-align: center;
+            border: 2px solid #CFD0D2;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
         .btn-browse:hover {

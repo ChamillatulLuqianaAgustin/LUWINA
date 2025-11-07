@@ -30,6 +30,8 @@ Route::prefix('superadmin')->group(function () {
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
     Route::post('/allproject', [AllProjectController::class, 'create'])->name('superadmin.allproject_create');
     Route::get('/allproject/detail/{id}', [AllProjectController::class, 'detail'])->name('superadmin.allproject_detail');
+    Route::get('/allproject/edit/{id}', [AllProjectController::class, 'edit'])->name('superadmin.allproject_edit');
+    Route::put('/allproject/update/{id}', [AllProjectController::class, 'update'])->name('superadmin.allproject_update');
     Route::get('/allproject/download', [AllProjectController::class, 'downloadPDF'])->name('superadmin.allproject_download');
     // Process
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
