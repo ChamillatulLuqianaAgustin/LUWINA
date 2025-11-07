@@ -422,9 +422,10 @@ class ProcessController extends Controller
         $detailDoc = $detailRef->snapshot();
 
         if (!$detailDoc->exists()) {
-            return redirect()
-                ->route('superadmin.process_detail', $id)
-                ->with('error', 'Data detail tidak ditemukan.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Data detail tidak ditemukan.'
+            ], 404);
         }
 
         // Hapus dokumen dari Firestore
@@ -443,9 +444,10 @@ class ProcessController extends Controller
             ['path' => 'ta_project_total', 'value' => $totals['grand']]
         ]);
 
-        return redirect()
-            ->route('superadmin.process_detail', $id)
-            ->with('success', 'Material berhasil dihapus.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Material berhasil dihapus.'
+        ]);
     }
 
     public function destroyProject($id)
@@ -457,7 +459,10 @@ class ProcessController extends Controller
         $projectSnap = $projectRef->snapshot();
 
         if (!$projectSnap->exists()) {
-            return redirect()->back()->with('error', 'Data project tidak ditemukan.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Data project tidak ditemukan.'
+            ], 404);
         }
 
         // Ambil semua detail project yang terhubung
@@ -475,7 +480,10 @@ class ProcessController extends Controller
         // Hapus data project utama
         $projectRef->delete();
 
-        return redirect()->route('superadmin.process')->with('success', 'Data project dan seluruh detail material berhasil dihapus.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Data project dan seluruh material berhasil dihapus.'
+        ]);
     }
 
     public function acc($id)
