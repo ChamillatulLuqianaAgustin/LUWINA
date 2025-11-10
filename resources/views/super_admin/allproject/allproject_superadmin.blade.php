@@ -194,7 +194,6 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // === SEMUA EVENT ADA DI SINI ===
 
             flatpickr("#date_range", {
                 mode: "range",
@@ -256,7 +255,7 @@
                 }
             });
 
-            // === SWEET ALERT KONFIRMASI SAAT KLIK SAVE ===
+            // SWEET ALERT KONFIRMASI SAAT KLIK SAVE
             saveBtn.addEventListener("click", async function(e) {
                 e.preventDefault();
                 const formData = new FormData(addProjectForm);
@@ -274,10 +273,10 @@
                     reverseButtons: true
                 }).then(async (result) => {
                     if (result.isConfirmed) {
-                        // 1️⃣ Tutup modal add project
+                        // Tutup modal add project
                         addProjectModal.style.display = "none";
 
-                        // 2️⃣ Tampilkan loading SweetAlert
+                        // Tampilkan loading SweetAlert
                         Swal.fire({
                             title: 'Sedang memproses...',
                             text: 'Mohon tunggu sebentar.',
@@ -299,14 +298,14 @@
                                 throw new Error(data.message ||
                                     "Terjadi kesalahan saat menyimpan data.");
 
-                            // 3️⃣ Tutup loading dan tampilkan alert berhasil
+                            // Tutup loading dan tampilkan alert berhasil
                             Swal.fire({
                                 icon: "success",
                                 title: "Berhasil!",
                                 text: data.message,
                                 confirmButtonColor: "#133995"
                             }).then(() => {
-                                // 4️⃣ Redirect sesuai status yang dipilih
+                                // Redirect sesuai status yang dipilih
                                 const status = formData.get("status");
                                 if (status === "PROCESS") {
                                     window.location.href =
@@ -334,6 +333,66 @@
                 });
             });
         });
+
+        // SWEETALERT UNTUK DOWNLOAD ALL PROJECT
+        const downloadAllBtn = document.querySelector('.btn-primary-custom');
+
+        if (downloadAllBtn) {
+            downloadAllBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                const downloadUrl = this.href;
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Semua data project akan diunduh dalam format PDF.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#C8170D',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonText: 'Ya, download sekarang!',
+                    reverseButtons: true
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        // Loading
+                        Swal.fire({
+                            title: 'Sedang menyiapkan file...',
+                            text: 'Mohon tunggu sebentar, sistem sedang memproses data.',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        try {
+                            // Simulasi waktu proses
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+
+                            // Jalankan download
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = '';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            // Sukses alert
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'File PDF berhasil didownload.',
+                                confirmButtonColor: '#133995'
+                            });
+                        } catch (err) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: 'Terjadi kesalahan saat memulai download.',
+                                confirmButtonColor: '#C8170D'
+                            });
+                        }
+                    }
+                });
+            });
+        }
 
         const blue = '#133995';
         const lightBlue = '#4A6AC0';
