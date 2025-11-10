@@ -537,9 +537,10 @@ class RejectController extends Controller
         $detailDoc = $detailRef->snapshot();
 
         if (!$detailDoc->exists()) {
-            return redirect()
-                ->route('superadmin.reject_detail', $id)
-                ->with('error', 'Data detail tidak ditemukan.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Data detail tidak ditemukan.'
+            ], 404);
         }
 
         // Hapus dokumen dari Firestore
@@ -558,9 +559,10 @@ class RejectController extends Controller
             ['path' => 'ta_project_total', 'value' => $totals['grand']]
         ]);
 
-        return redirect()
-            ->route('superadmin.reject_detail', $id)
-            ->with('success', 'Material berhasil dihapus.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Material berhasil dihapus.'
+        ]);
     }
 
     public function destroyProject($id)
@@ -590,7 +592,10 @@ class RejectController extends Controller
         // Hapus data project utama
         $projectRef->delete();
 
-        return redirect()->route('superadmin.reject')->with('success', 'Data project dan seluruh detail material berhasil dihapus.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Data project dan seluruh material berhasil dihapus.'
+        ]);
     }
 
     private function formatDate($timestamp)
