@@ -81,12 +81,13 @@
                                     <td>
                                         <form
                                             action="{{ route('superadmin.acc_destroy', ['id' => $acc['id'], 'detailId' => $item->id]) }}"
-                                            method="POST"
-                                            class="form-delete-material">
+                                            method="POST" class="form-delete-material">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;">
-                                                <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
+                                            <button type="submit"
+                                                style="border:none;background:none;padding:0;cursor:pointer;">
+                                                <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                    style="width:20px;height:20px;">
                                             </button>
                                         </form>
                                     </td>
@@ -211,10 +212,10 @@
                     </div>
 
                     <!-- Tombol Add / Remove -->
-                    <div class="action-btns">
+                    {{-- <div class="action-btns">
                         <button type="button" class="btn-add">+</button>
                         <button type="button" class="btn-remove">-</button>
-                    </div>
+                    </div> --}}
 
                     <!-- Footer Buttons -->
                     <div style="display:flex; justify-content:space-between; margin-top:20px;">
@@ -648,20 +649,20 @@
                 margin-bottom: 20px;
             }
 
-            .btn-add,
-            .btn-remove {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-weight: bold;
-                font-size: 16px;
-                border-radius: 50%;
-                width: 36px;
-                height: 36px;
-                cursor: pointer;
-                border: none;
-                transition: 0.2s;
-            }
+            /* .btn-add,
+                .btn-remove {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    font-weight: bold;
+                    font-size: 16px;
+                    border-radius: 50%;
+                    width: 36px;
+                    height: 36px;
+                    cursor: pointer;
+                    border: none;
+                    transition: 0.2s;
+                } */
 
             .btn-add {
                 background: #133995;
@@ -752,12 +753,16 @@
                 text-align: left !important;
             }
 
-            /* Tabel ACC Footer (Material, Jasa, Total, PPN, Grand) */
-            #data-table tfoot th {
-                background: #EDF7FF;
-                font-weight: 600;
-                text-align: center;
-                border: 1px solid #ddd !important;
+            #data-table tfoot tr+tr th,
+            #data-table tfoot tr+tr td {
+                border-top: none !important;
+            }
+
+            /* Tambahan fix border footer hilang */
+            #data-table.table-bordered>tfoot>tr>th,
+            #data-table.table-bordered>tfoot>tr>td {
+                border: none !important;
+                border-top: none !important;
             }
         </style>
 
@@ -794,7 +799,7 @@
 
                 // SWEETALERT UNTUK DELETE MATERIAL
                 document.querySelectorAll('.form-delete-material').forEach(form => {
-                    form.addEventListener('submit', async function (e) {
+                    form.addEventListener('submit', async function(e) {
                         e.preventDefault();
                         Swal.fire({
                             title: 'Apakah Anda yakin?',
@@ -818,18 +823,23 @@
                                 try {
                                     const res = await fetch(form.action, {
                                         method: 'POST',
-                                        headers: { 'X-CSRF-TOKEN': token },
+                                        headers: {
+                                            'X-CSRF-TOKEN': token
+                                        },
                                         body: new FormData(form)
                                     });
 
                                     const data = await res.json().catch(() => ({}));
                                     if (!res.ok || data.success === false)
-                                        throw new Error(data.message || 'Terjadi kesalahan saat menghapus material.');
+                                        throw new Error(data.message ||
+                                            'Terjadi kesalahan saat menghapus material.'
+                                        );
 
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Berhasil!',
-                                        text: data.message || 'Material berhasil dihapus.',
+                                        text: data.message ||
+                                            'Material berhasil dihapus.',
                                         confirmButtonColor: '#133995'
                                     }).then(() => window.location.reload());
 
@@ -837,7 +847,8 @@
                                     Swal.fire({
                                         icon: 'error',
                                         title: 'Gagal!',
-                                        text: err.message || 'Terjadi kesalahan saat menghapus material.',
+                                        text: err.message ||
+                                            'Terjadi kesalahan saat menghapus material.',
                                         confirmButtonColor: '#C8170D'
                                     });
                                 }
@@ -849,7 +860,7 @@
                 // SWEETALERT UNTUK DELETE PROJECT
                 const deleteProjectForm = document.querySelector('.form-delete-project');
                 if (deleteProjectForm) {
-                    deleteProjectForm.addEventListener('submit', async function (e) {
+                    deleteProjectForm.addEventListener('submit', async function(e) {
                         e.preventDefault();
                         Swal.fire({
                             title: 'Apakah Anda yakin?',
@@ -873,28 +884,34 @@
                                 try {
                                     const res = await fetch(deleteProjectForm.action, {
                                         method: 'POST',
-                                        headers: { 'X-CSRF-TOKEN': token },
+                                        headers: {
+                                            'X-CSRF-TOKEN': token
+                                        },
                                         body: new FormData(deleteProjectForm)
                                     });
 
                                     const data = await res.json().catch(() => ({}));
                                     if (!res.ok || data.success === false)
-                                        throw new Error(data.message || 'Terjadi kesalahan saat menghapus project.');
+                                        throw new Error(data.message ||
+                                            'Terjadi kesalahan saat menghapus project.');
 
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Berhasil!',
-                                        text: data.message || 'Seluruh data project berhasil dihapus.',
+                                        text: data.message ||
+                                            'Seluruh data project berhasil dihapus.',
                                         confirmButtonColor: '#133995'
                                     }).then(() => {
-                                        window.location.href = "{{ route('superadmin.process') }}";
+                                        window.location.href =
+                                            "{{ route('superadmin.process') }}";
                                     });
 
                                 } catch (err) {
                                     Swal.fire({
                                         icon: 'error',
                                         title: 'Gagal!',
-                                        text: err.message || 'Terjadi kesalahan saat menghapus project.',
+                                        text: err.message ||
+                                            'Terjadi kesalahan saat menghapus project.',
                                         confirmButtonColor: '#C8170D'
                                     });
                                 }
