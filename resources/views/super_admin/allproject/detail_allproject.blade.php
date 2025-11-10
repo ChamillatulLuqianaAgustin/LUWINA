@@ -24,7 +24,7 @@
             <!-- Header Nama Project -->
             <div class="project-header">
                 <span class="project-title">{{ $allproject['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="#" class="edit-project disabled">Edit Project</a>
+                <a href="{{ route('superadmin.allproject_edit', $allproject['id']) }}" class="edit-project">Edit Project</a>
             </div>
 
             <!-- Tabel Detail -->
@@ -42,6 +42,7 @@
                             <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
+                            <th style="width: 50px;">DELETE</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,33 +57,60 @@
                                 <td>{{ $item->volume }}</td>
                                 <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
+                                <td>
+                                    <form
+                                        action="{{ route('superadmin.allproject_destroy', ['id' => $allproject['id'], 'detailId' => $item->id]) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus material ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            style="border:none;background:none;padding:0;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                style="width:20px;height:20px;">
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
                             <th colspan="7" class="text-end">MATERIAL</th>
-                            <th colspan="2">{{ number_format($totals['material'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">JASA</th>
-                            <th colspan="2">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">TOTAL</th>
-                            <th colspan="2">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">PPN</th>
-                            <th colspan="2">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
-                            <th colspan="2">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
+                            <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                         </tr>
                     </tfoot>
                 </table>
             </div>
+        </div>
+        <!-- Tombol Delete Data Project -->
+        <div id="deleteProject" style="margin-top: 20px; text-align: left;">
+            <form action="{{ route('superadmin.allproject_destroy_project', $allproject['id']) }}" method="POST"
+                onsubmit="return confirm('Apakah Anda yakin ingin menghapus seluruh data project ini beserta detail materialnya?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                    style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
+                font-weight: 500;">
+                    <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
+                </button>
+            </form>
         </div>
     </div>
 
@@ -138,30 +166,6 @@
             font-weight: 500;
             display: flex;
             align-items: center;
-        }
-
-        .btn-acc {
-            background: #22973F;
-        }
-
-        .btn-acc:hover {
-            background-color: #fff;
-            color: #22973F !important;
-            border: 1px solid #CFD0D2;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .btn-reject {
-            background: #C8170D;
-        }
-
-        .btn-reject:hover {
-            background-color: #fff;
-            color: #C8170D !important;
-            border: 1px solid #CFD0D2;
-            text-decoration: none;
-            cursor: pointer;
         }
 
         .table-wrapper {

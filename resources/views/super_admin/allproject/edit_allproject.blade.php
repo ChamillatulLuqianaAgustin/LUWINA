@@ -27,7 +27,7 @@
                 <!-- Header Nama Project -->
                 <div class="project-header">
                     <input type="text" name="nama_project" class="input-edit-project"
-                        value="{{ old('nama_project', $acc['nama_project']) }}" required>
+                        value="{{ old('nama_project', $allproject['nama_project']) }}" required>
                     <button type="submit" class="btn-done">Done</button>
                 </div>
 
