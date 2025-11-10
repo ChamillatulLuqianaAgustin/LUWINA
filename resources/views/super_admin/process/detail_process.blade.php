@@ -327,7 +327,41 @@
                     cancelButtonText: 'Cancel',
                     reverseButtons: true
                 }).then(result => {
-                    if (result.isConfirmed) accForm.submit();
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Memproses ACC...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        fetch(accForm.action, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': token },
+                            body: new FormData(accForm)
+                        })
+                        .then(res => res.json().catch(() => ({})))
+                        .then(data => {
+                            if (!data || data.success === false) throw new Error(data.message || 'Terjadi kesalahan saat ACC project.');
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message || 'Project berhasil di-ACC.',
+                                confirmButtonColor: '#133995'
+                            }).then(() => {
+                                window.location.href = "{{ route('superadmin.acc') }}";
+                            });
+                        })
+                        .catch(err => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: err.message || 'Terjadi kesalahan saat ACC project.',
+                                confirmButtonColor: '#C8170D'
+                            });
+                        });
+                    }
                 });
             });
         }
@@ -335,7 +369,7 @@
         // SWEETALERT UNTUK REJECT
         const rejectForm = document.getElementById('formReject');
         if (rejectForm) {
-            rejectForm.addEventListener("submit", function (e) {
+            rejectForm.addEventListener("submit", async function (e) {
                 e.preventDefault();
                 Swal.fire({
                     title: 'Apakah Anda yakin?',
@@ -348,7 +382,41 @@
                     cancelButtonText: 'Cancel',
                     reverseButtons: true
                 }).then(result => {
-                    if (result.isConfirmed) rejectForm.submit();
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Memproses Reject...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        fetch(rejectForm.action, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': token },
+                            body: new FormData(rejectForm)
+                        })
+                        .then(res => res.json().catch(() => ({})))
+                        .then(data => {
+                            if (!data || data.success === false) throw new Error(data.message || 'Terjadi kesalahan saat menolak project.');
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message || 'Project berhasil di-reject.',
+                                confirmButtonColor: '#133995'
+                            }).then(() => {
+                                window.location.href = "{{ route('superadmin.reject') }}";
+                            });
+                        })
+                        .catch(err => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: err.message || 'Terjadi kesalahan saat menolak project.',
+                                confirmButtonColor: '#C8170D'
+                            });
+                        });
+                    }
                 });
             });
         }
