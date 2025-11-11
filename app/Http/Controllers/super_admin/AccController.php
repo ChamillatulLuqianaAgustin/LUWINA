@@ -302,19 +302,27 @@ class AccController extends Controller
             ->documents();
 
         $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
 
         foreach ($detailDocs as $d) {
             if (!$d->exists()) continue;
 
             $row = $d->data();
 
-            // Fetch designator data
+            // Fetch data from Data_Project_TA
             $designatorRef = $row['ta_detail_ta_id'];
             $designatorData = $this->getReferenceData($designatorRef);
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
             $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
             $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
 
             $detail[] = (object)[
                 'id' => $d->id(),
@@ -324,20 +332,27 @@ class AccController extends Controller
                 'harga_material' => $hargaMaterial,
                 'harga_jasa' => $hargaJasa,
                 'volume' => $volume,
-                'total_material' => $hargaMaterial * $volume,
-                'total_jasa' => $hargaJasa * $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
             ];
         }
 
-        $totals = $this->hitungTotal($detailDocs);
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
 
-        // // 🔍 DEBUG CEK DATA FOTO DAN PENDING
-        // dd([
-        //     'id_project' => $id,
-        //     'fotoData' => $fotoData,
-        //     'pendingData' => $pendingData,
-        // ]);
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
 
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
 
         return view('super_admin.acc.detail_acc', [
             'acc' => [
