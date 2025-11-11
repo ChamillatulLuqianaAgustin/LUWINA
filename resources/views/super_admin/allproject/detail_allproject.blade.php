@@ -60,8 +60,7 @@
                                 <td>
                                     <form
                                         action="{{ route('superadmin.allproject_destroy', ['id' => $allproject['id'], 'detailId' => $item->id]) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus material ini?')">
+                                        method="POST" class="form-delete-material">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -102,12 +101,12 @@
         <!-- Tombol Delete Data Project -->
         <div id="deleteProject" style="margin-top: 20px; text-align: left;">
             <form action="{{ route('superadmin.allproject_destroy_project', $allproject['id']) }}" method="POST"
-                onsubmit="return confirm('Apakah Anda yakin ingin menghapus seluruh data project ini beserta detail materialnya?')">
+                class="form-delete-project">
                 @csrf
                 @method('DELETE')
                 <button type="submit"
                     style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
-                font-weight: 500;">
+                    font-weight: 500;">
                     <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
                 </button>
             </form>
@@ -261,3 +260,123 @@
     </style>
 
 @endsection
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // SWEETALERT UNTUK DELETE MATERIAL
+        document.querySelectorAll('.form-delete-material').forEach(form => {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Material ini akan dihapus dari project dan tidak dapat dikembalikan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#C8170D',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonText: 'Ya, hapus material!',
+                    reverseButtons: true
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Sedang menghapus material...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        try {
+                            const res = await fetch(form.action, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': token },
+                                body: new FormData(form)
+                            });
+
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok || data.success === false)
+                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus material.');
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message || 'Material berhasil dihapus.',
+                                confirmButtonColor: '#133995'
+                            }).then(() => window.location.reload());
+
+                        } catch (err) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: err.message || 'Terjadi kesalahan saat menghapus material.',
+                                confirmButtonColor: '#C8170D'
+                            });
+                        }
+                    }
+                });
+            });
+        });
+
+        // SWEETALERT UNTUK DELETE PROJECT
+        const deleteProjectForm = document.querySelector('.form-delete-project');
+        if (deleteProjectForm) {
+            deleteProjectForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Seluruh data project beserta material akan dihapus secara permanen.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#C8170D',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonText: 'Ya, hapus project!',
+                    reverseButtons: true
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Sedang menghapus project...',
+                            text: 'Mohon tunggu sebentar.',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        try {
+                            const res = await fetch(deleteProjectForm.action, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': token },
+                                body: new FormData(deleteProjectForm)
+                            });
+
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok || data.success === false)
+                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus project.');
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message || 'Seluruh data project berhasil dihapus.',
+                                confirmButtonColor: '#133995'
+                            }).then(() => {
+                                window.location.href = "{{ route('superadmin.allproject') }}";
+                            });
+
+                        } catch (err) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: err.message || 'Terjadi kesalahan saat menghapus project.',
+                                confirmButtonColor: '#C8170D'
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+    }); // end DOMContentLoaded
+    </script>
