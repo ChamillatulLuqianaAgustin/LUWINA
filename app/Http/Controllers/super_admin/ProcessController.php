@@ -232,30 +232,57 @@ class ProcessController extends Controller
             ->documents();
 
         $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
         foreach ($detailDocs as $d) {
             if (!$d->exists()) continue;
 
             $row = $d->data();
-            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
 
             $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
-            $volume        = $row['ta_detail_volume'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
 
             $detail[] = (object)[
-                'id'             => $d->id(),
-                'designator'     => $designatorData['ta_designator'] ?? '',
-                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
-                'harga_jasa'     => $hargaJasa,
-                'volume'         => $volume,
-                'total_material' => $hargaMaterial * $volume,
-                'total_jasa'     => $hargaJasa * $volume,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
             ];
         }
 
-        $totals = $this->hitungTotal($detailDocs);
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
 
         return view('super_admin.process.detail_process', [
             'process' => [
