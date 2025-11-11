@@ -26,7 +26,11 @@ class RejectController extends Controller
         $foto_doc = $this->fetchFotoData();
         $pending_doc = $this->fetchPendingData();
         $qe_doc = $this->fetchQEData();
-        [$reject_doc, $grandTotal] = $this->fetchRejectData($request);
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+
+        [$reject_doc, $grandTotal] = $this->fetchRejectData($start, $end);
 
         return view('super_admin.reject.reject_superadmin', compact('reject_doc', 'grandTotal', 'qe_doc'));
     }
