@@ -157,7 +157,7 @@
 
         <!-- Tombol Delete Data Project -->
         <div id="deleteProject" style="margin-top: 20px; text-align: left;">
-            <form action="{{ route('superadmin.process_destroy_project', $reject['id']) }}" method="POST"
+            <form action="{{ route('superadmin.reject_destroy_project', $reject['id']) }}" method="POST"
                 class="form-delete-project">
                 @csrf
                 @method('DELETE')

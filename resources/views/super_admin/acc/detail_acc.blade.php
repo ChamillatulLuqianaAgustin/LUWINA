@@ -903,7 +903,7 @@
                                         confirmButtonColor: '#133995'
                                     }).then(() => {
                                         window.location.href =
-                                            "{{ route('superadmin.process') }}";
+                                            "{{ route('superadmin.acc') }}";
                                     });
 
                                 } catch (err) {
