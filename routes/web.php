@@ -72,3 +72,13 @@ Route::prefix('superadmin')->group(function () {
     Route::post('/reject/{id}/upload-revisi', [RejectController::class, 'updateRevisi'])
         ->name('superadmin.reject_upload_revisi');
 });
+
+use App\Http\Controllers\DebugController;
+
+// HALAMAN FORM DEBUG
+Route::get('/debug-upload', function () {
+    return view('debug-upload');
+});
+
+// PROSES UPLOAD DEBUG
+Route::post('/debug-upload', [DebugController::class, 'upload']);

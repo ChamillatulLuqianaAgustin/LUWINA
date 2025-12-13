@@ -9,7 +9,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
-
+use Cloudinary\Cloudinary;
+use Google\Cloud\Firestore\DocumentSnapshot;
 
 class AccController extends Controller
 {
@@ -608,75 +609,134 @@ class AccController extends Controller
 
     public function storeFoto(Request $request, $id)
     {
-        $firestore = $this->getFirestore();
+        try {
+            $firestore = $this->getFirestore();
 
-        // cari dokumen foto berdasarkan project_id
-        $fotoDocs = $firestore->collection('Foto_Evident')
-            ->where('project_id', '=', $id)
-            ->documents();
+            // mapping input => step
+            $mapping = [
+                'sebelum' => 'foto_sebelum',
+                'proses'  => 'foto_proses',
+                'sesudah' => 'foto_sesudah',
+            ];
 
-        // kalau belum ada dokumen untuk project ini → buat baru
-        $docRef = null;
-        foreach ($fotoDocs as $doc) {
-            if ($doc->exists()) {
-                $docRef = $firestore->collection('Foto_Evident')->document($doc->id());
-                break;
-            }
-        }
-
-        if (!$docRef) {
-            // bikin dokumen baru
-            $docRef = $firestore->collection('Foto_Evident')->add([
-                'project_id' => $id,
-                'foto_path'  => [
-                    'sebelum' => [],
-                    'proses' => [],
-                    'sesudah' => [],
-                ],
-                'uploaded_at' => new FireTimestamp(new \DateTime())
-            ]);
-            $docRef = $firestore->collection('Foto_Evident')->document($docRef->id());
-        }
-
-        // ambil data lama biar ga kehapus
-        $fotoData = $docRef->snapshot()->data()['foto_path'] ?? [
-            'sebelum' => [],
-            'proses'  => [],
-            'sesudah' => [],
-        ];
-
-        // upload per kategori
-        foreach (['sebelum', 'proses', 'sesudah'] as $tipe) {
-            $inputName = 'foto_' . $tipe;
-            if ($request->hasFile($inputName)) {
-                foreach ($request->file($inputName) as $file) {
-                    $path = $file->store("uploads/foto/{$tipe}", 'public');
-                    $fotoData[$tipe][] = asset('storage/' . $path);
+            // 1) Pastikan ada file sama sekali
+            $hasAnyFile = false;
+            foreach ($mapping as $inputName) {
+                if ($request->hasFile($inputName) && count($request->file($inputName)) > 0) {
+                    $hasAnyFile = true;
+                    break;
                 }
             }
-        }
-
-        // update data di Firestore
-        $docRef->update([
-            ['path' => 'foto_path', 'value' => $fotoData],
-            ['path' => 'uploaded_at', 'value' => new FireTimestamp(new \DateTime())],
-        ]);
-
-        // 🚀 Tambahan: update project utama supaya "Done" hanya bisa sekali
-        $projectRef = $firestore->collection('All_Project_TA')->document($id);
-        $projectDoc = $projectRef->snapshot();
-
-        if ($projectDoc->exists()) {
-            // Jika belum selesai → set tanggal selesai
-            $data = $projectDoc->data();
-            if (empty($data['ta_project_waktu_selesai'])) {
-                $projectRef->update([
-                    ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
-                ]);
+            if (! $hasAnyFile) {
+                return response()->json(['status' => 'error', 'message' => 'Tidak ada file yang diupload.'], 400);
             }
-        }
 
-        return back()->with('success', 'Foto evident berhasil diupload.');
+            // 2) Upload ke Cloudinary dulu -> kumpulkan URL
+            $uploaded = [
+                'sebelum' => [],
+                'proses'  => [],
+                'sesudah' => [],
+            ];
+
+            foreach ($mapping as $tipe => $inputName) {
+                if ($request->hasFile($inputName)) {
+                    foreach ($request->file($inputName) as $file) {
+                        // safety: cek instance
+                        if (! $file->isValid()) continue;
+
+                        $originalName = $file->getClientOriginalName();
+                        $fileName = pathinfo($originalName, PATHINFO_FILENAME);
+                        $publicId = date('Y-m-d_His') . '_' . $fileName;
+                        $cloudinaryPath = "evident_foto/" . $tipe;
+
+                        // upload ke Cloudinary
+                        $cloudinary = new Cloudinary(config('cloudinary.url'));
+
+                        $upload = $cloudinary->uploadApi()->upload(
+                            $file->getRealPath(),
+                            [
+                                'public_id' => $publicId,
+                                'folder'    => $cloudinaryPath,
+                            ]
+                        );
+
+                        $secureUrl = $upload['secure_url'];
+                        $uploaded[$tipe][] = $secureUrl;
+                    }
+                }
+            }
+
+            // 3) Cari dokumen Foto_Evident (by project_id)
+            $fotoDocs = $firestore->collection('Foto_Evident')
+                ->where('project_id', '=', $id)
+                ->documents();
+
+            $docRef = null;
+            foreach ($fotoDocs as $d) {
+                if ($d->exists()) {
+                    $docRef = $firestore->collection('Foto_Evident')->document($d->id());
+                    break;
+                }
+            }
+
+            // Kalau belum ada dokumen -> buat baru (dengan struktur awal)
+            if (! $docRef) {
+                $newDoc = $firestore->collection('Foto_Evident')->add([
+                    'project_id'  => $id,
+                    'foto_path'   => [
+                        'sebelum' => [],
+                        'proses'  => [],
+                        'sesudah' => [],
+                    ],
+                    'uploaded_at' => new FireTimestamp(new \DateTime()),
+                ]);
+                // ambil reference dokumen yang baru dibuat
+                $docRef = $firestore->collection('Foto_Evident')->document($newDoc->id());
+            }
+
+            // 4) Ambil existing data dengan cara aman
+            $snapshot = $docRef->snapshot()->data() ?? [];
+            $existing = $snapshot['foto_path'] ?? [
+                'sebelum' => [],
+                'proses'  => [],
+                'sesudah' => [],
+            ];
+
+            // pastikan setiap key adalah array
+            $existing['sebelum'] = is_array($existing['sebelum']) ? $existing['sebelum'] : [];
+            $existing['proses']  = is_array($existing['proses']) ? $existing['proses'] : [];
+            $existing['sesudah'] = is_array($existing['sesudah']) ? $existing['sesudah'] : [];
+
+            // 5) Merge existing + uploaded
+            $merged = [
+                'sebelum' => array_values(array_merge($existing['sebelum'], $uploaded['sebelum'])),
+                'proses'  => array_values(array_merge($existing['proses'],  $uploaded['proses'])),
+                'sesudah' => array_values(array_merge($existing['sesudah'], $uploaded['sesudah'])),
+            ];
+
+            // 6) Simpan ke Firestore (merge)
+            $docRef->set([
+                'project_id'  => $id,
+                'foto_path'   => $merged,
+                'uploaded_at' => new FireTimestamp(new \DateTime()),
+            ], ['merge' => true]);
+
+            // 7) Update ta_project_waktu_selesai bila perlu
+            $projectRef = $firestore->collection('All_Project_TA')->document($id);
+            $projectDoc = $projectRef->snapshot();
+            if ($projectDoc->exists()) {
+                $data = $projectDoc->data();
+                if (empty($data['ta_project_waktu_selesai'])) {
+                    $projectRef->update([
+                        ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
+                    ]);
+                }
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Foto evident berhasil diupload.', 'data' => $merged], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function pending(Request $request, $id)

@@ -141,7 +141,7 @@
                 <h3 id="modalTitle" style="text-align:center; color:#133995;">Upload Foto Evident Sebelum Pengerjaan</h3>
                 <p id="modalDesc" style="text-align:center;">Silahkan unggah foto evident <b>sebelum</b> pengerjaan</p>
 
-                <form method="POST" action="{{ route('superadmin.acc.storeFoto', $acc['id']) }}"
+                <form id="formUploadFoto" method="POST" action="{{ route('superadmin.acc.storeFoto', $acc['id']) }}"
                     enctype="multipart/form-data">
                     @csrf
 
@@ -650,19 +650,19 @@
             }
 
             /* .btn-add,
-                .btn-remove {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    font-weight: bold;
-                    font-size: 16px;
-                    border-radius: 50%;
-                    width: 36px;
-                    height: 36px;
-                    cursor: pointer;
-                    border: none;
-                    transition: 0.2s;
-                } */
+                                            .btn-remove {
+                                                display: flex;
+                                                justify-content: center;
+                                                align-items: center;
+                                                font-weight: bold;
+                                                font-size: 16px;
+                                                border-radius: 50%;
+                                                width: 36px;
+                                                height: 36px;
+                                                cursor: pointer;
+                                                border: none;
+                                                transition: 0.2s;
+                                            } */
 
             .btn-add {
                 background: #133995;
@@ -1159,99 +1159,75 @@
                 uploadBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
 
-                    const form = uploadBtn.closest('form');
+                    const form = document.getElementById('formUploadFoto');
                     const actionUrl = form.action;
-                    const csrfToken = form.querySelector('input[name="_token"]').value;
-
-                    const formData = new FormData();
-                    formData.append('_token', csrfToken);
 
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
-                        text: 'Setelah upload foto evident, data tidak dapat diubah lagi.',
+                        text: 'Setelah upload, foto evident tidak dapat diubah.',
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#133995',
                         cancelButtonColor: '#C8170D',
-                        cancelButtonText: 'Cancel',
-                        confirmButtonText: 'Ya, upload!',
-                        reverseButtons: true
+                        confirmButtonText: 'Ya, upload!'
                     }).then(async (result) => {
+                        if (!result.isConfirmed) return;
+
                         Swal.fire({
                             title: 'Sedang mengunggah foto...',
                             text: 'Mohon tunggu sebentar.',
                             allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
+                            didOpen: () => Swal.showLoading()
                         });
 
-                        if (result.isConfirmed) {
-                            const form = uploadBtn.closest('form');
-                            const actionUrl = form.action;
-                            const csrfToken = form.querySelector('input[name="_token"]').value;
+                        // --- 1) Sinkronisasi ke input file (opsional, tapi aman dipakai)
+                        const dtSebelum = new DataTransfer();
+                        imagesSebelum.forEach(f => dtSebelum.items.add(f));
+                        inputSebelum.files = dtSebelum.files;
 
-                            // Tambahkan semua file dari masing-masing array
-                            imagesSebelum.forEach(file => formData.append('foto_sebelum[]',
-                                file));
-                            imagesProses.forEach(file => formData.append('foto_proses[]',
-                                file));
-                            imagesSesudah.forEach(file => formData.append('foto_sesudah[]',
-                                file));
+                        const dtProses = new DataTransfer();
+                        imagesProses.forEach(f => dtProses.items.add(f));
+                        inputProses.files = dtProses.files;
 
-                            uploadBtn.disabled = true; // biar ga double klik
+                        const dtSesudah = new DataTransfer();
+                        imagesSesudah.forEach(f => dtSesudah.items.add(f));
+                        inputSesudah.files = dtSesudah.files;
 
-                            try {
-                                const res = await fetch(actionUrl, {
-                                    method: 'POST',
-                                    body: formData,
-                                });
+                        // --- 2) Buat FormData final untuk dikirim
+                        const formData = new FormData();
+                        formData.append("_token", document.querySelector(
+                            'meta[name="csrf-token"]').content);
 
-                                if (!res.ok) throw new Error('Upload gagal');
+                        imagesSebelum.forEach((f, i) => formData.append(`foto_sebelum[${i}]`,
+                            f));
+                        imagesProses.forEach((f, i) => formData.append(`foto_proses[${i}]`, f));
+                        imagesSesudah.forEach((f, i) => formData.append(`foto_sesudah[${i}]`,
+                            f));
 
-                                // Tutup modal DONE otomatis
-                                doneModal.style.display = "none";
+                        try {
+                            const response = await fetch(actionUrl, {
+                                method: "POST",
+                                body: new FormData(form)
+                            });
 
-                                // Ambil ulang isi foto evident tanpa reload seluruh halaman
-                                const parser = new DOMParser();
-                                const html = await (await fetch(window.location.href)).text();
-                                const newDoc = parser.parseFromString(html, 'text/html');
+                            const data = await response.json();
 
-                                const oldSection = document.querySelector(
-                                    '.rekap-section.mt-6'); // bagian foto evident lama
-                                const newSection = newDoc.querySelector('.rekap-section.mt-6');
+                            if (!response.ok) throw new Error(data.message || "Upload gagal.");
 
-                                if (oldSection && newSection) {
-                                    oldSection.innerHTML = newSection.innerHTML;
-                                }
+                            Swal.fire({
+                                icon: "success",
+                                title: "Berhasil!",
+                                text: data.message || "Foto berhasil diupload.",
+                                confirmButtonColor: '#133995'
+                            }).then(() => window.location.reload());
 
-                                // Reset file array
-                                imagesSebelum = [];
-                                imagesProses = [];
-                                imagesSesudah = [];
-                                previewSebelum.innerHTML = "";
-                                previewProses.innerHTML = "";
-                                previewSesudah.innerHTML = "";
-
-                                // Notifikasi sukses tanpa reload
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Berhasil!',
-                                    text: 'Foto evident berhasil diupload dan disimpan!',
-                                    confirmButtonColor: '#133995'
-                                });
-
-                            } catch (err) {
-                                console.error(err);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Gagal Upload!',
-                                    text: 'Terjadi kesalahan saat upload foto.'
-                                });
-                            } finally {
-                                uploadBtn.disabled = false;
-                            }
+                        } catch (error) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Gagal!",
+                                text: error.message || "Terjadi kesalahan.",
+                                confirmButtonColor: '#C8170D'
+                            });
                         }
                     });
 
