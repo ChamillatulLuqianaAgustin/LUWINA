@@ -69,7 +69,7 @@ class AuthController extends Controller
         if ($roleName === 'Super Admin') {
             return redirect()->route('superadmin.allproject');
         } elseif ($roleName === 'Telkom Akses') {
-            // return redirect('/dashboard/telkom'); SAMAIN SAMA ROUTE NYA DI WEB
+            return redirect()->route('telkomakses.allproject');
         } elseif ($roleName === 'Mitra') {
             // return redirect('/dashboard/mitra'); SAMAIN SAMA ROUTE NYA DI WEB
         } else {
