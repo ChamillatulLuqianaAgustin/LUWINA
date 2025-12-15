@@ -81,49 +81,19 @@ Route::prefix('superadmin')->group(function () {
 Route::prefix('telkomakses')->group(function () {
     // all project
     Route::get('/allproject', [TAAllProjectController::class, 'index'])->name('telkomakses.allproject');
-    Route::post('/allproject', [TAAllProjectController::class, 'create'])->name('telkomakses.allproject_create');
     Route::get('/allproject/detail/{id}', [TAAllProjectController::class, 'detail'])->name('telkomakses.allproject_detail');
-    Route::delete('/allproject/detail/{id}/destroy/{detailId}', [TAAllProjectController::class, 'destroy'])
-        ->name('telkomakses.allproject_destroy');
-    Route::get('/allproject/edit/{id}', [TAAllProjectController::class, 'edit'])->name('telkomakses.allproject_edit');
-    Route::put('/allproject/update/{id}', [TAAllProjectController::class, 'update'])->name('telkomakses.allproject_update');
-    Route::delete('/allproject/{id}/destroy', [TAAllProjectController::class, 'destroyProject'])
-        ->name('telkomakses.allproject_destroy_project');
     Route::get('/allproject/download', [TAAllProjectController::class, 'downloadPDF'])->name('telkomakses.allproject_download');
     // Process
     Route::get('/process', [TAProcessController::class, 'index'])->name('telkomakses.process');
     Route::get('/process/detail/{id}', [TAProcessController::class, 'detail'])->name('telkomakses.process_detail');
-    Route::delete('/process/detail/{id}/destroy/{detailId}', [TAProcessController::class, 'destroy'])
-        ->name('telkomakses.process_destroy');
-    Route::get('/process/edit/{id}', [TAProcessController::class, 'edit'])->name('telkomakses.process_edit');
-    Route::put('/process/update/{id}', [TAProcessController::class, 'update'])->name('telkomakses.process_update');
-    Route::delete('/process/{id}/destroy', [TAProcessController::class, 'destroyProject'])
-        ->name('telkomakses.process_destroy_project');
     Route::post('/process/{id}/acc', [TAProcessController::class, 'acc'])->name('telkomakses.process.acc');
     Route::post('/process/{id}/reject', [TAProcessController::class, 'reject'])->name('telkomakses.process.reject');
     // acc
     Route::get('/acc', [TAAccController::class, 'index'])->name('telkomakses.acc');
     Route::get('/acc/detail/{id}', [TAAccController::class, 'detail'])->name('telkomakses.acc_detail');
-    Route::delete('/acc/detail/{id}/destroy/{detailId}', [TAAccController::class, 'destroy'])
-        ->name('superadmin.acc_destroy');
-    Route::get('/acc/edit/{id}', [TAAccController::class, 'edit'])->name('telkomakses.acc_edit');
-    Route::put('/acc/update/{id}', [TAAccController::class, 'update'])->name('telkomakses.acc_update');
-    Route::delete('/acc/{id}/destroy', [TAAccController::class, 'destroyProject'])
-        ->name('superadmin.acc_destroy_project');
-    Route::post('/acc/{id}/kerjakan', [TAAccController::class, 'kerjakan'])->name('telkomakses.acc.kerjakan');
-    Route::post('/acc/{id}/done', [TAAccController::class, 'storeFoto'])->name('telkomakses.acc.storeFoto');
-    Route::post('/acc/{id}/pending', [TAAccController::class, 'pending'])->name('telkomakses.acc.pending');
     // reject
     Route::get('/reject', [TARejectController::class, 'index'])->name('telkomakses.reject');
     Route::get('/reject/detail/{id}', [TARejectController::class, 'detail'])->name('telkomakses.reject_detail');
-    Route::delete('/reject/detail/{id}/destroy/{detailId}', [TARejectController::class, 'destroy'])
-        ->name('telkomakses.reject_destroy');
-    Route::get('/reject/edit/{id}', [TARejectController::class, 'edit'])->name('telkomakses.reject_edit');
-    Route::put('/reject/update/{id}', [TARejectController::class, 'update'])->name('telkomakses.reject_update');
-    Route::delete('/reject/{id}/destroy', [TARejectController::class, 'destroyProject'])
-        ->name('telkomakses.reject_destroy_project');
-    Route::post('/reject/{id}/upload-revisi', [TARejectController::class, 'updateRevisi'])
-        ->name('telkomakses.reject_upload_revisi');
 });
 
 // use App\Http\Controllers\DebugController;

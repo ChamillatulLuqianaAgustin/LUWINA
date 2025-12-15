@@ -1,5 +1,5 @@
 @extends('layouts.telkom_akses.template_telkomakses')
-@section('title', 'Detail All Project')
+@section('title', 'Detail Reject')
 
 @section('header')
     @include('layouts.telkom_akses.header_telkomakses')
@@ -11,10 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <div class="page">
-        <!-- Tombol Back + ACC / Reject -->
+        <!-- Tombol Back + Kerjakan -->
         <div class="action-bar">
             <!-- Tombol Back -->
-            <a href="{{ route('telkomakses.allproject') }}" class="btn-back">
+            <a href="{{ route('telkomakses.reject') }}" class="btn-back">
                 <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Back
             </a>
         </div>
@@ -23,7 +23,7 @@
         <div class="table-wrapper">
             <!-- Header Nama Project -->
             <div class="project-header">
-                <span class="project-title">{{ $allproject['nama_project'] ?? 'Nama project belum ada' }}</span>
+                <span class="project-title">{{ $reject['nama_project'] ?? 'Nama project belum ada' }}</span>
             </div>
 
             <!-- Tabel Detail -->
@@ -44,7 +44,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($allproject['detail'] ?? [] as $index => $item)
+                        @foreach ($reject['detail'] ?? [] as $index => $item)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $item->designator }}</td>
@@ -83,7 +83,6 @@
                 </table>
             </div>
         </div>
-    </div>
 
     <style>
         :root {
@@ -114,13 +113,6 @@
             text-decoration: none;
             display: flex;
             align-items: center;
-        }
-
-        .btn-back:hover {
-            background-color: #fff;
-            color: #133995 !important;
-            border: 1px solid #CFD0D2;
-            text-decoration: none;
         }
 
         .table-wrapper {

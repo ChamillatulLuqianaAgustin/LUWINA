@@ -14,15 +14,14 @@
 
     <div class="page">
         <!-- Add project -->
-        <div class="top-controls">
-            <button type="button" class="btn-add-project">+ Add Project</button>
-
+                <div class="top-controls right-only">
             <div class="controls-right">
                 <!-- Input Tanggal -->
                 <div class="date-group">
                     <label for="date_range">Tanggal Upload:</label>
                     <input type="text" id="date_range" class="form-control" placeholder="Pilih rentang tanggal">
                 </div>
+
                 <a href="{{ route('telkomakses.allproject_download', ['start' => request('start'), 'end' => request('end')]) }}"
                     class="btn-primary-custom" target="_blank">
                     <i class="fa-solid fa-download"></i> Download All
@@ -116,66 +115,6 @@
                     </tr>
                 </tfoot>
             </table>
-        </div>
-    </div>
-
-    <!-- Pop-Up Add Project -->
-    <div id="addProjectModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h3 class="title">Add Project</h3>
-
-            <form class="addProjectForm" id="addProjectForm" action="{{ route('telkomakses.allproject_create') }}"
-                method="POST" enctype="multipart/form-data">
-                @csrf
-
-                <!-- Drop Zone Upload File Excel -->
-                <div id="dropZoneExcel" class="form-upload"
-                    style="border: 2px dashed #ccc; border-radius: 10px; padding: 20px; 
-                        text-align: center; margin-bottom: 20px; width: 100%;">
-
-                    <input type="file" name="file" id="excelFile" accept=".xls,.xlsx,.csv" hidden required>
-
-                    <label for="excelFile" style="cursor:pointer; display:block; color:#595961;">
-                        <i class="fa fa-cloud-upload-alt" style="font-size:24px; margin-bottom:8px;"></i><br>
-                        <span>Upload File Excel Project<br>(.xls / .xlsx / .csv up to 10MB)</span>
-                    </label>
-                    <br>
-                    <button type="button" id="browseExcelBtn" class="btn-browse">Browse</button>
-
-                    <div id="filePreview" class="file-preview"
-                        style="margin-top: 10px; color: #133995; font-size: 13px; font-weight: 500;"></div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="form-status">
-                        <label class="label-status">Status:</label>
-                        <select name="status" class="select-field" required>
-                            <option value="" disabled selected hidden>Pilih Status Project</option>
-                            <option value="PROCESS" style="color:#696A71;">PROCESS</option>
-                            <option value="ACC" style="color:#34C759;">ACC</option>
-                            <option value="REJECT" style="color:#C8170D;">REJECT</option>
-                        </select>
-                    </div>
-
-                    <div class="form-qe">
-                        <label class="label-qe">QE:</label>
-                        <select name="qe" class="select-field" required>
-                            <option value="" disabled selected hidden>Pilih Jenis QE</option>
-                            @foreach ($qe_doc as $qe)
-                                <option value="{{ $qe['qe'] }}">{{ $qe['qe'] }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-deskripsi">
-                        <label class="label-deskripsi">Deskripsi:</label>
-                        <input type="text" name="deskripsi" class="input-field"
-                            placeholder="Masukkan deskripsi project" required>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save">Save</button>
-            </form>
         </div>
     </div>
 
@@ -507,6 +446,14 @@
             gap: 12px;
         }
 
+        .top-controls.right-only {
+            display: flex;
+            justify-content: flex-end; /* dorong ke kanan */
+            align-items: flex-end;
+            margin-top: 20px;
+            margin-bottom: 18px;
+        }
+
         .date-group {
             display: flex;
             flex-direction: column;
@@ -579,15 +526,6 @@
             margin-right: 6px;
         }
 
-        /* Bagian Chart */
-        /* .charts-row {
-                                        margin-top: 20px;
-                                        display: grid;
-                                        grid-template-columns: 2fr 1fr;
-                                        gap: 18px;
-                                        margin-bottom: 22px;
-                                    } */
-
         .charts-row {
             margin-top: 20px;
             display: grid;
@@ -609,23 +547,12 @@
             box-sizing: border-box;
         }
 
-        /* .card.left {
-                                    height: 420px;
-                                } */
-
         .card.left {
             display: flex;
             flex-direction: column;
             height: 100%;
             min-height: 460px;
         }
-
-        /* .right-column {
-                                display: flex;
-                                flex-direction: column;
-                                gap: 18px;
-                                height: 420px;
-                            } */
 
         .right-column {
             display: flex;
@@ -635,11 +562,6 @@
             gap: 18px;
             min-height: 460px;
         }
-
-        /* .right-column .card {
-                            flex: 1;
-                            padding: 12px;
-                        } */
 
         .right-column .card {
             flex: 1;
@@ -655,12 +577,6 @@
             margin-bottom: 10px;
         }
 
-        /* .chart-wrap {
-                        flex: 1;
-                        min-height: 0;
-                        display: flex;
-                    } */
-
         .chart-wrap {
             flex-grow: 1;
             display: flex;
@@ -668,13 +584,7 @@
             justify-content: center;
             min-height: 0;
         }
-
-        /* .chart-wrap canvas {
-                    width: 100% !important;
-                    height: 100% !important;
-                    display: block;
-                } */
-
+        
         .chart-wrap canvas {
             width: 100% !important;
             height: 100% !important;

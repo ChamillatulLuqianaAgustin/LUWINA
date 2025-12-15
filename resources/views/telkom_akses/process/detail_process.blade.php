@@ -44,7 +44,6 @@
             <!-- Header Nama Project -->
             <div class="project-header">
                 <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="{{ route('telkomakses.process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
             </div>
 
             <!-- Tabel Detail -->
@@ -62,7 +61,6 @@
                             <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
-                            <th style="width: 50px;">DELETE</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,59 +76,33 @@
                                 <td>{{ $item->volume }}</td>
                                 <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
-                                <td>
-                                    <form
-                                        action="{{ route('telkomakses.process_destroy', ['id' => $process['id'], 'detailId' => $item->id]) }}"
-                                        method="POST"
-                                        class="form-delete-material">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;">
-                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
-                                        </button>
-                                    </form>
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="7" class="text-end">Material</th>
+                            <th colspan="6" class="text-end">Material</th>
                             <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">Jasa</th>
+                            <th colspan="6" class="text-end">Jasa</th>
                             <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">Total</th>
+                            <th colspan="6" class="text-end">Total</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">PPN (11%)</th>
+                            <th colspan="6" class="text-end">PPN (11%)</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">Total Setelah PPN</th>
+                            <th colspan="6" class="text-end">Total Setelah PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                         </tr>
                     </tfoot>
                 </table>
             </div>
-        </div>
-
-        <!-- Tombol Delete Data Project -->
-        <div id="deleteProject" style="margin-top: 20px; text-align: left;">
-            <form action="{{ route('telkomakses.process_destroy_project', $process['id']) }}" method="POST"
-                class="form-delete-project">
-                @csrf
-                @method('DELETE')
-                <button type="submit"
-                    style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
-                    font-weight: 500;">
-                    <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
-                </button>
-            </form>
         </div>
 
         <style>
@@ -231,19 +203,6 @@
 
             .project-title {
                 color: #595961;
-            }
-
-            .edit-project {
-                font-size: 14px;
-                font-weight: 500;
-                color: #133995;
-                text-decoration: none;
-                cursor: pointer;
-            }
-
-            .edit-project:hover {
-                text-decoration: underline;
-                color: #133995;
             }
 
             .table-responsive {
@@ -416,117 +375,6 @@
                                 confirmButtonColor: '#C8170D'
                             });
                         });
-                    }
-                });
-            });
-        }
-
-        // SWEETALERT UNTUK DELETE MATERIAL
-        document.querySelectorAll('.form-delete-material').forEach(form => {
-            form.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Material ini akan dihapus dari project dan tidak dapat dikembalikan.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus material!',
-                    reverseButtons: true
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Sedang menghapus material...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        try {
-                            const res = await fetch(form.action, {
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': token },
-                                body: new FormData(form)
-                            });
-
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok || data.success === false)
-                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus material.');
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Material berhasil dihapus.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => window.location.reload());
-
-                        } catch (err) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat menghapus material.',
-                                confirmButtonColor: '#C8170D'
-                            });
-                        }
-                    }
-                });
-            });
-        });
-
-        // SWEETALERT UNTUK DELETE PROJECT
-        const deleteProjectForm = document.querySelector('.form-delete-project');
-        if (deleteProjectForm) {
-            deleteProjectForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Seluruh data project beserta material akan dihapus secara permanen.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus project!',
-                    reverseButtons: true
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Sedang menghapus project...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        try {
-                            const res = await fetch(deleteProjectForm.action, {
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': token },
-                                body: new FormData(deleteProjectForm)
-                            });
-
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok || data.success === false)
-                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus project.');
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Seluruh data project berhasil dihapus.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => {
-                                window.location.href = "{{ route('telkomakses.process') }}";
-                            });
-
-                        } catch (err) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat menghapus project.',
-                                confirmButtonColor: '#C8170D'
-                            });
-                        }
                     }
                 });
             });
