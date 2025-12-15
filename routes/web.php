@@ -13,7 +13,11 @@ use App\Http\Controllers\telkom_akses\AllProjectController as TAAllProjectContro
 use App\Http\Controllers\telkom_akses\ProcessController as TAProcessController;
 use App\Http\Controllers\telkom_akses\AccController as TAAccController;
 use App\Http\Controllers\telkom_akses\RejectController as TARejectController;
-
+use App\Http\Controllers\mitra\AllProjectController as MAllProjectController;
+use App\Http\Controllers\mitra\MakeProjectController as MMakeProjectController;
+use App\Http\Controllers\mitra\ProcessController as MProcessController;
+use App\Http\Controllers\mitra\AccController as MAccController;
+use App\Http\Controllers\mitra\RejectController as MRejectController;
 
 // Route Login Page
 Route::get('/', [AuthController::class, 'index'])->name('login');
@@ -94,6 +98,58 @@ Route::prefix('telkomakses')->group(function () {
     // reject
     Route::get('/reject', [TARejectController::class, 'index'])->name('telkomakses.reject');
     Route::get('/reject/detail/{id}', [TARejectController::class, 'detail'])->name('telkomakses.reject_detail');
+});
+
+// Mitra
+Route::prefix('mitra')->group(function () {
+    // make project
+    Route::get('/makeproject', [MMakeProjectController::class, 'index'])->name('mitra.makeproject');
+    Route::post('/makeproject', [MMakeProjectController::class, 'store'])->name('mitra.makeproject_store');
+    // all project
+    Route::get('/allproject', [MAllProjectController::class, 'index'])->name('mitra.allproject');
+    Route::post('/allproject', [MAllProjectController::class, 'create'])->name('mitra.allproject_create');
+    Route::get('/allproject/detail/{id}', [MAllProjectController::class, 'detail'])->name('mitra.allproject_detail');
+    Route::delete('/allproject/detail/{id}/destroy/{detailId}', [MAllProjectController::class, 'destroy'])
+        ->name('mitra.allproject_destroy');
+    Route::get('/allproject/edit/{id}', [MAllProjectController::class, 'edit'])->name('mitra.allproject_edit');
+    Route::put('/allproject/update/{id}', [MAllProjectController::class, 'update'])->name('mitra.allproject_update');
+    Route::delete('/allproject/{id}/destroy', [MAllProjectController::class, 'destroyProject'])
+        ->name('mitra.allproject_destroy_project');
+    Route::get('/allproject/download', [MAllProjectController::class, 'downloadPDF'])->name('mitra.allproject_download');
+    // Process
+    Route::get('/process', [MProcessController::class, 'index'])->name('mitra.process');
+    Route::get('/process/detail/{id}', [MProcessController::class, 'detail'])->name('mitra.process_detail');
+    Route::delete('/process/detail/{id}/destroy/{detailId}', [MProcessController::class, 'destroy'])
+        ->name('mitra.process_destroy');
+    Route::get('/process/edit/{id}', [MProcessController::class, 'edit'])->name('mitra.process_edit');
+    Route::put('/process/update/{id}', [MProcessController::class, 'update'])->name('mitra.process_update');
+    Route::delete('/process/{id}/destroy', [MProcessController::class, 'destroyProject'])
+        ->name('mitra.process_destroy_project');
+    Route::post('/process/{id}/acc', [MProcessController::class, 'acc'])->name('mitra.process.acc');
+    Route::post('/process/{id}/reject', [MProcessController::class, 'reject'])->name('mitra.process.reject');
+    // acc
+    Route::get('/acc', [MAccController::class, 'index'])->name('mitra.acc');
+    Route::get('/acc/detail/{id}', [MAccController::class, 'detail'])->name('mitra.acc_detail');
+    Route::delete('/acc/detail/{id}/destroy/{detailId}', [MAccController::class, 'destroy'])
+        ->name('mitra.acc_destroy');
+    Route::get('/acc/edit/{id}', [MAccController::class, 'edit'])->name('mitra.acc_edit');
+    Route::put('/acc/update/{id}', [MAccController::class, 'update'])->name('mitra.acc_update');
+    Route::delete('/acc/{id}/destroy', [MAccController::class, 'destroyProject'])
+        ->name('mitra.acc_destroy_project');
+    Route::post('/acc/{id}/kerjakan', [MAccController::class, 'kerjakan'])->name('mitra.acc.kerjakan');
+    Route::post('/acc/{id}/done', [MAccController::class, 'storeFoto'])->name('mitra.acc.storeFoto');
+    Route::post('/acc/{id}/pending', [MAccController::class, 'pending'])->name('mitra.acc.pending');
+    // reject
+    Route::get('/reject', [MRejectController::class, 'index'])->name('mitra.reject');
+    Route::get('/reject/detail/{id}', [MRejectController::class, 'detail'])->name('mitra.reject_detail');
+    Route::delete('/reject/detail/{id}/destroy/{detailId}', [MRejectController::class, 'destroy'])
+        ->name('mitra.reject_destroy');
+    Route::get('/reject/edit/{id}', [MRejectController::class, 'edit'])->name('mitra.reject_edit');
+    Route::put('/reject/update/{id}', [MRejectController::class, 'update'])->name('mitra.reject_update');
+    Route::delete('/reject/{id}/destroy', [MRejectController::class, 'destroyProject'])
+        ->name('mitra.reject_destroy_project');
+    Route::post('/reject/{id}/upload-revisi', [MRejectController::class, 'updateRevisi'])
+        ->name('mitra.reject_upload_revisi');
 });
 
 // use App\Http\Controllers\DebugController;
