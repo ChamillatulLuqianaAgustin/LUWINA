@@ -10,6 +10,8 @@ use App\Imports\TaImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Cache;
+use Google\Cloud\Core\Timestamp as FireTimestamp;
+use Cloudinary\Cloudinary;
 
 class AllProjectController extends Controller
 {
@@ -372,7 +374,47 @@ class AllProjectController extends Controller
         }
     }
 
-    public function detail($id)
+    private function formatDate($timestamp)
+    {
+        if (!$timestamp) {
+            return "-";
+        };
+
+        if (is_object($timestamp) && method_exists($timestamp, 'get')) {
+            $timestamp = $timestamp->get()->format('Y-m-d');
+        } else {
+            $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
+        }
+
+        return $timestamp;
+    }
+
+    public function downloadPDF(Request $request)
+    {
+        $start = $request->query('start');
+        $end   = $request->query('end');
+
+        list($project_doc, $grandTotal) = $this->fetchAllProjects($start, $end);
+
+        // 🔧 Gunakan format parser yang konsisten
+        if ($start && $end) {
+            $startFormatted = Carbon::createFromFormat('Y-m-d', $start)->translatedFormat('j M Y');
+            $endFormatted   = Carbon::createFromFormat('Y-m-d', $end)->translatedFormat('j M Y');
+            $title = "All Project TA ({$startFormatted} - {$endFormatted})";
+        } else {
+            $title = "All Project TA - " . now()->translatedFormat('j M Y');
+        }
+
+        $pdf = Pdf::loadView('mitra.allproject.download_mitra', [
+            'project_doc' => $project_doc,
+            'grandTotal' => $grandTotal,
+            'title' => $title,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('All_Project_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function detailProcess($id)
     {
         $firestore = $this->getFirestore();
         $docRef = $firestore->collection('All_Project_TA')->document($id);
@@ -384,18 +426,18 @@ class AllProjectController extends Controller
 
         $data = $doc->data();
 
-        // Fetch related data
-        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        // --- Ambil data project utama pakai getReferenceData() ---
+        $fotoData    = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
         $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
-        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
+        $qeData      = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
-        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglUpload     = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
         $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
-        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+        $tglSelesai    = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
 
-        // Fetch detail data from Detail_Project_TA
+        // --- Ambil detail ---
         $detailDocs = $firestore->collection('Detail_Project_TA')
-            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
+            ->where('ta_detail_all_id', '=', $docRef)
             ->documents();
 
         $detail = [];
@@ -451,26 +493,26 @@ class AllProjectController extends Controller
             'grand' => $grand,
         ];
 
-        return view('mitra.allproject.detail_allproject', [
-            'allproject' => [
-                'id' => $id,
-                'nama_project' => $data['ta_project_pekerjaan'],
-                // 'deskripsi_project' => $data['ta_project_deskripsi'],
-                // 'qe' => $qeData['type'] ?? null,
-                'foto' => $fotoData,
-                'pending' => $pendingData,
-                // 'tgl_upload' => $tglUpload,
-                // 'tgl_pengerjaan' => $tglPengerjaan,
-                // 'tgl_selesai' => $tglSelesai,
-                // 'status' => $data['ta_project_status'],
-                'total' => $data['ta_project_total'],
-                'detail' => $detail,
+        return view('mitra.allproject.process.detail_process', [
+            'process' => [
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe'               => $qeData['type'] ?? null,
+                'foto'             => $fotoData,
+                'pending'          => $pendingData,
+                'tgl_upload'       => $tglUpload,
+                'tgl_pengerjaan'   => $tglPengerjaan,
+                'tgl_selesai'      => $tglSelesai,
+                'status'           => $data['ta_project_status'],
+                'total'            => $data['ta_project_total'],
+                'detail'           => $detail,
             ],
             'totals' => $totals,
         ]);
     }
 
-    public function edit($id)
+    public function editProcess($id)
     {
         $firestore = $this->getFirestore();
         $docRef = $firestore->collection('All_Project_TA')->document($id);
@@ -516,8 +558,8 @@ class AllProjectController extends Controller
         // --- Ambil data referensi designator pakai helper ---
         [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
 
-        return view('mitra.allproject.edit_allproject', [
-            'allproject' => [
+        return view('mitra.allproject.process.edit_process', [
+            'process' => [
                 'id'               => $id,
                 'nama_project'     => $data['ta_project_pekerjaan'],
                 'deskripsi_project' => $data['ta_project_deskripsi'],
@@ -528,7 +570,7 @@ class AllProjectController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function updateProcess(Request $request, $id)
     {
         $firestore = $this->getFirestore();
         $docRef = $firestore->collection('All_Project_TA')->document($id);
@@ -603,11 +645,11 @@ class AllProjectController extends Controller
         $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
 
         return redirect()
-            ->route('mitra.allproject_detail', $id)
+            ->route('mitra.allproject_process_detail', $id)
             ->with('success', 'Project berhasil diperbarui');
     }
 
-    public function destroy($id, $detailId)
+    public function destroyProcess($id, $detailId)
     {
         $firestore = $this->getFirestore();
 
@@ -644,7 +686,7 @@ class AllProjectController extends Controller
         ]);
     }
 
-    public function destroyProject($id)
+    public function destroyProjectProcess($id)
     {
         $firestore = $this->getFirestore();
 
@@ -680,43 +722,978 @@ class AllProjectController extends Controller
         ]);
     }
 
-    private function formatDate($timestamp)
+    public function accProcess($id)
     {
-        if (!$timestamp) {
-            return "-";
-        };
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
 
-        if (is_object($timestamp) && method_exists($timestamp, 'get')) {
-            $timestamp = $timestamp->get()->format('Y-m-d');
-        } else {
-            $timestamp = Carbon::parse($timestamp)->format('Y-m-d');
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Project tidak ditemukan');
         }
 
-        return $timestamp;
+        // Update status jadi ACC
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'ACC'],
+        ]);
+
+        return redirect()->route('mitra.allproject_process.acc')->with('success', 'Project berhasil di-ACC');
     }
 
-    public function downloadPDF(Request $request)
+    public function rejectProcess($id)
     {
-        $start = $request->query('start');
-        $end   = $request->query('end');
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
 
-        list($project_doc, $grandTotal) = $this->fetchAllProjects($start, $end);
-
-        // 🔧 Gunakan format parser yang konsisten
-        if ($start && $end) {
-            $startFormatted = Carbon::createFromFormat('Y-m-d', $start)->translatedFormat('j M Y');
-            $endFormatted   = Carbon::createFromFormat('Y-m-d', $end)->translatedFormat('j M Y');
-            $title = "All Project TA ({$startFormatted} - {$endFormatted})";
-        } else {
-            $title = "All Project TA - " . now()->translatedFormat('j M Y');
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Project tidak ditemukan');
         }
 
-        $pdf = Pdf::loadView('mitra.allproject.download_mitra', [
-            'project_doc' => $project_doc,
-            'grandTotal' => $grandTotal,
-            'title' => $title,
-        ])->setPaper('a4', 'landscape');
+        // Update status jadi REJECT
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'REJECT'],
+        ]);
 
-        return $pdf->download('All_Project_' . now()->format('Y-m-d') . '.pdf');
+        return redirect()->route('mitra.allproject_process.reject')->with('success', 'Project berhasil di-Reject');
+    }
+
+    public function detailAcc($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Foto evident (ambil semua dokumen by project_id)
+        $fotoDocs = $firestore->collection('Foto_Evident')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        $fotoData = [
+            'sebelum' => [],
+            'proses' => [],
+            'sesudah' => [],
+        ];
+
+        foreach ($fotoDocs as $docFoto) {
+            if ($docFoto->exists()) {
+                $dataFoto = $docFoto->data()['foto_path'] ?? [];
+
+                if (is_object($dataFoto)) {
+                    $dataFoto = json_decode(json_encode($dataFoto), true);
+                }
+
+                foreach (['sebelum', 'proses', 'sesudah'] as $step) {
+                    if (!empty($dataFoto[$step])) {
+                        $fotoData[$step] = array_merge($fotoData[$step], $dataFoto[$step]);
+                    }
+                }
+            }
+            // dd($docFoto->data());
+        }
+
+        $acc['foto'] = $fotoData;
+
+        // --- Pending (ambil semua dokumen by project_id)
+        $pendingDocs = $firestore->collection('Pending')
+            ->where('project_id', '=', $id)->documents();
+        $pendingData = [];
+        foreach ($pendingDocs as $pd) {
+            if (!$pd->exists()) continue;
+            $dataPd = $pd->data();
+            $kets = $dataPd['pending_keterangan'] ?? null;
+            $waktus = $dataPd['pending_waktu'] ?? null;
+
+            if (is_array($kets)) {
+                foreach ($kets as $i => $ket) {
+                    $pendingData[] = [
+                        'tgl_pending' => is_array($waktus) ? ($waktus[$i] ?? $waktus[0] ?? '-') : ($waktus ?? '-'),
+                        'keterangan'  => $ket ?? '-',
+                    ];
+                }
+            } else {
+                $pendingData[] = [
+                    'tgl_pending' => $waktus ?? '-',
+                    'keterangan'  => $kets ?? '-',
+                ];
+            }
+        }
+
+        // Fetch detail from Detail_Project_TA
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
+            ->documents();
+
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('mitra.allproject.acc.detail_acc', [
+            'acc' => [
+                'id'              => $id,
+                'nama_project'    => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe'              => $data['ta_project_qe_id'] ?? null,
+                'foto'            => $fotoData,
+                'pending'         => $pendingData,
+                'tgl_upload'      => $this->formatDate($data['ta_project_waktu_upload'] ?? null),
+                'tgl_pengerjaan'  => $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null),
+                'tgl_selesai'     => $this->formatDate($data['ta_project_waktu_selesai'] ?? null),
+                'status'          => $data['ta_project_status'],
+                'total'           => $data['ta_project_total'],
+                'detail'          => $detail,
+            ],
+            'totals' => $totals,
+        ]);
+    }
+
+    public function editAcc($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Ambil detail project ---
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $detail = [];
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume        = $row['ta_detail_volume'] ?? 0;
+
+            $detail[] = (object)[
+                'id'             => $d->id(),
+                'designator'     => $designatorData['ta_designator'] ?? '',
+                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa'     => $hargaJasa,
+                'volume'         => $volume,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa'     => $hargaJasa * $volume,
+            ];
+        }
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // --- Ambil data referensi designator pakai helper ---
+        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+
+        return view('mitra.allproject.acc.edit_acc', [
+            'acc' => [
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'detail'           => $detail,
+            ],
+            'totals'         => $totals,
+            'project_ta_doc' => $project_ta_doc,
+        ]);
+    }
+
+    public function updateAcc(Request $request, $id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update project name
+        $docRef->update([
+            ['path' => 'ta_project_pekerjaan', 'value' => $request->nama_project],
+        ]);
+
+        // Existing details
+        $existingDetails = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        // Map for existing details
+        $existingMap = [];
+        foreach ($existingDetails as $detail) {
+            $existingMap[$detail->id()] = $detail; // Using document ID as the key
+        }
+
+        // Data from the form
+        $designators = $request->input('designator', []);
+        $volumes = $request->input('volume', []);
+        $detailIds = $request->input('detail_id', []); // Associated detail IDs
+
+        foreach ($designators as $index => $dsg) {
+            $volume = (int)($volumes[$index] ?? 0);
+            $detailId = $detailIds[$index] ?? null;
+
+            // Fetch the designator reference based on user input
+            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+
+            if ($dsg && $volume > 0) {
+                if ($detailId && isset($existingMap[$detailId])) {
+                    // Update existing detail
+                    $detailRef = $existingMap[$detailId];
+
+                    // Update volume
+                    $detailRef->reference()->update([
+                        ['path' => 'ta_detail_volume', 'value' => $volume],
+                    ]);
+
+                    // Update designator if it has changed
+                    if (count($designatorDoc) > 0) {
+                        $detailRef->reference()->update([
+                            ['path' => 'ta_detail_ta_id', 'value' => $designatorDoc[0]->reference()], // Save as reference
+                        ]);
+                    }
+                } else {
+                    // Add new detail if not exists
+                    if (count($designatorDoc) > 0) {
+                        $firestore->collection('Detail_Project_TA')->add([
+                            'ta_detail_all_id' => $docRef,
+                            'ta_detail_ta_id' => $designatorDoc[0]->reference(), // Save as reference
+                            'ta_detail_volume' => $volume,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Update total after changes
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+        $totals = $this->hitungTotal($detailDocs);
+        $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
+
+        return redirect()
+            ->route('mitra.allproject_acc_detail', $id)
+            ->with('success', 'Project berhasil diperbarui');
+    }
+
+    public function destroyAcc($id, $detailId)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
+        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
+        $detailDoc = $detailRef->snapshot();
+
+        if (!$detailDoc->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data detail tidak ditemukan.'
+            ], 404);
+        }
+
+        // Hapus dokumen dari Firestore
+        $detailRef->delete();
+
+        // Hitung ulang total project setelah penghapusan
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // Update total di dokumen induk
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $totals['grand']]
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Material berhasil dihapus.'
+        ]);
+    }
+
+    public function destroyProjectAcc($id)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen project utama
+        $projectRef = $firestore->collection('All_Project_TA')->document($id);
+        $projectSnap = $projectRef->snapshot();
+
+        if (!$projectSnap->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data project tidak ditemukan.'
+            ], 404);
+        }
+
+        // Ambil semua detail project yang terhubung
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $projectRef)
+            ->documents();
+
+        // Hapus semua detail project
+        foreach ($detailDocs as $detail) {
+            if ($detail->exists()) {
+                $firestore->collection('Detail_Project_TA')->document($detail->id())->delete();
+            }
+        }
+
+        // Hapus data project utama
+        $projectRef->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data project dan seluruh material berhasil dihapus.'
+        ]);
+    }
+
+    public function kerjakanAcc($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        // cek apakah dokumen ada
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')
+                ->with('error', 'Project tidak ditemukan');
+        }
+
+        // gunakan Firestore Timestamp agar konsisten dengan data Firestore
+        $now = new FireTimestamp(new \DateTime());
+
+        $docRef->update([
+            ['path' => 'ta_project_waktu_pengerjaan', 'value' => $now],
+        ]);
+
+        return redirect()->route('mitra.allproject.acc_detail', $id)
+            ->with('success', 'Tanggal pengerjaan berhasil diset.');
+    }
+
+    public function storeFotoAcc(Request $request, $id)
+    {
+        try {
+            $firestore = $this->getFirestore();
+
+            // mapping input => step
+            $mapping = [
+                'sebelum' => 'foto_sebelum',
+                'proses'  => 'foto_proses',
+                'sesudah' => 'foto_sesudah',
+            ];
+
+            // 1) Pastikan ada file sama sekali
+            $hasAnyFile = false;
+            foreach ($mapping as $inputName) {
+                if ($request->hasFile($inputName) && count($request->file($inputName)) > 0) {
+                    $hasAnyFile = true;
+                    break;
+                }
+            }
+            if (! $hasAnyFile) {
+                return response()->json(['status' => 'error', 'message' => 'Tidak ada file yang diupload.'], 400);
+            }
+
+            // 2) Upload ke Cloudinary dulu -> kumpulkan URL
+            $uploaded = [
+                'sebelum' => [],
+                'proses'  => [],
+                'sesudah' => [],
+            ];
+
+            foreach ($mapping as $tipe => $inputName) {
+                if ($request->hasFile($inputName)) {
+                    foreach ($request->file($inputName) as $file) {
+                        // safety: cek instance
+                        if (! $file->isValid()) continue;
+
+                        $originalName = $file->getClientOriginalName();
+                        $fileName = pathinfo($originalName, PATHINFO_FILENAME);
+                        $publicId = date('Y-m-d_His') . '_' . $fileName;
+                        $cloudinaryPath = "evident_foto/" . $tipe;
+
+                        // upload ke Cloudinary
+                        $cloudinary = new Cloudinary(config('cloudinary.url'));
+
+                        $upload = $cloudinary->uploadApi()->upload(
+                            $file->getRealPath(),
+                            [
+                                'public_id' => $publicId,
+                                'folder'    => $cloudinaryPath,
+                            ]
+                        );
+
+                        $secureUrl = $upload['secure_url'];
+                        $uploaded[$tipe][] = $secureUrl;
+                    }
+                }
+            }
+
+            // 3) Cari dokumen Foto_Evident (by project_id)
+            $fotoDocs = $firestore->collection('Foto_Evident')
+                ->where('project_id', '=', $id)
+                ->documents();
+
+            $docRef = null;
+            foreach ($fotoDocs as $d) {
+                if ($d->exists()) {
+                    $docRef = $firestore->collection('Foto_Evident')->document($d->id());
+                    break;
+                }
+            }
+
+            // Kalau belum ada dokumen -> buat baru (dengan struktur awal)
+            if (! $docRef) {
+                $newDoc = $firestore->collection('Foto_Evident')->add([
+                    'project_id'  => $id,
+                    'foto_path'   => [
+                        'sebelum' => [],
+                        'proses'  => [],
+                        'sesudah' => [],
+                    ],
+                    'uploaded_at' => new FireTimestamp(new \DateTime()),
+                ]);
+                // ambil reference dokumen yang baru dibuat
+                $docRef = $firestore->collection('Foto_Evident')->document($newDoc->id());
+            }
+
+            // 4) Ambil existing data dengan cara aman
+            $snapshot = $docRef->snapshot()->data() ?? [];
+            $existing = $snapshot['foto_path'] ?? [
+                'sebelum' => [],
+                'proses'  => [],
+                'sesudah' => [],
+            ];
+
+            // pastikan setiap key adalah array
+            $existing['sebelum'] = is_array($existing['sebelum']) ? $existing['sebelum'] : [];
+            $existing['proses']  = is_array($existing['proses']) ? $existing['proses'] : [];
+            $existing['sesudah'] = is_array($existing['sesudah']) ? $existing['sesudah'] : [];
+
+            // 5) Merge existing + uploaded
+            $merged = [
+                'sebelum' => array_values(array_merge($existing['sebelum'], $uploaded['sebelum'])),
+                'proses'  => array_values(array_merge($existing['proses'],  $uploaded['proses'])),
+                'sesudah' => array_values(array_merge($existing['sesudah'], $uploaded['sesudah'])),
+            ];
+
+            // 6) Simpan ke Firestore (merge)
+            $docRef->set([
+                'project_id'  => $id,
+                'foto_path'   => $merged,
+                'uploaded_at' => new FireTimestamp(new \DateTime()),
+            ], ['merge' => true]);
+
+            // 7) Update ta_project_waktu_selesai bila perlu
+            $projectRef = $firestore->collection('All_Project_TA')->document($id);
+            $projectDoc = $projectRef->snapshot();
+            if ($projectDoc->exists()) {
+                $data = $projectDoc->data();
+                if (empty($data['ta_project_waktu_selesai'])) {
+                    $projectRef->update([
+                        ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
+                    ]);
+                }
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Foto evident berhasil diupload.', 'data' => $merged], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function pendingAcc(Request $request, $id)
+    {
+        $request->validate([
+            'tgl_pending'   => 'required|array|min:1',
+            'tgl_pending.*' => 'required|date',
+            'keterangan'    => 'required|array|min:1',
+            'keterangan.*'  => 'required|string|max:255',
+        ]);
+
+        $firestore = $this->getFirestore();
+
+        foreach ($request->keterangan as $i => $ket) {
+            $tgl = $request->tgl_pending[$i] ?? $request->tgl_pending[0] ?? now()->format('Y-m-d');
+
+            $pendingRef = $firestore->collection('Pending')->add([
+                'pending_keterangan' => $ket,
+                'pending_waktu'      => $tgl,
+                'project_id'         => $id,
+                'created_at'         => new FireTimestamp(new \DateTime())
+            ]);
+        }
+
+        return back()->with('success', 'Project berhasil dipending');
+    }
+
+    public function detailReject($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
+
+        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
+        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
+            ->documents();
+
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('mitra.allproject.reject.detail_reject', [
+            'reject' => [
+                'id' => $id,
+                'nama_project' => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe' => $qeData['type'] ?? null,
+                'foto' => $fotoData,
+                'pending' => $pendingData,
+                'tgl_upload' => $tglUpload,
+                'tgl_pengerjaan' => $tglPengerjaan,
+                'tgl_selesai' => $tglSelesai,
+                'status' => $data['ta_project_status'],
+                'total' => $data['ta_project_total'],
+                'detail' => $detail,
+            ],
+            'totals' => $totals,
+        ]);
+    }
+
+    public function editReject($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Ambil detail project ---
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $detail = [];
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume        = $row['ta_detail_volume'] ?? 0;
+
+            $detail[] = (object)[
+                'id'             => $d->id(),
+                'designator'     => $designatorData['ta_designator'] ?? '',
+                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa'     => $hargaJasa,
+                'volume'         => $volume,
+                'total_material' => $hargaMaterial * $volume,
+                'total_jasa'     => $hargaJasa * $volume,
+            ];
+        }
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // --- Ambil data referensi designator pakai helper ---
+        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+
+        return view('mitra.allproject.reject.edit_reject', [
+            'reject' => [
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'detail'           => $detail,
+            ],
+            'totals'         => $totals,
+            'project_ta_doc' => $project_ta_doc,
+        ]);
+    }
+
+    public function updateReject(Request $request, $id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('mitra.allproject')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update project name
+        $docRef->update([
+            ['path' => 'ta_project_pekerjaan', 'value' => $request->nama_project],
+        ]);
+
+        // Existing details
+        $existingDetails = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        // Map for existing details
+        $existingMap = [];
+        foreach ($existingDetails as $detail) {
+            $existingMap[$detail->id()] = $detail; // Using document ID as the key
+        }
+
+        // Data from the form
+        $designators = $request->input('designator', []);
+        $volumes = $request->input('volume', []);
+        $detailIds = $request->input('detail_id', []); // Associated detail IDs
+
+        foreach ($designators as $index => $dsg) {
+            $volume = (int)($volumes[$index] ?? 0);
+            $detailId = $detailIds[$index] ?? null;
+
+            // Fetch the designator reference based on user input
+            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+
+            if ($dsg && $volume > 0) {
+                if ($detailId && isset($existingMap[$detailId])) {
+                    // Update existing detail
+                    $detailRef = $existingMap[$detailId];
+
+                    // Update volume
+                    $detailRef->reference()->update([
+                        ['path' => 'ta_detail_volume', 'value' => $volume],
+                    ]);
+
+                    // Update designator if it has changed
+                    if (count($designatorDoc) > 0) {
+                        $detailRef->reference()->update([
+                            ['path' => 'ta_detail_ta_id', 'value' => $designatorDoc[0]->reference()], // Save as reference
+                        ]);
+                    }
+                } else {
+                    // Add new detail if not exists
+                    if (count($designatorDoc) > 0) {
+                        $firestore->collection('Detail_Project_TA')->add([
+                            'ta_detail_all_id' => $docRef,
+                            'ta_detail_ta_id' => $designatorDoc[0]->reference(), // Save as reference
+                            'ta_detail_volume' => $volume,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Update total after changes
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+        $totals = $this->hitungTotal($detailDocs);
+        $docRef->update([['path' => 'ta_project_total', 'value' => $totals['grand']]]);
+
+        return redirect()
+            ->route('mitra.allproject_reject_detail', $id)
+            ->with('success', 'Project berhasil diperbarui');
+    }
+
+    public function updateRevisiReject(Request $request, $id)
+    {
+        try {
+            $firestore = $this->getFirestore();
+
+            // 🔒 Validasi hanya file revisi (tanpa QE dan deskripsi)
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls',
+            ]);
+
+            // 🔹 Ambil dokumen project lama
+            $projectRef = $firestore->collection('All_Project_TA')->document($id);
+            $projectSnap = $projectRef->snapshot();
+
+            if (!$projectSnap->exists()) {
+                return back()->with('error', 'Data project tidak ditemukan.');
+            }
+
+            // Ambil data lama (QE dan deskripsi tetap dipakai)
+            $oldData = $projectSnap->data();
+            $oldQERef = $oldData['ta_project_qe_id'] ?? null;
+            $oldDeskripsi = $oldData['ta_project_deskripsi'] ?? '-';
+            $oldNamaProject = $oldData['ta_project_pekerjaan'] ?? '-';
+
+            // 1️⃣ Jalankan import Excel
+            $rows = Excel::toCollection(new TAImport, $request->file('file'))[0];
+            $import = new TAImport();
+            $import->collection($rows);
+
+            $header = $import->headerData;
+            $details = $import->detailData;
+
+            // 2️⃣ Hapus semua detail lama dari project ini
+            $detailDocs = $firestore->collection('Detail_Project_TA')
+                ->where('ta_detail_all_id', '=', $projectRef)
+                ->documents();
+
+            foreach ($detailDocs as $detail) {
+                if ($detail->exists()) {
+                    $firestore->collection('Detail_Project_TA')->document($detail->id())->delete();
+                }
+            }
+
+            // 3️⃣ Tambahkan ulang detail baru dari file revisi
+            $dataProjectCollection = $firestore->collection('Data_Project_TA');
+            $totalMaterial = 0;
+            $totalJasa = 0;
+
+            foreach ($details as $detail) {
+                $designator = $detail['designator'];
+                $volume = (float)$detail['volume'];
+
+                // 🔍 Cari designator di Data_Project_TA
+                $dataTA = $dataProjectCollection->where('ta_designator', '=', $designator)->documents();
+                $dataRef = null;
+                $hargaMaterial = 0;
+                $hargaJasa = 0;
+
+                foreach ($dataTA as $d) {
+                    if ($d->exists()) {
+                        $dataRef = $dataProjectCollection->document($d->id());
+                        $hargaMaterial = $d->data()['ta_harga_material'] ?? 0;
+                        $hargaJasa = $d->data()['ta_harga_jasa'] ?? 0;
+                        break;
+                    }
+                }
+
+                if (!$dataRef) continue;
+
+                $firestore->collection('Detail_Project_TA')->add([
+                    'ta_detail_all_id' => $projectRef,
+                    'ta_detail_ta_id'  => $dataRef,
+                    'ta_detail_volume' => $volume,
+                ]);
+
+                // Hitung total baru
+                $totalMaterial += $hargaMaterial * $volume;
+                $totalJasa += $hargaJasa * $volume;
+            }
+
+            $total = $totalMaterial + $totalJasa;
+            $ppn = $total * 0.11;
+            $grandTotal = $total + $ppn;
+
+            // 4️⃣ Update data di All_Project_TA (ganti detail dan total, tapi QE & deskripsi tetap)
+            $projectRef->update([
+                ['path' => 'ta_project_qe_id', 'value' => $oldQERef], // tetap pakai QE lama
+                ['path' => 'ta_project_pekerjaan', 'value' => $header['ta_project_pekerjaan'] ?? $oldNamaProject], // 🔥 ambil dari file revisi jika ada
+                ['path' => 'ta_project_deskripsi', 'value' => $oldDeskripsi], // deskripsi tetap
+                ['path' => 'ta_project_khs', 'value' => $header['ta_project_khs'] ?? $oldData['ta_project_khs'] ?? '-'],
+                ['path' => 'ta_project_pelaksana', 'value' => $header['ta_project_pelaksana'] ?? $oldData['ta_project_pelaksana'] ?? '-'],
+                ['path' => 'ta_project_witel', 'value' => $header['ta_project_witel'] ?? $oldData['ta_project_witel'] ?? '-'],
+                ['path' => 'ta_project_status', 'value' => 'PROCESS'], // status otomatis jadi PROCESS
+                ['path' => 'ta_project_total', 'value' => $grandTotal],
+                ['path' => 'ta_project_waktu_upload', 'value' => Carbon::now()],
+            ]);
+
+            return back()->with('success', 'Revisi berhasil diupload! Data lama diganti kecuali QE & deskripsi (tetap).');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyReject($id, $detailId)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen Detail_Project_TA yang ingin dihapus
+        $detailRef = $firestore->collection('Detail_Project_TA')->document($detailId);
+        $detailDoc = $detailRef->snapshot();
+
+        if (!$detailDoc->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data detail tidak ditemukan.'
+            ], 404);
+        }
+
+        // Hapus dokumen dari Firestore
+        $detailRef->delete();
+
+        // Hitung ulang total project setelah penghapusan
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $totals = $this->hitungTotal($detailDocs);
+
+        // Update total di dokumen induk
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $totals['grand']]
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Material berhasil dihapus.'
+        ]);
+    }
+
+    public function destroyProjectReject($id)
+    {
+        $firestore = $this->getFirestore();
+
+        // Referensi ke dokumen project utama
+        $projectRef = $firestore->collection('All_Project_TA')->document($id);
+        $projectSnap = $projectRef->snapshot();
+
+        if (!$projectSnap->exists()) {
+            return redirect()->back()->with('error', 'Data project tidak ditemukan.');
+        }
+
+        // Ambil semua detail project yang terhubung
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $projectRef)
+            ->documents();
+
+        // Hapus semua detail project
+        foreach ($detailDocs as $detail) {
+            if ($detail->exists()) {
+                $firestore->collection('Detail_Project_TA')->document($detail->id())->delete();
+            }
+        }
+
+        // Hapus data project utama
+        $projectRef->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data project dan seluruh material berhasil dihapus.'
+        ]);
     }
 }

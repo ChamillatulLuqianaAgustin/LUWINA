@@ -102,9 +102,15 @@
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['total_formatted'] }}</td>
                             <td>
-                                <a href="{{ route('mitra.allproject_detail', $project['id']) }}" title="Lihat Detail">
+                                <a href="
+                                    @if ($project['status'] === 'PROCESS') {{ route('mitra.allproject_process_detail', $project['id']) }}
+                                    @elseif ($project['status'] === 'ACC') {{ route('mitra.allproject_acc_detail', $project['id']) }}
+                                    @elseif ($project['status'] === 'REJECT') {{ route('mitra.allproject_reject_detail', $project['id']) }}
+                                    @else {{ route('telkomakses.allproject', $project['id']) }} @endif "
+                                    title="Lihat Detail">
                                     <img src="{{ asset('assets/detail.png') }}" alt="Detail"
                                         style="width:20px;height:20px;">
+                                </a>
                             </td>
                         </tr>
                     @endforeach
@@ -124,8 +130,8 @@
         <div class="modal-content">
             <h3 class="title">Add Project</h3>
 
-            <form class="addProjectForm" id="addProjectForm" action="{{ route('mitra.allproject_create') }}"
-                method="POST" enctype="multipart/form-data">
+            <form class="addProjectForm" id="addProjectForm" action="{{ route('mitra.allproject_create') }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
 
                 <!-- Drop Zone Upload File Excel -->
@@ -334,7 +340,7 @@
         const downloadAllBtn = document.querySelector('.btn-primary-custom');
 
         if (downloadAllBtn) {
-            downloadAllBtn.addEventListener('click', async function (e) {
+            downloadAllBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const downloadUrl = this.href;
 
@@ -581,12 +587,12 @@
 
         /* Bagian Chart */
         /* .charts-row {
-                                        margin-top: 20px;
-                                        display: grid;
-                                        grid-template-columns: 2fr 1fr;
-                                        gap: 18px;
-                                        margin-bottom: 22px;
-                                    } */
+                                                    margin-top: 20px;
+                                                    display: grid;
+                                                    grid-template-columns: 2fr 1fr;
+                                                    gap: 18px;
+                                                    margin-bottom: 22px;
+                                                } */
 
         .charts-row {
             margin-top: 20px;
@@ -610,8 +616,8 @@
         }
 
         /* .card.left {
-                                    height: 420px;
-                                } */
+                                                height: 420px;
+                                            } */
 
         .card.left {
             display: flex;
@@ -621,11 +627,11 @@
         }
 
         /* .right-column {
-                                display: flex;
-                                flex-direction: column;
-                                gap: 18px;
-                                height: 420px;
-                            } */
+                                            display: flex;
+                                            flex-direction: column;
+                                            gap: 18px;
+                                            height: 420px;
+                                        } */
 
         .right-column {
             display: flex;
@@ -637,9 +643,9 @@
         }
 
         /* .right-column .card {
-                            flex: 1;
-                            padding: 12px;
-                        } */
+                                        flex: 1;
+                                        padding: 12px;
+                                    } */
 
         .right-column .card {
             flex: 1;
@@ -656,10 +662,10 @@
         }
 
         /* .chart-wrap {
-                        flex: 1;
-                        min-height: 0;
-                        display: flex;
-                    } */
+                                    flex: 1;
+                                    min-height: 0;
+                                    display: flex;
+                                } */
 
         .chart-wrap {
             flex-grow: 1;
@@ -670,10 +676,10 @@
         }
 
         /* .chart-wrap canvas {
-                    width: 100% !important;
-                    height: 100% !important;
-                    display: block;
-                } */
+                                width: 100% !important;
+                                height: 100% !important;
+                                display: block;
+                            } */
 
         .chart-wrap canvas {
             width: 100% !important;

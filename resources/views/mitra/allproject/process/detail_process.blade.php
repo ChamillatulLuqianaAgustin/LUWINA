@@ -23,8 +23,8 @@
         <div class="table-wrapper">
             <!-- Header Nama Project -->
             <div class="project-header">
-                <span class="project-title">{{ $allproject['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="{{ route('mitra.allproject_edit', $allproject['id']) }}" class="edit-project">Edit Project</a>
+                <span class="project-title">{{ $process['nama_project'] ?? 'Nama project belum ada' }}</span>
+                <a href="{{ route('mitra.allproject_process_edit', $process['id']) }}" class="edit-project">Edit Project</a>
             </div>
 
             <!-- Tabel Detail -->
@@ -46,7 +46,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($allproject['detail'] ?? [] as $index => $item)
+                        @foreach ($process['detail'] ?? [] as $index => $item)
+                            {{-- @dd($item) --}}
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $item->designator }}</td>
@@ -59,14 +60,13 @@
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
                                 <td>
                                     <form
-                                        action="{{ route('mitra.allproject_destroy', ['id' => $allproject['id'], 'detailId' => $item->id]) }}"
-                                        method="POST" class="form-delete-material">
+                                        action="{{ route('mitra.allproject_process_destroy', ['id' => $process['id'], 'detailId' => $item->id]) }}"
+                                        method="POST"
+                                        class="form-delete-material">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                            style="border:none;background:none;padding:0;cursor:pointer;">
-                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete"
-                                                style="width:20px;height:20px;">
+                                        <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
                                         </button>
                                     </form>
                                 </td>
@@ -75,32 +75,33 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="7" class="text-end">MATERIAL</th>
+                            <th colspan="7" class="text-end">Material</th>
                             <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">JASA</th>
+                            <th colspan="7" class="text-end">Jasa</th>
                             <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL</th>
+                            <th colspan="7" class="text-end">Total</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">PPN</th>
+                            <th colspan="7" class="text-end">PPN (11%)</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
+                            <th colspan="7" class="text-end">Total Setelah PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
                         </tr>
                     </tfoot>
                 </table>
             </div>
         </div>
+
         <!-- Tombol Delete Data Project -->
         <div id="deleteProject" style="margin-top: 20px; text-align: left;">
-            <form action="{{ route('mitra.allproject_destroy_project', $allproject['id']) }}" method="POST"
+            <form action="{{ route('mitra.allproject_process_destroy_project', $process['id']) }}" method="POST"
                 class="form-delete-project">
                 @csrf
                 @method('DELETE')
@@ -111,157 +112,140 @@
                 </button>
             </form>
         </div>
-    </div>
 
-    <style>
-        :root {
-            --blue: #133995;
-        }
+        <style>
+            :root {
+                --blue: #133995;
+            }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
+            body {
+                font-family: 'Poppins', sans-serif;
+            }
 
-        .page {
-            padding: 20px;
-        }
+            .page {
+                padding: 20px;
+            }
 
-        .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
+            .action-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
 
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-        }
+            .btn-back {
+                background: var(--blue);
+                color: white;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+            }
 
-        .btn-back {
-            background: var(--blue);
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-        }
+            .btn-back:hover {
+                background-color: #fff;
+                color: #133995 !important;
+                border: 1px solid #CFD0D2;
+                text-decoration: none;
+            }
 
-        .btn-back:hover {
-            background-color: #fff;
-            color: #133995 !important;
-            border: 1px solid #CFD0D2;
-            text-decoration: none;
-        }
+            .table-wrapper {
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                overflow: hidden;
+                margin-top: 16px;
+            }
 
-        .btn-action {
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-        }
+            .project-header {
+                background: #EBEBEB;
+                padding: 12px 16px;
+                font-size: 18px;
+                font-weight: 500;
+                border-bottom: 1px solid #ccc;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
 
-        .table-wrapper {
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 16px;
-        }
+            .project-title {
+                color: #595961;
+            }
 
-        .project-header {
-            background: #EBEBEB;
-            padding: 12px 16px;
-            font-size: 18px;
-            font-weight: 500;
-            border-bottom: 1px solid #ccc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+            .edit-project {
+                font-size: 14px;
+                font-weight: 500;
+                color: #133995;
+                text-decoration: none;
+                cursor: pointer;
+            }
 
-        .project-title {
-            color: #595961;
-        }
+            .edit-project:hover {
+                text-decoration: underline;
+                color: #133995;
+            }
 
-        .edit-project {
-            font-size: 14px;
-            font-weight: 500;
-            color: #133995;
-            text-decoration: none;
-            cursor: pointer;
-        }
+            .table-responsive {
+                overflow-x: auto;
+            }
 
-        .edit-project:hover {
-            text-decoration: underline;
-            color: #133995;
-        }
+            #data-table {
+                border-collapse: collapse;
+                width: 100%;
+                border-radius: 10px;
+                overflow: hidden;
+                border-radius: 0;
+                font-family: 'Poppins', sans-serif;
+                font-weight: normal !important;
+                table-layout: fixed;
+            }
 
-        .table-responsive {
-            overflow-x: auto;
-        }
+            #data-table th,
+            #data-table td {
+                border: 1px solid #ccc;
+                padding: 10px;
+                text-align: center;
+                overflow: hidden;
+                white-space: nowrap;
+            }
 
-        #data-table {
-            border-collapse: collapse;
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            border-radius: 0;
-            font-family: 'Poppins', sans-serif;
-            font-weight: normal !important;
-            table-layout: fixed;
-        }
+            #data-table th {
+                background-color: var(--blue);
+                color: white;
+                height: 20px;
+                font-family: 'Poppins', sans-serif;
+                font-weight: 600 !important;
+            }
 
-        #data-table th,
-        #data-table td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-            overflow: hidden;
-            white-space: nowrap;
-        }
+            #data-table tfoot th {
+                background-color: #EDF7FF;
+                color: #000;
+                font-weight: 700 !important;
+                text-align: center;
+                border: none !important;
+            }
 
-        #data-table th {
-            background-color: var(--blue);
-            color: white;
-            height: 20px;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600 !important;
-        }
+            #data-table td {
+                overflow-x: auto;
+                overflow-y: hidden;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
 
-        #data-table tfoot th {
-            background-color: #EDF7FF;
-            color: #000;
-            font-weight: 700 !important;
-            text-align: center;
-            border: none !important;
-        }
+            #data-table td::-webkit-scrollbar {
+                display: none;
+            }
 
-        #data-table td {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+            #data-table td:first-child,
+            #data-table th:first-child {
+                width: 50px;
+            }
+        </style>
 
-        #data-table td::-webkit-scrollbar {
-            display: none;
-        }
+    @endsection
 
-        #data-table td:first-child,
-        #data-table th:first-child {
-            width: 50px;
-        }
-    </style>
-
-@endsection
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     document.addEventListener("DOMContentLoaded", () => {
 

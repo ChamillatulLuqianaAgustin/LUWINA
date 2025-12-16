@@ -133,13 +133,42 @@ Route::prefix('mitra')->group(function () {
     // all project
     Route::get('/allproject', [MAllProjectController::class, 'index'])->name('mitra.allproject');
     Route::post('/allproject', [MAllProjectController::class, 'create'])->name('mitra.allproject_create');
-    Route::get('/allproject/detail/{id}', [MAllProjectController::class, 'detail'])->name('mitra.allproject_detail');
-    Route::delete('/allproject/detail/{id}/destroy/{detailId}', [MAllProjectController::class, 'destroy'])
-        ->name('mitra.allproject_destroy');
-    Route::get('/allproject/edit/{id}', [MAllProjectController::class, 'edit'])->name('mitra.allproject_edit');
-    Route::put('/allproject/update/{id}', [MAllProjectController::class, 'update'])->name('mitra.allproject_update');
-    Route::delete('/allproject/{id}/destroy', [MAllProjectController::class, 'destroyProject'])
-        ->name('mitra.allproject_destroy_project');
+
+
+    Route::get('/allproject/process/detail/{id}', [MAllProjectController::class, 'detailProcess'])->name('mitra.allproject_process_detail');
+    Route::delete('/allproject/process/detail/{id}/destroy/{detailId}', [MAllProjectController::class, 'destroyProcess'])
+        ->name('mitra.allproject_process_destroy');
+    Route::get('/allproject/process/edit/{id}', [MAllProjectController::class, 'editProcess'])->name('mitra.allproject_process_edit');
+    Route::put('/allproject/process/update/{id}', [MAllProjectController::class, 'updateProcess'])->name('mitra.allproject_process_update');
+    Route::delete('/allproject/process/{id}/destroy', [MAllProjectController::class, 'destroyProjectProcess'])
+        ->name('mitra.allproject_process_destroy_project');
+    Route::post('/allproject/process/{id}/acc', [MAllProjectController::class, 'accProcess'])->name('mitra.allproject_process.acc');
+    Route::post('/allproject/process/{id}/reject', [MAllProjectController::class, 'rejectProcess'])->name('mitra.allproject_process.reject');
+
+
+    Route::get('/allproject/acc/detail/{id}', [MAllProjectController::class, 'detailAcc'])->name('mitra.allproject_acc_detail');
+    Route::delete('/allproject/acc/detail/{id}/destroy/{detailId}', [MAllProjectController::class, 'destroyAcc'])
+        ->name('mitra.allproject_acc_destroy');
+    Route::get('/allproject/acc/edit/{id}', [MAllProjectController::class, 'editAcc'])->name('mitra.allproject_acc_edit');
+    Route::put('/allproject/acc/update/{id}', [MAllProjectController::class, 'updateAcc'])->name('mitra.allproject_acc_update');
+    Route::delete('/allproject/acc/{id}/destroy', [MAllProjectController::class, 'destroyProjectAcc'])
+        ->name('mitra.allproject_acc_destroy_project');
+    Route::post('/allproject/acc/{id}/kerjakan', [MAllProjectController::class, 'kerjakanAcc'])->name('mitra.allproject_acc.kerjakan');
+    Route::post('/allproject/acc/{id}/done', [MAllProjectController::class, 'storeFotoAcc'])->name('mitra.allproject_acc.storeFoto');
+    Route::post('/allproject/acc/{id}/pending', [MAllProjectController::class, 'pendingAcc'])->name('mitra.allproject_acc.pending');
+
+
+    Route::get('/allproject/reject/detail/{id}', [MAllProjectController::class, 'detailReject'])->name('mitra.allproject_reject_detail');
+    Route::delete('/allproject/reject/detail/{id}/destroy/{detailId}', [MAllProjectController::class, 'destroyReject'])
+        ->name('mitra.allproject_reject_destroy');
+    Route::get('/allproject/reject/edit/{id}', [MAllProjectController::class, 'editReject'])->name('mitra.allproject_reject_edit');
+    Route::put('/allproject/reject/update/{id}', [MAllProjectController::class, 'updateReject'])->name('mitra.allproject_reject_update');
+    Route::delete('/allproject/reject/{id}/destroy', [MAllProjectController::class, 'destroyProjectReject'])
+        ->name('mitra.allproject_reject_destroy_project');
+    Route::post('/allproject/reject/{id}/upload-revisi', [MAllProjectController::class, 'updateRevisiReject'])
+        ->name('mitra.allproject_reject_upload_revisi');
+
+
     Route::get('/allproject/download', [MAllProjectController::class, 'downloadPDF'])->name('mitra.allproject_download');
     // Process
     Route::get('/process', [MProcessController::class, 'index'])->name('mitra.process');
