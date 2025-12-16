@@ -106,18 +106,11 @@ Route::prefix('superadmin')->group(function () {
 Route::prefix('telkomakses')->group(function () {
     // all project
     Route::get('/allproject', [TAAllProjectController::class, 'index'])->name('telkomakses.allproject');
-    // Route::get('/allproject/detail/{id}', [TAAllProjectController::class, 'detail'])->name('telkomakses.allproject_detail');
     Route::get('/allproject/download', [TAAllProjectController::class, 'downloadPDF'])->name('telkomakses.allproject_download');
-
-
     Route::get('/allproject/process/detail/{id}', [TAAllProjectController::class, 'detailProcess'])->name('telkomakses.allproject_process_detail');
     Route::post('/allproject/process/{id}/acc', [TAAllProjectController::class, 'accProcess'])->name('telkomakses.allproject_process.acc');
     Route::post('/allproject/process/{id}/reject', [TAAllProjectController::class, 'rejectProcess'])->name('telkomakses.allproject_process.reject');
-
-
     Route::get('/allproject/acc/detail/{id}', [TAAllProjectController::class, 'detailAcc'])->name('telkomakses.allproject_acc_detail');
-
-
     Route::get('/allproject/reject/detail/{id}', [TAAllProjectController::class, 'detailReject'])->name('telkomakses.allproject_reject_detail');
     // Process
     Route::get('/process', [TAProcessController::class, 'index'])->name('telkomakses.process');
