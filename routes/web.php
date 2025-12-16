@@ -37,13 +37,42 @@ Route::prefix('superadmin')->group(function () {
     // all project
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
     Route::post('/allproject', [AllProjectController::class, 'create'])->name('superadmin.allproject_create');
-    Route::get('/allproject/detail/{id}', [AllProjectController::class, 'detail'])->name('superadmin.allproject_detail');
-    Route::delete('/allproject/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroy'])
-        ->name('superadmin.allproject_destroy');
-    Route::get('/allproject/edit/{id}', [AllProjectController::class, 'edit'])->name('superadmin.allproject_edit');
-    Route::put('/allproject/update/{id}', [AllProjectController::class, 'update'])->name('superadmin.allproject_update');
-    Route::delete('/allproject/{id}/destroy', [AllProjectController::class, 'destroyProject'])
-        ->name('superadmin.allproject_destroy_project');
+
+
+    Route::get('/allproject/process/detail/{id}', [AllProjectController::class, 'detailProcess'])->name('superadmin.allproject_process_detail');
+    Route::delete('/allproject/process/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyProcess'])
+        ->name('superadmin.allproject_process_destroy');
+    Route::get('/allproject/process/edit/{id}', [AllProjectController::class, 'editProcess'])->name('superadmin.allproject_process_edit');
+    Route::put('/allproject/process/update/{id}', [AllProjectController::class, 'updateProcess'])->name('superadmin.allproject_process_update');
+    Route::delete('/allproject/process/{id}/destroy', [AllProjectController::class, 'destroyProjectProcess'])
+        ->name('superadmin.allproject_process_destroy_project');
+    Route::post('/allproject/process/{id}/acc', [AllProjectController::class, 'accProcess'])->name('superadmin.allproject_process.acc');
+    Route::post('/allproject/process/{id}/reject', [AllProjectController::class, 'rejectProcess'])->name('superadmin.allproject_process.reject');
+
+
+    Route::get('/allproject/acc/detail/{id}', [AllProjectController::class, 'detailAcc'])->name('superadmin.allproject_acc_detail');
+    Route::delete('/allproject/acc/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyAcc'])
+        ->name('superadmin.allproject_acc_destroy');
+    Route::get('/allproject/acc/edit/{id}', [AllProjectController::class, 'editAcc'])->name('superadmin.allproject_acc_edit');
+    Route::put('/allproject/acc/update/{id}', [AllProjectController::class, 'updateAcc'])->name('superadmin.allproject_acc_update');
+    Route::delete('/allproject/acc/{id}/destroy', [AllProjectController::class, 'destroyProjectAcc'])
+        ->name('superadmin.allproject_acc_destroy_project');
+    Route::post('/allproject/acc/{id}/kerjakan', [AllProjectController::class, 'kerjakanAcc'])->name('superadmin.allproject.acc.kerjakan');
+    Route::post('/allproject/acc/{id}/done', [AllProjectController::class, 'storeFotoAcc'])->name('superadmin.allproject.acc.storeFoto');
+    Route::post('/allproject/acc/{id}/pending', [AllProjectController::class, 'pendingAcc'])->name('superadmin.allproject.acc.pending');
+
+
+    Route::get('/allproject/reject/detail/{id}', [AllProjectController::class, 'detailReject'])->name('superadmin.allproject_reject_detail');
+    Route::delete('/allproject/reject/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyReject'])
+        ->name('superadmin.allproject_reject_destroy');
+    Route::get('/allproject/reject/edit/{id}', [AllProjectController::class, 'editReject'])->name('superadmin.allproject_reject_edit');
+    Route::put('/allproject/reject/update/{id}', [AllProjectController::class, 'updateReject'])->name('superadmin.allproject_reject_update');
+    Route::delete('/allproject/reject/{id}/destroy', [AllProjectController::class, 'destroyProjectReject'])
+        ->name('superadmin.allproject_reject_destroy_project');
+    Route::post('/allproject/reject/{id}/upload-revisi', [AllProjectController::class, 'updateRevisiReject'])
+        ->name('superadmin.allproject_reject_upload_revisi');
+
+
     Route::get('/allproject/download', [AllProjectController::class, 'downloadPDF'])->name('superadmin.allproject_download');
     // Process
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');

@@ -650,19 +650,19 @@
             }
 
             /* .btn-add,
-                                            .btn-remove {
-                                                display: flex;
-                                                justify-content: center;
-                                                align-items: center;
-                                                font-weight: bold;
-                                                font-size: 16px;
-                                                border-radius: 50%;
-                                                width: 36px;
-                                                height: 36px;
-                                                cursor: pointer;
-                                                border: none;
-                                                transition: 0.2s;
-                                            } */
+                                                .btn-remove {
+                                                    display: flex;
+                                                    justify-content: center;
+                                                    align-items: center;
+                                                    font-weight: bold;
+                                                    font-size: 16px;
+                                                    border-radius: 50%;
+                                                    width: 36px;
+                                                    height: 36px;
+                                                    cursor: pointer;
+                                                    border: none;
+                                                    transition: 0.2s;
+                                                } */
 
             .btn-add {
                 background: #133995;
