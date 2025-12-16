@@ -14,7 +14,7 @@
 
     <div class="page">
         <!-- Add project -->
-                <div class="top-controls right-only">
+        <div class="top-controls right-only">
             <div class="controls-right">
                 <!-- Input Tanggal -->
                 <div class="date-group">
@@ -101,9 +101,15 @@
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['total_formatted'] }}</td>
                             <td>
-                                <a href="{{ route('telkomakses.allproject_detail', $project['id']) }}" title="Lihat Detail">
+                                <a href="
+                                    @if ($project['status'] === 'PROCESS') {{ route('telkomakses.allproject_process_detail', $project['id']) }}
+                                    @elseif ($project['status'] === 'ACC') {{ route('telkomakses.allproject_acc_detail', $project['id']) }}
+                                    @elseif ($project['status'] === 'REJECT') {{ route('telkomakses.allproject_reject_detail', $project['id']) }}
+                                    @else {{ route('telkomakses.allproject', $project['id']) }} @endif "
+                                    title="Lihat Detail">
                                     <img src="{{ asset('assets/detail.png') }}" alt="Detail"
                                         style="width:20px;height:20px;">
+                                </a>
                             </td>
                         </tr>
                     @endforeach
@@ -163,7 +169,7 @@
         const downloadAllBtn = document.querySelector('.btn-primary-custom');
 
         if (downloadAllBtn) {
-            downloadAllBtn.addEventListener('click', async function (e) {
+            downloadAllBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const downloadUrl = this.href;
 
@@ -338,7 +344,8 @@
 
         .top-controls.right-only {
             display: flex;
-            justify-content: flex-end; /* dorong ke kanan */
+            justify-content: flex-end;
+            /* dorong ke kanan */
             align-items: flex-end;
             margin-top: 20px;
             margin-bottom: 18px;
@@ -474,7 +481,7 @@
             justify-content: center;
             min-height: 0;
         }
-        
+
         .chart-wrap canvas {
             width: 100% !important;
             height: 100% !important;

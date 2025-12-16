@@ -37,8 +37,6 @@ Route::prefix('superadmin')->group(function () {
     // all project
     Route::get('/allproject', [AllProjectController::class, 'index'])->name('superadmin.allproject');
     Route::post('/allproject', [AllProjectController::class, 'create'])->name('superadmin.allproject_create');
-
-
     Route::get('/allproject/process/detail/{id}', [AllProjectController::class, 'detailProcess'])->name('superadmin.allproject_process_detail');
     Route::delete('/allproject/process/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyProcess'])
         ->name('superadmin.allproject_process_destroy');
@@ -48,8 +46,6 @@ Route::prefix('superadmin')->group(function () {
         ->name('superadmin.allproject_process_destroy_project');
     Route::post('/allproject/process/{id}/acc', [AllProjectController::class, 'accProcess'])->name('superadmin.allproject_process.acc');
     Route::post('/allproject/process/{id}/reject', [AllProjectController::class, 'rejectProcess'])->name('superadmin.allproject_process.reject');
-
-
     Route::get('/allproject/acc/detail/{id}', [AllProjectController::class, 'detailAcc'])->name('superadmin.allproject_acc_detail');
     Route::delete('/allproject/acc/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyAcc'])
         ->name('superadmin.allproject_acc_destroy');
@@ -60,8 +56,6 @@ Route::prefix('superadmin')->group(function () {
     Route::post('/allproject/acc/{id}/kerjakan', [AllProjectController::class, 'kerjakanAcc'])->name('superadmin.allproject.acc.kerjakan');
     Route::post('/allproject/acc/{id}/done', [AllProjectController::class, 'storeFotoAcc'])->name('superadmin.allproject.acc.storeFoto');
     Route::post('/allproject/acc/{id}/pending', [AllProjectController::class, 'pendingAcc'])->name('superadmin.allproject.acc.pending');
-
-
     Route::get('/allproject/reject/detail/{id}', [AllProjectController::class, 'detailReject'])->name('superadmin.allproject_reject_detail');
     Route::delete('/allproject/reject/detail/{id}/destroy/{detailId}', [AllProjectController::class, 'destroyReject'])
         ->name('superadmin.allproject_reject_destroy');
@@ -71,8 +65,6 @@ Route::prefix('superadmin')->group(function () {
         ->name('superadmin.allproject_reject_destroy_project');
     Route::post('/allproject/reject/{id}/upload-revisi', [AllProjectController::class, 'updateRevisiReject'])
         ->name('superadmin.allproject_reject_upload_revisi');
-
-
     Route::get('/allproject/download', [AllProjectController::class, 'downloadPDF'])->name('superadmin.allproject_download');
     // Process
     Route::get('/process', [ProcessController::class, 'index'])->name('superadmin.process');
@@ -114,8 +106,19 @@ Route::prefix('superadmin')->group(function () {
 Route::prefix('telkomakses')->group(function () {
     // all project
     Route::get('/allproject', [TAAllProjectController::class, 'index'])->name('telkomakses.allproject');
-    Route::get('/allproject/detail/{id}', [TAAllProjectController::class, 'detail'])->name('telkomakses.allproject_detail');
+    // Route::get('/allproject/detail/{id}', [TAAllProjectController::class, 'detail'])->name('telkomakses.allproject_detail');
     Route::get('/allproject/download', [TAAllProjectController::class, 'downloadPDF'])->name('telkomakses.allproject_download');
+
+
+    Route::get('/allproject/process/detail/{id}', [TAAllProjectController::class, 'detailProcess'])->name('telkomakses.allproject_process_detail');
+    Route::post('/allproject/process/{id}/acc', [TAAllProjectController::class, 'accProcess'])->name('telkomakses.allproject_process.acc');
+    Route::post('/allproject/process/{id}/reject', [TAAllProjectController::class, 'rejectProcess'])->name('telkomakses.allproject_process.reject');
+
+
+    Route::get('/allproject/acc/detail/{id}', [TAAllProjectController::class, 'detailAcc'])->name('telkomakses.allproject_acc_detail');
+
+
+    Route::get('/allproject/reject/detail/{id}', [TAAllProjectController::class, 'detailReject'])->name('telkomakses.allproject_reject_detail');
     // Process
     Route::get('/process', [TAProcessController::class, 'index'])->name('telkomakses.process');
     Route::get('/process/detail/{id}', [TAProcessController::class, 'detail'])->name('telkomakses.process_detail');

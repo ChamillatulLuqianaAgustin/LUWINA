@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Cache;
+use Google\Cloud\Core\Timestamp as FireTimestamp;
+use Cloudinary\Cloudinary;
 
 class AllProjectController extends Controller
 {
@@ -408,5 +410,378 @@ class AllProjectController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('All_Project_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function detailProcess($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('telkomakses.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Ambil data project utama pakai getReferenceData() ---
+        $fotoData    = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData      = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
+
+        $tglUpload     = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
+        $tglSelesai    = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+
+        // --- Ambil detail ---
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef)
+            ->documents();
+
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('telkom_akses.allproject.process.detail_process', [
+            'process' => [
+                'id'               => $id,
+                'nama_project'     => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe'               => $qeData['type'] ?? null,
+                'foto'             => $fotoData,
+                'pending'          => $pendingData,
+                'tgl_upload'       => $tglUpload,
+                'tgl_pengerjaan'   => $tglPengerjaan,
+                'tgl_selesai'      => $tglSelesai,
+                'status'           => $data['ta_project_status'],
+                'total'            => $data['ta_project_total'],
+                'detail'           => $detail,
+            ],
+            'totals' => $totals,
+        ]);
+    }
+
+    public function accProcess($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('telkomakses.allproject')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update status jadi ACC
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'ACC'],
+        ]);
+
+        return redirect()->route('telkomakses.allproject_process.acc')->with('success', 'Project berhasil di-ACC');
+    }
+
+    public function rejectProcess($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+
+        $doc = $docRef->snapshot();
+        if (!$doc->exists()) {
+            return redirect()->route('telkomakses.process')->with('error', 'Project tidak ditemukan');
+        }
+
+        // Update status jadi REJECT
+        $docRef->update([
+            ['path' => 'ta_project_status', 'value' => 'REJECT'],
+        ]);
+
+        return redirect()->route('telkomakses.allproject_process.reject')->with('success', 'Project berhasil di-Reject');
+    }
+
+    public function detailAcc($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('telkomakses.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+
+        // --- Foto evident (ambil semua dokumen by project_id)
+        $fotoDocs = $firestore->collection('Foto_Evident')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        $fotoData = [
+            'sebelum' => [],
+            'proses' => [],
+            'sesudah' => [],
+        ];
+
+        foreach ($fotoDocs as $docFoto) {
+            if ($docFoto->exists()) {
+                $dataFoto = $docFoto->data()['foto_path'] ?? [];
+
+                if (is_object($dataFoto)) {
+                    $dataFoto = json_decode(json_encode($dataFoto), true);
+                }
+
+                foreach (['sebelum', 'proses', 'sesudah'] as $step) {
+                    if (!empty($dataFoto[$step])) {
+                        $fotoData[$step] = array_merge($fotoData[$step], $dataFoto[$step]);
+                    }
+                }
+            }
+            // dd($docFoto->data());
+        }
+
+        $acc['foto'] = $fotoData;
+
+        // --- Pending (ambil semua dokumen by project_id)
+        $pendingDocs = $firestore->collection('Pending')
+            ->where('project_id', '=', $id)->documents();
+        $pendingData = [];
+        foreach ($pendingDocs as $pd) {
+            if (!$pd->exists()) continue;
+            $dataPd = $pd->data();
+            $kets = $dataPd['pending_keterangan'] ?? null;
+            $waktus = $dataPd['pending_waktu'] ?? null;
+
+            if (is_array($kets)) {
+                foreach ($kets as $i => $ket) {
+                    $pendingData[] = [
+                        'tgl_pending' => is_array($waktus) ? ($waktus[$i] ?? $waktus[0] ?? '-') : ($waktus ?? '-'),
+                        'keterangan'  => $ket ?? '-',
+                    ];
+                }
+            } else {
+                $pendingData[] = [
+                    'tgl_pending' => $waktus ?? '-',
+                    'keterangan'  => $kets ?? '-',
+                ];
+            }
+        }
+
+        // Fetch detail from Detail_Project_TA
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
+            ->documents();
+
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('telkom_akses.allproject.acc.detail_acc', [
+            'acc' => [
+                'id'              => $id,
+                'nama_project'    => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe'              => $data['ta_project_qe_id'] ?? null,
+                'foto'            => $fotoData,
+                'pending'         => $pendingData,
+                'tgl_upload'      => $this->formatDate($data['ta_project_waktu_upload'] ?? null),
+                'tgl_pengerjaan'  => $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null),
+                'tgl_selesai'     => $this->formatDate($data['ta_project_waktu_selesai'] ?? null),
+                'status'          => $data['ta_project_status'],
+                'total'           => $data['ta_project_total'],
+                'detail'          => $detail,
+            ],
+            'totals' => $totals,
+        ]);
+    }
+
+    public function detailReject($id)
+    {
+        $firestore = $this->getFirestore();
+        $docRef = $firestore->collection('All_Project_TA')->document($id);
+        $doc = $docRef->snapshot();
+
+        if (!$doc->exists()) {
+            return redirect()->route('telkomakses.allproject')->with('error', 'Data project tidak ditemukan');
+        }
+
+        $data = $doc->data();
+        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
+        $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
+
+        $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
+        $tglPengerjaan = $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null);
+        $tglSelesai = $this->formatDate($data['ta_project_waktu_selesai'] ?? null);
+
+        $detailDocs = $firestore->collection('Detail_Project_TA')
+            ->where('ta_detail_all_id', '=', $docRef) // filter by project reference
+            ->documents();
+
+        $detail = [];
+        $totalMaterial = 0;
+        $totalJasa = 0;
+
+        foreach ($detailDocs as $d) {
+            if (!$d->exists()) continue;
+
+            $row = $d->data();
+
+            // Fetch data from Data_Project_TA
+            $designatorRef = $row['ta_detail_ta_id'];
+            $designatorData = $this->getReferenceData($designatorRef);
+
+            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            $totalM = $hargaMaterial * $volume;
+            $totalJ = $hargaJasa * $volume;
+
+            $totalMaterial += $totalM;
+            $totalJasa += $totalJ;
+
+            $detail[] = (object)[
+                'id' => $d->id(),
+                'designator' => $designatorData['ta_designator'] ?? '',
+                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'harga_material' => $hargaMaterial,
+                'harga_jasa' => $hargaJasa,
+                'volume' => $volume,
+                'total_material' => $totalM,
+                'total_jasa' => $totalJ,
+            ];
+        }
+
+        $total = $totalMaterial + $totalJasa;
+        $ppn = $total * 0.11;
+        $grand = $total + $ppn;
+
+        // Update project total in Firestore
+        $docRef->update([
+            ['path' => 'ta_project_total', 'value' => $grand],
+        ]);
+
+        $totals = [
+            'material' => $totalMaterial,
+            'jasa' => $totalJasa,
+            'total' => $total,
+            'ppn' => $ppn,
+            'grand' => $grand,
+        ];
+
+        return view('telkom_akses.allproject.reject.detail_reject', [
+            'reject' => [
+                'id' => $id,
+                'nama_project' => $data['ta_project_pekerjaan'],
+                'deskripsi_project' => $data['ta_project_deskripsi'],
+                'qe' => $qeData['type'] ?? null,
+                'foto' => $fotoData,
+                'pending' => $pendingData,
+                'tgl_upload' => $tglUpload,
+                'tgl_pengerjaan' => $tglPengerjaan,
+                'tgl_selesai' => $tglSelesai,
+                'status' => $data['ta_project_status'],
+                'total' => $data['ta_project_total'],
+                'detail' => $detail,
+            ],
+            'totals' => $totals,
+        ]);
     }
 }
