@@ -12,7 +12,7 @@ class UserController extends Controller
     {
         return new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => storage_path('app/firebase/luwina-381dd-firebase-adminsdk-fbsvc-d4615d8138.json'),
+            'keyFilePath' => storage_path('app/firebase/luwina-ta-firebase-adminsdk-fbsvc-e165a7c4f0.json'),
         ]);
     }
 

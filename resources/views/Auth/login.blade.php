@@ -72,8 +72,9 @@
         <img src="{{ asset('assets/luwina_logo.png') }}" alt="Telkom Akses" class="mx-auto w-56 mb-4">
 
         <div class="mt-12">
-            <form action="{{ route('login-proses') }}" method="POST" class="mt-4">
-                @csrf
+            {{-- <form action="{{ route('login-proses') }}" method="POST" class="mt-4"> --}}
+            <form onsubmit="event.preventDefault(); loginFirebase();" class="mt-4">
+                {{-- @csrf --}}
                 <div class="text-left">
                     <div class="relative">
                         <input type="text" name="nik" placeholder="Masukkan username"
@@ -82,9 +83,9 @@
                             <img src="{{ asset('assets/username_logo.png') }}"style="width: 25px; height: 25px;">
                         </span>
                     </div>
-                    @error('nik')
+                    {{-- @error('nik')
                         <small class="text-red-500">{{ $message }}</small>
-                    @enderror
+                    @enderror --}}
                 </div>
 
                 <div class="text-left mt-4">
@@ -100,9 +101,9 @@
                                 style="width: 20px; height: 20px;">
                         </span>
                     </div>
-                    @error('password')
+                    {{-- @error('password')
                         <small class="text-red-500">{{ $message }}</small>
-                    @enderror
+                    @enderror --}}
                 </div>
 
                 <div class="text-left mt-4 flex justify-end">
@@ -128,7 +129,9 @@
             }
         }
     </script>
-
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <!-- jQuery -->
     <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 4 -->
@@ -150,6 +153,71 @@
             });
         </script>
     @endif
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmidPMSQnPi5SbwvEmNLfbfuRhZC-iKQk",
+            authDomain: "luwina-381dd.firebaseapp.com",
+            projectId: "luwina-381dd",
+        };
+
+        // init
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+
+    <script>
+        async function loginFirebase() {
+            const nik = document.querySelector('input[name="nik"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+
+            try {
+                // ambil user dari Firestore
+                const snapshot = await db.collection("User")
+                    .where("user_nik", "==", nik)
+                    .limit(1)
+                    .get();
+
+                if (snapshot.empty) {
+                    Swal.fire("Error", "NIK tidak ditemukan", "error");
+                    return;
+                }
+
+                const userData = snapshot.docs[0].data();
+
+                if (userData.user_password !== password) {
+                    Swal.fire("Error", "Password salah", "error");
+                    return;
+                }
+
+                // ambil role
+                let roleName = "Unknown";
+                if (userData.user_role) {
+                    const roleDoc = await userData.user_role.get();
+                    roleName = roleDoc.data().role;
+                }
+
+                // simpan ke localStorage (pengganti session)
+                localStorage.setItem("user_nama", userData.user_nama);
+                localStorage.setItem("role", roleName);
+
+                // redirect
+                if (roleName === "Super Admin") {
+                    window.location.href = "/superadmin/allproject";
+                } else if (roleName === "Telkom Akses") {
+                    window.location.href = "/telkomakses/allproject";
+                } else if (roleName === "Mitra") {
+                    window.location.href = "/mitra/allproject";
+                } else {
+                    window.location.href = "/";
+                }
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire("Error", "Terjadi kesalahan", "error");
+            }
+        }
+    </script>
 </body>
 
 </html>

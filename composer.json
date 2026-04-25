@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
+        "cloudinary/cloudinary_php": "^3.1",
         "google/cloud-firestore": "^1.53",
         "kreait/laravel-firebase": "^6.1",
         "laravel/framework": "^12.0",

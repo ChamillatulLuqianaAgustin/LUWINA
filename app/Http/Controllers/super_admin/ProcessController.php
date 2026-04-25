@@ -14,7 +14,7 @@ class ProcessController extends Controller
     {
         return new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => storage_path('app/firebase/luwina-381dd-firebase-adminsdk-fbsvc-d4615d8138.json'),
+            'keyFilePath' => storage_path('app/firebase/luwina-ta-firebase-adminsdk-fbsvc-e165a7c4f0.json'),
         ]);
     }
 
@@ -140,30 +140,30 @@ class ProcessController extends Controller
 
     private function fetchProjectTaData()
     {
-        return Cache::remember('project_ta_doc', 3600, function () {
-            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+        return Cache::remember('project_mitra_doc', 3600, function () {
+            $project_mitra_collection = $this->getFirestore()->collection('Data_Project_Mitra')->documents();
 
-            $project_ta_doc = [];
+            $project_mitra_doc = [];
             $uraianOptions = [];
-            foreach ($project_ta_collection as $docd) {
+            foreach ($project_mitra_collection as $docd) {
                 if ($docd->exists()) {
-                    $project_ta_doc[] = [
+                    $project_mitra_doc[] = [
                         'id' => $docd->id(),
-                        'designator' => $docd->data()['ta_designator'],
-                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
-                        'satuan' => $docd->data()['ta_satuan'],
-                        'harga_material' => $docd->data()['ta_harga_material'],
-                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                        'designator' => $docd->data()['mitra_designator'],
+                        'uraian' => $docd->data()['mitra_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['mitra_satuan'],
+                        'harga_material' => $docd->data()['mitra_harga_material'],
+                        'harga_jasa' => $docd->data()['mitra_harga_jasa'],
                     ];
-                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                    $uraianOptions[] = $docd->data()['mitra_uraian_pekerjaan'];
                 }
             }
 
             $uraianOptions = array_values(array_unique($uraianOptions));
             sort($uraianOptions);
-            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+            usort($project_mitra_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-            return [$project_ta_doc, $uraianOptions];
+            return [$project_mitra_doc, $uraianOptions];
         });
     }
 
@@ -188,20 +188,20 @@ class ProcessController extends Controller
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
             $volume         = $row['ta_detail_volume'] ?? 0;
 
-            $totalMaterial += ($designatorData['ta_harga_material'] ?? 0) * $volume;
-            $totalJasa     += ($designatorData['ta_harga_jasa'] ?? 0) * $volume;
+            $totalMaterial += ($designatorData['mitra_harga_material'] ?? 0) * $volume;
+            $totalJasa     += ($designatorData['mitra_harga_jasa'] ?? 0) * $volume;
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn   = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn   = $total * 0.11;
+        // $grand = $total + $ppn;
 
         return [
             'material' => $totalMaterial,
             'jasa'     => $totalJasa,
             'total'    => $total,
-            'ppn'      => $ppn,
-            'grand'    => $grand,
+            // 'ppn'      => $ppn,
+            // 'grand'    => $grand,
         ];
     }
 
@@ -218,7 +218,7 @@ class ProcessController extends Controller
         $data = $doc->data();
 
         // --- Ambil data project utama pakai getReferenceData() ---
-        $fotoData    = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $fotoData = $data['ta_project_foto'] ?? [];
         $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
         $qeData      = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
@@ -240,12 +240,12 @@ class ProcessController extends Controller
 
             $row = $d->data();
 
-            // Fetch data from Data_Project_TA
+            // Fetch data from Data_Project_Mitra
             $designatorRef = $row['ta_detail_ta_id'];
             $designatorData = $this->getReferenceData($designatorRef);
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume = $row['ta_detail_volume'] ?? 0;
 
             $totalM = $hargaMaterial * $volume;
@@ -256,9 +256,9 @@ class ProcessController extends Controller
 
             $detail[] = (object)[
                 'id' => $d->id(),
-                'designator' => $designatorData['ta_designator'] ?? '',
-                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'designator' => $designatorData['mitra_designator'] ?? '',
+                'uraian' => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa' => $hargaJasa,
                 'volume' => $volume,
@@ -268,20 +268,20 @@ class ProcessController extends Controller
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn = $total * 0.11;
+        // $grand = $total + $ppn;
 
         // Update project total in Firestore
         $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $grand],
+            ['path' => 'ta_project_total', 'value' => $total],
         ]);
 
         $totals = [
             'material' => $totalMaterial,
             'jasa' => $totalJasa,
             'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
+            // 'ppn' => $ppn,
+            // 'grand' => $grand,
         ];
 
         return view('super_admin.process.detail_process', [
@@ -327,15 +327,15 @@ class ProcessController extends Controller
             $row = $d->data();
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume        = $row['ta_detail_volume'] ?? 0;
 
             $detail[] = (object)[
                 'id'             => $d->id(),
-                'designator'     => $designatorData['ta_designator'] ?? '',
-                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'designator'     => $designatorData['mitra_designator'] ?? '',
+                'uraian'         => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa'     => $hargaJasa,
                 'volume'         => $volume,
@@ -347,7 +347,7 @@ class ProcessController extends Controller
         $totals = $this->hitungTotal($detailDocs);
 
         // --- Ambil data referensi designator pakai helper ---
-        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+        [$project_mitra_doc, $uraianOptions] = $this->fetchProjectTaData();
 
         return view('super_admin.process.edit_process', [
             'process' => [
@@ -357,7 +357,7 @@ class ProcessController extends Controller
                 'detail'           => $detail,
             ],
             'totals'         => $totals,
-            'project_ta_doc' => $project_ta_doc,
+            'project_mitra_doc' => $project_mitra_doc,
         ]);
     }
 
@@ -397,7 +397,7 @@ class ProcessController extends Controller
             $detailId = $detailIds[$index] ?? null;
 
             // Fetch the designator reference based on user input
-            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+            $designatorDoc = $firestore->collection('Data_Project_Mitra')->where('mitra_designator', '=', $dsg)->documents()->rows();
 
             if ($dsg && $volume > 0) {
                 if ($detailId && isset($existingMap[$detailId])) {

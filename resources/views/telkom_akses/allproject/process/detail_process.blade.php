@@ -20,8 +20,8 @@
 
             <!-- Tombol ACC / Reject -->
             <div class="action-buttons">
-                <form id="formAcc" action="{{ route('telkomakses.allproject_process.acc', $process['id']) }}" method="POST"
-                    style="display:inline;">
+                <form id="formAcc" action="{{ route('telkomakses.allproject_process.acc', $process['id']) }}"
+                    method="POST" style="display:inline;">
                     @csrf
                     <button type="submit" class="btn-action btn-acc">
                         <i class="fa fa-check" style="margin-right: 8px;"></i> ACC
@@ -29,8 +29,8 @@
                 </form>
 
                 <!-- Reject -->
-                <form id="formReject" action="{{ route('telkomakses.allproject_process.reject', $process['id']) }}" method="POST"
-                    style="display:inline;">
+                <form id="formReject" action="{{ route('telkomakses.allproject_process.reject', $process['id']) }}"
+                    method="POST" style="display:inline;">
                     @csrf
                     <button type="submit" class="btn-action btn-reject">
                         <i class="fa fa-times" style="margin-right: 8px;"></i> Reject
@@ -92,18 +92,34 @@
                             <th colspan="6" class="text-end">Total</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="6" class="text-end">PPN (11%)</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="6" class="text-end">Total Setelah PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
         </div>
+
+        <!-- Foto Evident -->
+        @if (!empty($process['foto']) && count($process['foto']) > 0)
+            <h3 class="section-title">Foto Evident:</h3>
+            <div class="rekap-box">
+                <div class="foto-group">
+                    <div class="foto-list">
+                        @forelse($process['foto'] as $foto)
+                            <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                        @empty
+                            <span>-</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <style>
             :root {
@@ -260,6 +276,58 @@
             #data-table th:first-child {
                 width: 50px;
             }
+
+            /* Rekap */
+            .section-title {
+                color: #133995;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+
+            .rekap-section {
+                margin-left: 1.5rem;
+                margin-right: 1.5rem;
+            }
+
+            .rekap-box {
+                background: #F9F9F9;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 20px;
+            }
+
+            /* Foto Evident */
+            .foto-group {
+                margin-bottom: 20px;
+            }
+
+            .foto-title {
+                font-weight: 600;
+                color: #133995;
+                margin-bottom: 10px;
+            }
+
+            .foto-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .foto-container {
+                padding: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 18px;
+                background: #F9F9F9;
+            }
+
+            .foto-item {
+                width: 180px;
+                height: 180px;
+                object-fit: cover;
+                border-radius: 10px;
+                border: 1px solid #ddd;
+            }
         </style>
 
     @endsection
@@ -375,7 +443,8 @@
                                             'Project berhasil di-reject.',
                                         confirmButtonColor: '#133995'
                                     }).then(() => {
-                                        document.getElementById('formReject').submit();
+                                        document.getElementById('formReject')
+                                            .submit();
                                     });
                                 })
                                 .catch(err => {

@@ -7,10 +7,11 @@ use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Core\Timestamp as FireTimestamp;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+// use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Cloudinary\Cloudinary;
-use Google\Cloud\Firestore\DocumentSnapshot;
+// use Google\Cloud\Firestore\DocumentSnapshot;
+// use Illuminate\Support\Str;
 
 class AccController extends Controller
 {
@@ -18,7 +19,7 @@ class AccController extends Controller
     {
         return new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => storage_path('app/firebase/luwina-381dd-firebase-adminsdk-fbsvc-d4615d8138.json'),
+            'keyFilePath' => storage_path('app/firebase/luwina-ta-firebase-adminsdk-fbsvc-e165a7c4f0.json'),
         ]);
     }
 
@@ -131,12 +132,12 @@ class AccController extends Controller
                     }
                 }
 
-                $accFotoRef = $data['ta_project_foto_id'];
-                $accPendingRef = $data['ta_project_pending_id'];
+                // $accFotoRef = $data['ta_project_foto_id'];
+                // $accPendingRef = $data['ta_project_pending_id'];
                 $accQERef = $data['ta_project_qe_id'];
 
-                $fotoData = $this->getReferenceData($accFotoRef);
-                $pendingData = $this->getReferenceData($accPendingRef);
+                // $fotoData = $this->getReferenceData($accFotoRef);
+                // $pendingData = $this->getReferenceData($accPendingRef);
                 $qeData = $this->getReferenceData($accQERef);
 
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
@@ -165,30 +166,30 @@ class AccController extends Controller
 
     private function fetchProjectTaData()
     {
-        return Cache::remember('project_ta_doc', 3600, function () {
-            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+        return Cache::remember('project_mitra_doc', 3600, function () {
+            $project_mitra_collection = $this->getFirestore()->collection('Data_Project_Mitra')->documents();
 
-            $project_ta_doc = [];
+            $project_mitra_doc = [];
             $uraianOptions = [];
-            foreach ($project_ta_collection as $docd) {
+            foreach ($project_mitra_collection as $docd) {
                 if ($docd->exists()) {
-                    $project_ta_doc[] = [
+                    $project_mitra_doc[] = [
                         'id' => $docd->id(),
-                        'designator' => $docd->data()['ta_designator'],
-                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
-                        'satuan' => $docd->data()['ta_satuan'],
-                        'harga_material' => $docd->data()['ta_harga_material'],
-                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                        'designator' => $docd->data()['mitra_designator'],
+                        'uraian' => $docd->data()['mitra_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['mitra_satuan'],
+                        'harga_material' => $docd->data()['mitra_harga_material'],
+                        'harga_jasa' => $docd->data()['mitra_harga_jasa'],
                     ];
-                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                    $uraianOptions[] = $docd->data()['mitra_uraian_pekerjaan'];
                 }
             }
 
             $uraianOptions = array_values(array_unique($uraianOptions));
             sort($uraianOptions);
-            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+            usort($project_mitra_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-            return [$project_ta_doc, $uraianOptions];
+            return [$project_mitra_doc, $uraianOptions];
         });
     }
 
@@ -213,20 +214,20 @@ class AccController extends Controller
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
             $volume         = $row['ta_detail_volume'] ?? 0;
 
-            $totalMaterial += ($designatorData['ta_harga_material'] ?? 0) * $volume;
-            $totalJasa     += ($designatorData['ta_harga_jasa'] ?? 0) * $volume;
+            $totalMaterial += ($designatorData['mitra_harga_material'] ?? 0) * $volume;
+            $totalJasa     += ($designatorData['mitra_harga_jasa'] ?? 0) * $volume;
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn   = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn   = $total * 0.11;
+        // $grand = $total + $ppn;
 
         return [
             'material' => $totalMaterial,
             'jasa'     => $totalJasa,
             'total'    => $total,
-            'ppn'      => $ppn,
-            'grand'    => $grand,
+            // 'ppn'      => $ppn,
+            // 'grand'    => $grand,
         ];
     }
 
@@ -311,12 +312,12 @@ class AccController extends Controller
 
             $row = $d->data();
 
-            // Fetch data from Data_Project_TA
+            // Fetch data from Data_Project_Mitra
             $designatorRef = $row['ta_detail_ta_id'];
             $designatorData = $this->getReferenceData($designatorRef);
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume = $row['ta_detail_volume'] ?? 0;
 
             $totalM = $hargaMaterial * $volume;
@@ -327,9 +328,9 @@ class AccController extends Controller
 
             $detail[] = (object)[
                 'id' => $d->id(),
-                'designator' => $designatorData['ta_designator'] ?? '',
-                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'designator' => $designatorData['mitra_designator'] ?? '',
+                'uraian' => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa' => $hargaJasa,
                 'volume' => $volume,
@@ -339,20 +340,20 @@ class AccController extends Controller
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn = $total * 0.11;
+        // $grand = $total + $ppn;
 
         // Update project total in Firestore
         $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $grand],
+            ['path' => 'ta_project_total', 'value' => $total],
         ]);
 
         $totals = [
             'material' => $totalMaterial,
             'jasa' => $totalJasa,
             'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
+            // 'ppn' => $ppn,
+            // 'grand' => $grand,
         ];
 
         return view('super_admin.acc.detail_acc', [
@@ -362,6 +363,7 @@ class AccController extends Controller
                 'deskripsi_project' => $data['ta_project_deskripsi'],
                 'qe'              => $data['ta_project_qe_id'] ?? null,
                 'foto'            => $fotoData,
+                'foto_project' => $data['ta_project_foto'] ?? [],
                 'pending'         => $pendingData,
                 'tgl_upload'      => $this->formatDate($data['ta_project_waktu_upload'] ?? null),
                 'tgl_pengerjaan'  => $this->formatDate($data['ta_project_waktu_pengerjaan'] ?? null),
@@ -398,15 +400,15 @@ class AccController extends Controller
             $row = $d->data();
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume        = $row['ta_detail_volume'] ?? 0;
 
             $detail[] = (object)[
                 'id'             => $d->id(),
-                'designator'     => $designatorData['ta_designator'] ?? '',
-                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'designator'     => $designatorData['mitra_designator'] ?? '',
+                'uraian'         => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa'     => $hargaJasa,
                 'volume'         => $volume,
@@ -418,7 +420,7 @@ class AccController extends Controller
         $totals = $this->hitungTotal($detailDocs);
 
         // --- Ambil data referensi designator pakai helper ---
-        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+        [$project_mitra_doc, $uraianOptions] = $this->fetchProjectTaData();
 
         return view('super_admin.acc.edit_acc', [
             'acc' => [
@@ -428,7 +430,7 @@ class AccController extends Controller
                 'detail'           => $detail,
             ],
             'totals'         => $totals,
-            'project_ta_doc' => $project_ta_doc,
+            'project_mitra_doc' => $project_mitra_doc,
         ]);
     }
 
@@ -468,7 +470,7 @@ class AccController extends Controller
             $detailId = $detailIds[$index] ?? null;
 
             // Fetch the designator reference based on user input
-            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+            $designatorDoc = $firestore->collection('Data_Project_Mitra')->where('mitra_designator', '=', $dsg)->documents()->rows();
 
             if ($dsg && $volume > 0) {
                 if ($detailId && isset($existingMap[$detailId])) {
@@ -609,64 +611,72 @@ class AccController extends Controller
 
     public function storeFoto(Request $request, $id)
     {
+        // dd($request->file('foto_sebelum'), $request->file('foto_sesudah'));
+
         try {
             $firestore = $this->getFirestore();
 
-            // mapping input => step
-            $mapping = [
-                'sebelum' => 'foto_sebelum',
-                'proses'  => 'foto_proses',
-                'sesudah' => 'foto_sesudah',
-            ];
+            $docRef = $firestore
+                ->collection('acc')
+                ->document($id);
 
-            // 1) Pastikan ada file sama sekali
-            $hasAnyFile = false;
-            foreach ($mapping as $inputName) {
-                if ($request->hasFile($inputName) && count($request->file($inputName)) > 0) {
-                    $hasAnyFile = true;
-                    break;
-                }
-            }
-            if (! $hasAnyFile) {
-                return response()->json(['status' => 'error', 'message' => 'Tidak ada file yang diupload.'], 400);
+            if (empty($request->file('foto_sebelum')) && empty($request->file('foto_sesudah'))) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tidak ada file yang diupload.'
+                ], 400);
             }
 
-            // 2) Upload ke Cloudinary dulu -> kumpulkan URL
+            $cloudinary = new Cloudinary(config('cloudinary.url'));
+
             $uploaded = [
                 'sebelum' => [],
-                'proses'  => [],
                 'sesudah' => [],
             ];
 
-            foreach ($mapping as $tipe => $inputName) {
-                if ($request->hasFile($inputName)) {
-                    foreach ($request->file($inputName) as $file) {
-                        // safety: cek instance
-                        if (! $file->isValid()) continue;
-
-                        $originalName = $file->getClientOriginalName();
-                        $fileName = pathinfo($originalName, PATHINFO_FILENAME);
-                        $publicId = date('Y-m-d_His') . '_' . $fileName;
-                        $cloudinaryPath = "evident_foto/" . $tipe;
-
-                        // upload ke Cloudinary
-                        $cloudinary = new Cloudinary(config('cloudinary.url'));
+            // ================================
+            // LOOP FOTO SEBELUM PER DESIGNATOR
+            // ================================
+            if (!empty($request->file('foto_sebelum'))) {
+                foreach ($request->file('foto_sebelum') as $designator => $files) {
+                    foreach ($files as $file) {
+                        if (!$file->isValid()) continue;
 
                         $upload = $cloudinary->uploadApi()->upload(
                             $file->getRealPath(),
                             [
-                                'public_id' => $publicId,
-                                'folder'    => $cloudinaryPath,
+                                'folder' => "new_evident_foto/sebelum/$designator"
                             ]
                         );
 
-                        $secureUrl = $upload['secure_url'];
-                        $uploaded[$tipe][] = $secureUrl;
+                        $uploaded['sebelum'][$designator][] = $upload['secure_url'];
                     }
                 }
             }
 
-            // 3) Cari dokumen Foto_Evident (by project_id)
+            // ================================
+            // LOOP FOTO SESUDAH PER DESIGNATOR
+            // ================================
+            if (!empty($request->file('foto_sesudah'))) {
+                foreach ($request->file('foto_sesudah') as $designator => $files) {
+                    foreach ($files as $file) {
+                        if (!$file->isValid()) continue;
+
+                        $upload = $cloudinary->uploadApi()->upload(
+                            $file->getRealPath(),
+                            [
+                                'folder' => "new_evident_foto/sesudah/$designator"
+                            ]
+                        );
+
+                        $uploaded['sesudah'][$designator][] = $upload['secure_url'];
+                    }
+                }
+            }
+
+            // ================================
+            // CARI / BUAT DOKUMEN FOTO_EVIDENT
+            // ================================
             $fotoDocs = $firestore->collection('Foto_Evident')
                 ->where('project_id', '=', $id)
                 ->documents();
@@ -674,68 +684,92 @@ class AccController extends Controller
             $docRef = null;
             foreach ($fotoDocs as $d) {
                 if ($d->exists()) {
-                    $docRef = $firestore->collection('Foto_Evident')->document($d->id());
+                    $docRef = $firestore
+                        ->collection('Foto_Evident')
+                        ->document($d->id());
                     break;
                 }
             }
 
-            // Kalau belum ada dokumen -> buat baru (dengan struktur awal)
-            if (! $docRef) {
+            if (!$docRef) {
                 $newDoc = $firestore->collection('Foto_Evident')->add([
-                    'project_id'  => $id,
-                    'foto_path'   => [
+                    'project_id' => $id,
+                    'foto_path' => [
                         'sebelum' => [],
-                        'proses'  => [],
                         'sesudah' => [],
                     ],
                     'uploaded_at' => new FireTimestamp(new \DateTime()),
                 ]);
-                // ambil reference dokumen yang baru dibuat
-                $docRef = $firestore->collection('Foto_Evident')->document($newDoc->id());
+
+                $docRef = $firestore
+                    ->collection('Foto_Evident')
+                    ->document($newDoc->id());
             }
 
-            // 4) Ambil existing data dengan cara aman
+            // ================================
+            // AMBIL DATA EXISTING
+            // ================================
             $snapshot = $docRef->snapshot()->data() ?? [];
+
             $existing = $snapshot['foto_path'] ?? [
                 'sebelum' => [],
-                'proses'  => [],
                 'sesudah' => [],
             ];
 
-            // pastikan setiap key adalah array
-            $existing['sebelum'] = is_array($existing['sebelum']) ? $existing['sebelum'] : [];
-            $existing['proses']  = is_array($existing['proses']) ? $existing['proses'] : [];
-            $existing['sesudah'] = is_array($existing['sesudah']) ? $existing['sesudah'] : [];
+            // ================================
+            // MERGE PER DESIGNATOR
+            // ================================
+            foreach ($uploaded['sebelum'] as $dsg => $urls) {
+                $existing['sebelum'][$dsg] =
+                    array_merge($existing['sebelum'][$dsg] ?? [], $urls);
+            }
 
-            // 5) Merge existing + uploaded
-            $merged = [
-                'sebelum' => array_values(array_merge($existing['sebelum'], $uploaded['sebelum'])),
-                'proses'  => array_values(array_merge($existing['proses'],  $uploaded['proses'])),
-                'sesudah' => array_values(array_merge($existing['sesudah'], $uploaded['sesudah'])),
-            ];
+            foreach ($uploaded['sesudah'] as $dsg => $urls) {
+                $existing['sesudah'][$dsg] =
+                    array_merge($existing['sesudah'][$dsg] ?? [], $urls);
+            }
 
-            // 6) Simpan ke Firestore (merge)
+            // ================================
+            // SIMPAN KE FIRESTORE
+            // ================================
             $docRef->set([
-                'project_id'  => $id,
-                'foto_path'   => $merged,
+                'project_id' => $id,
+                'foto_path' => $existing,
                 'uploaded_at' => new FireTimestamp(new \DateTime()),
             ], ['merge' => true]);
 
-            // 7) Update ta_project_waktu_selesai bila perlu
-            $projectRef = $firestore->collection('All_Project_TA')->document($id);
-            $projectDoc = $projectRef->snapshot();
-            if ($projectDoc->exists()) {
-                $data = $projectDoc->data();
-                if (empty($data['ta_project_waktu_selesai'])) {
+            // =====================================
+            // UPDATE ta_project_waktu_selesai
+            // =====================================
+            $projectRef = $firestore
+                ->collection('All_Project_TA') // pastikan nama collection benar
+                ->document($id);
+
+            $projectSnapshot = $projectRef->snapshot();
+
+            if ($projectSnapshot->exists()) {
+                $projectData = $projectSnapshot->data();
+
+                // hanya set jika belum ada
+                if (empty($projectData['ta_project_waktu_selesai'])) {
                     $projectRef->update([
-                        ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
+                        [
+                            'path'  => 'ta_project_waktu_selesai',
+                            'value' => new FireTimestamp(new \DateTime()),
+                        ],
                     ]);
                 }
             }
 
-            return response()->json(['status' => 'success', 'message' => 'Foto evident berhasil diupload.', 'data' => $merged], 200);
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Foto evident berhasil diupload.'
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

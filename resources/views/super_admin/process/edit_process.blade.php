@@ -105,7 +105,7 @@
                                 </th>
                                 <th></th>
                             </tr>
-                            <tr>
+                            {{-- <tr>
                                 <th colspan="6" class="text-end">PPN (11%)</th>
                                 <th colspan="2" class="summary-ppn">{{ number_format($totals['ppn'], 0, ',', '.') }}
                                 </th>
@@ -116,7 +116,7 @@
                                 <th colspan="2" class="summary-after-ppn">
                                     {{ number_format($totals['grand'], 0, ',', '.') }}</th>
                                 <th></th>
-                            </tr>
+                            </tr> --}}
                         </tfoot>
                     </table>
                 </div>
@@ -377,7 +377,7 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
-            const dsgData = @json($project_ta_doc);
+            const dsgData = @json($project_mitra_doc);
 
             // Function to calculate total material and total jasa based on volume
             function calculateRow(row) {
@@ -423,15 +423,15 @@
                 });
 
                 const total = totalMaterial + totalJasa;
-                const ppn = total * 0.11;
-                const totalAfterPpn = total + ppn;
+                // const ppn = total * 0.11;
+                // const totalAfterPpn = total + ppn;
 
                 // Update the summary display elements if they exist
                 document.querySelector('.summary-material').textContent = totalMaterial.toLocaleString('id-ID');
                 document.querySelector('.summary-jasa').textContent = totalJasa.toLocaleString('id-ID');
                 document.querySelector('.summary-total').textContent = total.toLocaleString('id-ID');
-                document.querySelector('.summary-ppn').textContent = ppn.toLocaleString('id-ID');
-                document.querySelector('.summary-after-ppn').textContent = totalAfterPpn.toLocaleString('id-ID');
+                // document.querySelector('.summary-ppn').textContent = ppn.toLocaleString('id-ID');
+                // document.querySelector('.summary-after-ppn').textContent = totalAfterPpn.toLocaleString('id-ID');
             }
 
             function changeFontColor(selectElement) {

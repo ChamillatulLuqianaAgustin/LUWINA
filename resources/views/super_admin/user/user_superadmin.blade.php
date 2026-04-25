@@ -156,11 +156,14 @@
                     </select>
                 </div>
 
-                <select id="edit_uker" name="uker" class="select-field">
-                    @foreach ($uker_doc as $uk)
-                        <option value="{{ $uk['id'] }}">{{ $uk['unit'] }}</option>
-                    @endforeach
-                </select>
+                <div class="edit-uker">
+                    <label for="edit_uker" class="label-uker">Unit Kerja:</label>
+                    <select id="edit_uker" name="uker" class="select-field">
+                        @foreach ($uker_doc as $uk)
+                            <option value="{{ $uk['id'] }}">{{ $uk['unit'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="edit-password">
                     <label for="edit_password" class="label-password">Password:</label>
@@ -755,13 +758,13 @@
                     ukerSelect.appendChild(option);
                 }
 
-                // TELKOM AKSES → Unit_Kerja/2–26
-                else if (roleId == '2' && ukerId >= 2 && ukerId <= 26) {
+                // TELKOM AKSES → Unit_Kerja/2–10
+                else if (roleId == '2' && ukerId >= 2 && ukerId <= 10) {
                     ukerSelect.appendChild(option);
                 }
 
-                // MITRA → Unit_Kerja/27–34
-                else if (roleId == '3' && ukerId >= 27 && ukerId <= 34) {
+                // MITRA → Unit_Kerja/11–18
+                else if (roleId == '3' && ukerId >= 11 && ukerId <= 18) {
                     ukerSelect.appendChild(option);
                 }
             });

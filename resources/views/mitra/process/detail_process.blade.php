@@ -61,12 +61,13 @@
                                 <td>
                                     <form
                                         action="{{ route('mitra.process_destroy', ['id' => $process['id'], 'detailId' => $item->id]) }}"
-                                        method="POST"
-                                        class="form-delete-material">
+                                        method="POST" class="form-delete-material">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;">
-                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
+                                        <button type="submit"
+                                            style="border:none;background:none;padding:0;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                style="width:20px;height:20px;">
                                         </button>
                                     </form>
                                 </td>
@@ -86,14 +87,14 @@
                             <th colspan="7" class="text-end">Total</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="7" class="text-end">PPN (11%)</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">Total Setelah PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
@@ -112,6 +113,22 @@
                 </button>
             </form>
         </div>
+
+        <!-- Foto Evident -->
+        @if (!empty($process['foto']) && count($process['foto']) > 0)
+            <h3 class="section-title">Foto Evident:</h3>
+            <div class="rekap-box">
+                <div class="foto-group">
+                    <div class="foto-list">
+                        @forelse($process['foto'] as $foto)
+                            <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                        @empty
+                            <span>-</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <style>
             :root {
@@ -241,126 +258,190 @@
             #data-table th:first-child {
                 width: 50px;
             }
+
+            /* Rekap */
+            .section-title {
+                color: #133995;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+
+            .rekap-section {
+                margin-left: 1.5rem;
+                margin-right: 1.5rem;
+            }
+
+            .rekap-box {
+                background: #F9F9F9;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 20px;
+            }
+
+            /* Foto Evident */
+            .foto-group {
+                margin-bottom: 20px;
+            }
+
+            .foto-title {
+                font-weight: 600;
+                color: #133995;
+                margin-bottom: 10px;
+            }
+
+            .foto-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .foto-container {
+                padding: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 18px;
+                background: #F9F9F9;
+            }
+
+            .foto-item {
+                width: 180px;
+                height: 180px;
+                object-fit: cover;
+                border-radius: 10px;
+                border: 1px solid #ddd;
+            }
         </style>
 
     @endsection
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-    document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", () => {
 
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // SWEETALERT UNTUK DELETE MATERIAL
-        document.querySelectorAll('.form-delete-material').forEach(form => {
-            form.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Material ini akan dihapus dari project dan tidak dapat dikembalikan.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus material!',
-                    reverseButtons: true
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Sedang menghapus material...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        try {
-                            const res = await fetch(form.action, {
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': token },
-                                body: new FormData(form)
+            // SWEETALERT UNTUK DELETE MATERIAL
+            document.querySelectorAll('.form-delete-material').forEach(form => {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Material ini akan dihapus dari project dan tidak dapat dikembalikan.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#133995',
+                        cancelButtonColor: '#C8170D',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Ya, hapus material!',
+                        reverseButtons: true
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            Swal.fire({
+                                title: 'Sedang menghapus material...',
+                                text: 'Mohon tunggu sebentar.',
+                                allowOutsideClick: false,
+                                didOpen: () => Swal.showLoading()
                             });
 
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok || data.success === false)
-                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus material.');
+                            try {
+                                const res = await fetch(form.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
+                                    body: new FormData(form)
+                                });
 
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Material berhasil dihapus.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => window.location.reload());
+                                const data = await res.json().catch(() => ({}));
+                                if (!res.ok || data.success === false)
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat menghapus material.'
+                                    );
 
-                        } catch (err) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat menghapus material.',
-                                confirmButtonColor: '#C8170D'
-                            });
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: data.message ||
+                                        'Material berhasil dihapus.',
+                                    confirmButtonColor: '#133995'
+                                }).then(() => window.location.reload());
+
+                            } catch (err) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat menghapus material.',
+                                    confirmButtonColor: '#C8170D'
+                                });
+                            }
                         }
-                    }
+                    });
                 });
             });
-        });
 
-        // SWEETALERT UNTUK DELETE PROJECT
-        const deleteProjectForm = document.querySelector('.form-delete-project');
-        if (deleteProjectForm) {
-            deleteProjectForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Seluruh data project beserta material akan dihapus secara permanen.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus project!',
-                    reverseButtons: true
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Sedang menghapus project...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        try {
-                            const res = await fetch(deleteProjectForm.action, {
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': token },
-                                body: new FormData(deleteProjectForm)
-                            });
-
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok || data.success === false)
-                                throw new Error(data.message || 'Terjadi kesalahan saat menghapus project.');
-
+            // SWEETALERT UNTUK DELETE PROJECT
+            const deleteProjectForm = document.querySelector('.form-delete-project');
+            if (deleteProjectForm) {
+                deleteProjectForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Seluruh data project beserta material akan dihapus secara permanen.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#133995',
+                        cancelButtonColor: '#C8170D',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Ya, hapus project!',
+                        reverseButtons: true
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Seluruh data project berhasil dihapus.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => {
-                                window.location.href = "{{ route('mitra.process') }}";
+                                title: 'Sedang menghapus project...',
+                                text: 'Mohon tunggu sebentar.',
+                                allowOutsideClick: false,
+                                didOpen: () => Swal.showLoading()
                             });
 
-                        } catch (err) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat menghapus project.',
-                                confirmButtonColor: '#C8170D'
-                            });
+                            try {
+                                const res = await fetch(deleteProjectForm.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
+                                    body: new FormData(deleteProjectForm)
+                                });
+
+                                const data = await res.json().catch(() => ({}));
+                                if (!res.ok || data.success === false)
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat menghapus project.');
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: data.message ||
+                                        'Seluruh data project berhasil dihapus.',
+                                    confirmButtonColor: '#133995'
+                                }).then(() => {
+                                    window.location.href =
+                                        "{{ route('mitra.process') }}";
+                                });
+
+                            } catch (err) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat menghapus project.',
+                                    confirmButtonColor: '#C8170D'
+                                });
+                            }
                         }
-                    }
+                    });
                 });
-            });
-        }
+            }
 
-    }); // end DOMContentLoaded
+        }); // end DOMContentLoaded
     </script>

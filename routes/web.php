@@ -100,6 +100,8 @@ Route::prefix('superadmin')->group(function () {
         ->name('superadmin.reject_destroy_project');
     Route::post('/reject/{id}/upload-revisi', [RejectController::class, 'updateRevisi'])
         ->name('superadmin.reject_upload_revisi');
+    Route::post('/reject/{id}/push', [RejectController::class, 'push'])
+        ->name('superadmin.reject_push');
 });
 
 // Telkom Akses

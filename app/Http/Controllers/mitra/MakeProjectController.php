@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Google\Cloud\Firestore\FirestoreClient;
 use Illuminate\Support\Facades\Cache;
+use Cloudinary\Cloudinary;
 
 class MakeProjectController extends Controller
 {
@@ -13,16 +14,48 @@ class MakeProjectController extends Controller
     {
         return new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => base_path(env('FIREBASE_CREDENTIALS')),
+            'keyFilePath' => storage_path('app/firebase/luwina-ta-firebase-adminsdk-fbsvc-e165a7c4f0.json'),
         ]);
     }
 
     public function index()
     {
         $qeOptions = $this->fetchQEOptions();
-        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+        [$project_mitra_doc, $uraianOptions] = $this->fetchProjectTaData();
+        $uker_doc = $this->fetchUnitKerja();
 
-        return view('mitra.makeproject.makeproject_mitra', compact('qeOptions', 'project_ta_doc', 'uraianOptions'));
+        return view('mitra.makeproject.makeproject_mitra', compact('qeOptions', 'project_mitra_doc', 'uraianOptions', 'uker_doc'));
+    }
+
+    private function fetchUnitKerja()
+    {
+        return Cache::remember('uker_doc', 3600, function () {
+
+            $collection = $this->getFirestore()
+                ->collection('Unit_Kerja')
+                ->documents();
+
+            $result = [];
+
+            foreach ($collection as $doc) {
+                if ($doc->exists()) {
+
+                    $id = (int) $doc->id();
+                    $data = $doc->data();
+
+                    if ($id >= 11 && $id <= 18) {
+                        $result[] = [
+                            'id'   => $doc->id(),
+                            'unit' => $data['Unit'] ?? '',
+                        ];
+                    }
+                }
+            }
+
+            usort($result, fn($a, $b) => (int)$a['id'] <=> (int)$b['id']);
+
+            return $result;
+        });
     }
 
     private function fetchQEOptions()
@@ -45,67 +78,163 @@ class MakeProjectController extends Controller
 
     private function fetchProjectTaData()
     {
-        return Cache::remember('project_ta_doc', 3600, function () {
-            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+        return Cache::remember('project_mitra_doc', 3600, function () {
+            $project_mitra_collection = $this->getFirestore()->collection('Data_Project_Mitra')->documents();
 
-            $project_ta_doc = [];
+            $project_mitra_doc = [];
             $uraianOptions = [];
-            foreach ($project_ta_collection as $docd) {
+            foreach ($project_mitra_collection as $docd) {
                 if ($docd->exists()) {
-                    $project_ta_doc[] = [
+
+                    $project_mitra_doc[] = [
                         'id' => $docd->id(),
-                        'designator' => $docd->data()['ta_designator'],
-                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
-                        'satuan' => $docd->data()['ta_satuan'],
-                        'harga_material' => $docd->data()['ta_harga_material'],
-                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                        'designator' => $docd->data()['mitra_designator'],
+                        'uraian' => $docd->data()['mitra_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['mitra_satuan'],
+                        'harga_material' => $docd->data()['mitra_harga_material'],
+                        'harga_jasa' => $docd->data()['mitra_harga_jasa'],
                     ];
-                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                    $uraianOptions[] = $docd->data()['mitra_uraian_pekerjaan'];
                 }
             }
 
             $uraianOptions = array_values(array_unique($uraianOptions));
             sort($uraianOptions);
-            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+            usort($project_mitra_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-            return [$project_ta_doc, $uraianOptions];
+            return [$project_mitra_doc, $uraianOptions];
         });
     }
+
+    // public function store(Request $request)
+    // {
+    //     $firestore = $this->getFirestore();
+
+    //     try {
+    //         // 1. Simpan ke All_Project_TA
+    //         $allProjectRef = $firestore->collection('All_Project_TA')->add([
+    //             'ta_project_deskripsi'        => $request->deskripsi,
+    //             // 'ta_project_foto_id'          => null,
+    //             'ta_project_khs'              => $request->khs,
+    //             'ta_project_pekerjaan'        => $request->pekerjaan,
+    //             'ta_project_pelaksana'        => $request->pelaksana,
+    //             // 'ta_project_pending_id'       => null,
+    //             'ta_project_qe_id'            => $firestore->collection('QE')->document($request->qe),
+    //             'ta_project_status'           => 'PROCESS',
+    //             'ta_project_total'            => (float) $request->summary_after_ppn,
+    //             'ta_project_waktu_pengerjaan' => null,
+    //             'ta_project_waktu_selesai'    => null,
+    //             'ta_project_waktu_upload'     => now(),
+    //             'ta_project_witel'            => $request->witel,
+    //         ]);
+
+    //         $allProjectId = $allProjectRef->id();
+
+    //         // 2. Simpan ke Detail_Project_TA
+    //         foreach ($request->designator as $i => $designator) {
+    //             if (empty($designator)) continue;
+
+    //             $dataProjectQuery = $firestore->collection('Data_Project_TA')
+    //                 ->where('ta_designator', '=', $designator)
+    //                 ->limit(1)
+    //                 ->documents();
+
+    //             $dataProjectId = null;
+    //             foreach ($dataProjectQuery as $doc) {
+    //                 $dataProjectId = $doc->id();
+    //             }
+
+    //             if (!$dataProjectId) continue;
+
+    //             $firestore->collection('Detail_Project_TA')->add([
+    //                 'ta_detail_all_id' => $firestore->collection('All_Project_TA')->document($allProjectId),
+    //                 'ta_detail_ta_id'  => $firestore->collection('Data_Project_TA')->document($dataProjectId),
+    //                 'ta_detail_volume' => (int) ($request->volume[$i] ?? 0),
+    //             ]);
+    //         }
+
+    //         // ✅ Kembalikan response JSON biar fetch tahu sukses
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Project berhasil dibuat!',
+    //             'project_id' => $allProjectId
+    //         ], 200);
+
+    //     } catch (\Exception $e) {
+    //         // ❌ Jika ada error, kirim JSON error
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function store(Request $request)
     {
         $firestore = $this->getFirestore();
 
         try {
-            // 1. Simpan ke All_Project_TA
+
+            // ==============================
+            // 1️⃣ UPLOAD FOTO KE CLOUDINARY
+            // ==============================
+            $uploadedUrls = [];
+
+            if ($request->hasFile('foto_eviden')) {
+
+                $cloudinary = new Cloudinary(config('cloudinary.url'));
+
+                foreach ($request->file('foto_eviden') as $file) {
+
+                    if (!$file->isValid()) continue;
+
+                    $upload = $cloudinary->uploadApi()->upload(
+                        $file->getRealPath(),
+                        [
+                            'folder' => 'make_eviden'
+                        ]
+                    );
+
+                    $uploadedUrls[] = $upload['secure_url'];
+                }
+            }
+
+            // ==============================
+            // 2️⃣ SIMPAN KE All_Project_TA
+            // ==============================
             $allProjectRef = $firestore->collection('All_Project_TA')->add([
                 'ta_project_deskripsi'        => $request->deskripsi,
-                'ta_project_foto_id'          => null,
                 'ta_project_khs'              => $request->khs,
                 'ta_project_pekerjaan'        => $request->pekerjaan,
                 'ta_project_pelaksana'        => $request->pelaksana,
-                'ta_project_pending_id'       => null,
                 'ta_project_qe_id'            => $firestore->collection('QE')->document($request->qe),
                 'ta_project_status'           => 'PROCESS',
-                'ta_project_total'            => (float) $request->summary_after_ppn,
+                'ta_project_total'            => (float) $request->summary_total,
                 'ta_project_waktu_pengerjaan' => null,
                 'ta_project_waktu_selesai'    => null,
                 'ta_project_waktu_upload'     => now(),
                 'ta_project_witel'            => $request->witel,
+
+                // 🔥 FIELD BARU UNTUK FOTO
+                'ta_project_foto'             => $uploadedUrls,
             ]);
 
             $allProjectId = $allProjectRef->id();
 
-            // 2. Simpan ke Detail_Project_TA
+            // ==============================
+            // 3️⃣ SIMPAN DETAIL PROJECT
+            // ==============================
             foreach ($request->designator as $i => $designator) {
+
                 if (empty($designator)) continue;
 
-                $dataProjectQuery = $firestore->collection('Data_Project_TA')
-                    ->where('ta_designator', '=', $designator)
+                $dataProjectQuery = $firestore->collection('Data_Project_Mitra')
+                    ->where('mitra_designator', '=', $designator)
                     ->limit(1)
                     ->documents();
 
                 $dataProjectId = null;
+
                 foreach ($dataProjectQuery as $doc) {
                     $dataProjectId = $doc->id();
                 }
@@ -114,20 +243,18 @@ class MakeProjectController extends Controller
 
                 $firestore->collection('Detail_Project_TA')->add([
                     'ta_detail_all_id' => $firestore->collection('All_Project_TA')->document($allProjectId),
-                    'ta_detail_ta_id'  => $firestore->collection('Data_Project_TA')->document($dataProjectId),
+                    'ta_detail_ta_id'  => $firestore->collection('Data_Project_Mitra')->document($dataProjectId),
                     'ta_detail_volume' => (int) ($request->volume[$i] ?? 0),
                 ]);
             }
 
-            // ✅ Kembalikan response JSON biar fetch tahu sukses
             return response()->json([
                 'success' => true,
                 'message' => 'Project berhasil dibuat!',
                 'project_id' => $allProjectId
             ], 200);
-
         } catch (\Exception $e) {
-            // ❌ Jika ada error, kirim JSON error
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()

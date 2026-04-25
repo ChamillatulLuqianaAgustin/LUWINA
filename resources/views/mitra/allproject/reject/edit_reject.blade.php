@@ -105,7 +105,7 @@
                                 </th>
                                 <th></th>
                             </tr>
-                            <tr>
+                            {{-- <tr>
                                 <th colspan="6" class="text-end">PPN (11%)</th>
                                 <th colspan="2" class="summary-ppn">{{ number_format($totals['ppn'], 0, ',', '.') }}
                                 </th>
@@ -116,7 +116,7 @@
                                 <th colspan="2" class="summary-after-ppn">
                                     {{ number_format($totals['grand'], 0, ',', '.') }}</th>
                                 <th></th>
-                            </tr>
+                            </tr> --}}
                         </tfoot>
                     </table>
                 </div>
@@ -390,7 +390,7 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
-            const dsgData = @json($project_ta_doc);
+            const dsgData = @json($project_mitra_doc);
 
             // Function to calculate total material and total jasa based on volume
             function calculateRow(row) {

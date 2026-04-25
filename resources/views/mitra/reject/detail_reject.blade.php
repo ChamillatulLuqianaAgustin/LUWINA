@@ -19,11 +19,11 @@
             </a>
 
             <!-- Tombol Kerjakan -->
-            <div class="action-buttons">
+            {{-- <div class="action-buttons">
                 <button type="button" class="btn-add-revisi">
                     Upload File Revisi
                 </button>
-            </div>
+            </div> --}}
         </div>
 
         <!-- Nama Project + Table wrapper -->
@@ -68,12 +68,13 @@
                                 <td>
                                     <form
                                         action="{{ route('mitra.reject_destroy', ['id' => $reject['id'], 'detailId' => $item->id]) }}"
-                                        method="POST"
-                                        class="form-delete-material">
+                                        method="POST" class="form-delete-material">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;">
-                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete" style="width:20px;height:20px;">
+                                        <button type="submit"
+                                            style="border:none;background:none;padding:0;cursor:pointer;">
+                                            <img src="{{ asset('assets/delete.png') }}" alt="Delete"
+                                                style="width:20px;height:20px;">
                                         </button>
                                     </form>
                                 </td>
@@ -93,14 +94,14 @@
                             <th colspan="7" class="text-end">TOTAL</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="7" class="text-end">PPN</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
@@ -168,6 +169,22 @@
                 </button>
             </form>
         </div>
+
+        <!-- Foto Evident -->
+        @if (!empty($reject['foto']) && count($reject['foto']) > 0)
+            <h3 class="section-title">Foto Evident:</h3>
+            <div class="rekap-box">
+                <div class="foto-group">
+                    <div class="foto-list">
+                        @forelse($reject['foto'] as $foto)
+                            <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                        @empty
+                            <span>-</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <style>
@@ -386,6 +403,58 @@
         #data-table th:first-child {
             width: 50px;
         }
+
+        /* Rekap */
+        .section-title {
+            color: #133995;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .rekap-section {
+            margin-left: 1.5rem;
+            margin-right: 1.5rem;
+        }
+
+        .rekap-box {
+            background: #F9F9F9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        /* Foto Evident */
+        .foto-group {
+            margin-bottom: 20px;
+        }
+
+        .foto-title {
+            font-weight: 600;
+            color: #133995;
+            margin-bottom: 10px;
+        }
+
+        .foto-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .foto-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            background: #F9F9F9;
+        }
+
+        .foto-item {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
     </style>
 
     <!-- Script Chart.JS -->
@@ -439,7 +508,7 @@
 
             // SWEETALERT UNTUK DELETE MATERIAL
             document.querySelectorAll('.form-delete-material').forEach(form => {
-                form.addEventListener('submit', async function (e) {
+                form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
@@ -463,18 +532,23 @@
                             try {
                                 const res = await fetch(form.action, {
                                     method: 'POST',
-                                    headers: { 'X-CSRF-TOKEN': token },
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
                                     body: new FormData(form)
                                 });
 
                                 const data = await res.json().catch(() => ({}));
                                 if (!res.ok || data.success === false)
-                                    throw new Error(data.message || 'Terjadi kesalahan saat menghapus material.');
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat menghapus material.'
+                                    );
 
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil!',
-                                    text: data.message || 'Material berhasil dihapus.',
+                                    text: data.message ||
+                                        'Material berhasil dihapus.',
                                     confirmButtonColor: '#133995'
                                 }).then(() => window.location.reload());
 
@@ -482,7 +556,8 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Gagal!',
-                                    text: err.message || 'Terjadi kesalahan saat menghapus material.',
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat menghapus material.',
                                     confirmButtonColor: '#C8170D'
                                 });
                             }
@@ -494,7 +569,7 @@
             // SWEETALERT UNTUK DELETE PROJECT
             const deleteProjectForm = document.querySelector('.form-delete-project');
             if (deleteProjectForm) {
-                deleteProjectForm.addEventListener('submit', async function (e) {
+                deleteProjectForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
@@ -518,28 +593,34 @@
                             try {
                                 const res = await fetch(deleteProjectForm.action, {
                                     method: 'POST',
-                                    headers: { 'X-CSRF-TOKEN': token },
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
                                     body: new FormData(deleteProjectForm)
                                 });
 
                                 const data = await res.json().catch(() => ({}));
                                 if (!res.ok || data.success === false)
-                                    throw new Error(data.message || 'Terjadi kesalahan saat menghapus project.');
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat menghapus project.');
 
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil!',
-                                    text: data.message || 'Seluruh data project berhasil dihapus.',
+                                    text: data.message ||
+                                        'Seluruh data project berhasil dihapus.',
                                     confirmButtonColor: '#133995'
                                 }).then(() => {
-                                    window.location.href = "{{ route('mitra.reject') }}";
+                                    window.location.href =
+                                        "{{ route('mitra.reject') }}";
                                 });
 
                             } catch (err) {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Gagal!',
-                                    text: err.message || 'Terjadi kesalahan saat menghapus project.',
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat menghapus project.',
                                     confirmButtonColor: '#C8170D'
                                 });
                             }
@@ -581,29 +662,35 @@
                             try {
                                 const res = await fetch(formRevisi.action, {
                                     method: 'POST',
-                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
                                     body: new FormData(formRevisi)
                                 });
 
                                 const data = await res.json().catch(() => ({}));
 
                                 if (!res.ok || data.success === false)
-                                    throw new Error(data.message || 'Terjadi kesalahan saat upload file revisi.');
+                                    throw new Error(data.message ||
+                                        'Terjadi kesalahan saat upload file revisi.');
 
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil!',
-                                    text: data.message || 'File revisi berhasil diupload.',
+                                    text: data.message ||
+                                        'File revisi berhasil diupload.',
                                     confirmButtonColor: '#133995'
                                 }).then(() => {
-                                    window.location.reload();
+                                    window.location.href =
+                                        "{{ route('mitra.process') }}";
                                 });
 
                             } catch (err) {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Gagal!',
-                                    text: err.message || 'Terjadi kesalahan saat upload file revisi.',
+                                    text: err.message ||
+                                        'Terjadi kesalahan saat upload file revisi.',
                                     confirmButtonColor: '#C8170D'
                                 });
                             }

@@ -17,7 +17,7 @@ class RejectController extends Controller
     {
         return new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => base_path(env('FIREBASE_CREDENTIALS')),
+            'keyFilePath' => storage_path('app/firebase/luwina-ta-firebase-adminsdk-fbsvc-e165a7c4f0.json'),
         ]);
     }
 
@@ -123,12 +123,8 @@ class RejectController extends Controller
                     }
                 }
 
-                $rejectFotoRef = $data['ta_project_foto_id'];
-                $rejectPendingRef = $data['ta_project_pending_id'];
                 $rejectQERef = $data['ta_project_qe_id'];
 
-                $fotoData = $this->getReferenceData($rejectFotoRef);
-                $pendingData = $this->getReferenceData($rejectPendingRef);
                 $qeData = $this->getReferenceData($rejectQERef);
 
                 $tglUpload = $this->formatDate($data['ta_project_waktu_upload'] ?? null);
@@ -157,30 +153,30 @@ class RejectController extends Controller
 
     private function fetchProjectTaData()
     {
-        return Cache::remember('project_ta_doc', 3600, function () {
-            $project_ta_collection = $this->getFirestore()->collection('Data_Project_TA')->documents();
+        return Cache::remember('project_mitra_doc', 3600, function () {
+            $project_mitra_collection = $this->getFirestore()->collection('Data_Project_Mitra')->documents();
 
-            $project_ta_doc = [];
+            $project_mitra_doc = [];
             $uraianOptions = [];
-            foreach ($project_ta_collection as $docd) {
+            foreach ($project_mitra_collection as $docd) {
                 if ($docd->exists()) {
-                    $project_ta_doc[] = [
+                    $project_mitra_doc[] = [
                         'id' => $docd->id(),
-                        'designator' => $docd->data()['ta_designator'],
-                        'uraian' => $docd->data()['ta_uraian_pekerjaan'],
-                        'satuan' => $docd->data()['ta_satuan'],
-                        'harga_material' => $docd->data()['ta_harga_material'],
-                        'harga_jasa' => $docd->data()['ta_harga_jasa'],
+                        'designator' => $docd->data()['mitra_designator'],
+                        'uraian' => $docd->data()['mitra_uraian_pekerjaan'],
+                        'satuan' => $docd->data()['mitra_satuan'],
+                        'harga_material' => $docd->data()['mitra_harga_material'],
+                        'harga_jasa' => $docd->data()['mitra_harga_jasa'],
                     ];
-                    $uraianOptions[] = $docd->data()['ta_uraian_pekerjaan'];
+                    $uraianOptions[] = $docd->data()['mitra_uraian_pekerjaan'];
                 }
             }
 
             $uraianOptions = array_values(array_unique($uraianOptions));
             sort($uraianOptions);
-            usort($project_ta_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
+            usort($project_mitra_doc, fn($c, $d) => (int)$c['id'] <=> (int)$d['id']);
 
-            return [$project_ta_doc, $uraianOptions];
+            return [$project_mitra_doc, $uraianOptions];
         });
     }
 
@@ -205,20 +201,20 @@ class RejectController extends Controller
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
             $volume         = $row['ta_detail_volume'] ?? 0;
 
-            $totalMaterial += ($designatorData['ta_harga_material'] ?? 0) * $volume;
-            $totalJasa     += ($designatorData['ta_harga_jasa'] ?? 0) * $volume;
+            $totalMaterial += ($designatorData['mitra_harga_material'] ?? 0) * $volume;
+            $totalJasa     += ($designatorData['mitra_harga_jasa'] ?? 0) * $volume;
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn   = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn   = $total * 0.11;
+        // $grand = $total + $ppn;
 
         return [
             'material' => $totalMaterial,
             'jasa'     => $totalJasa,
             'total'    => $total,
-            'ppn'      => $ppn,
-            'grand'    => $grand,
+            // 'ppn'      => $ppn,
+            // 'grand'    => $grand,
         ];
     }
 
@@ -233,7 +229,7 @@ class RejectController extends Controller
         }
 
         $data = $doc->data();
-        $fotoData = $this->getReferenceData($data['ta_project_foto_id'] ?? null);
+        $fotoData = $data['ta_project_foto'] ?? [];
         $pendingData = $this->getReferenceData($data['ta_project_pending_id'] ?? null);
         $qeData = $this->getReferenceData($data['ta_project_qe_id'] ?? null);
 
@@ -254,12 +250,12 @@ class RejectController extends Controller
 
             $row = $d->data();
 
-            // Fetch data from Data_Project_TA
+            // Fetch data from Data_Project_Mitra
             $designatorRef = $row['ta_detail_ta_id'];
             $designatorData = $this->getReferenceData($designatorRef);
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume = $row['ta_detail_volume'] ?? 0;
 
             $totalM = $hargaMaterial * $volume;
@@ -270,9 +266,9 @@ class RejectController extends Controller
 
             $detail[] = (object)[
                 'id' => $d->id(),
-                'designator' => $designatorData['ta_designator'] ?? '',
-                'uraian' => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan' => $designatorData['ta_satuan'] ?? '',
+                'designator' => $designatorData['mitra_designator'] ?? '',
+                'uraian' => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan' => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa' => $hargaJasa,
                 'volume' => $volume,
@@ -282,20 +278,20 @@ class RejectController extends Controller
         }
 
         $total = $totalMaterial + $totalJasa;
-        $ppn = $total * 0.11;
-        $grand = $total + $ppn;
+        // $ppn = $total * 0.11;
+        // $grand = $total + $ppn;
 
         // Update project total in Firestore
         $docRef->update([
-            ['path' => 'ta_project_total', 'value' => $grand],
+            ['path' => 'ta_project_total', 'value' => $total],
         ]);
 
         $totals = [
             'material' => $totalMaterial,
             'jasa' => $totalJasa,
             'total' => $total,
-            'ppn' => $ppn,
-            'grand' => $grand,
+            // 'ppn' => $ppn,
+            // 'grand' => $grand,
         ];
 
         return view('mitra.reject.detail_reject', [
@@ -341,15 +337,15 @@ class RejectController extends Controller
             $row = $d->data();
             $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
 
-            $hargaMaterial = $designatorData['ta_harga_material'] ?? 0;
-            $hargaJasa     = $designatorData['ta_harga_jasa'] ?? 0;
+            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+            $hargaJasa     = $designatorData['mitra_harga_jasa'] ?? 0;
             $volume        = $row['ta_detail_volume'] ?? 0;
 
             $detail[] = (object)[
                 'id'             => $d->id(),
-                'designator'     => $designatorData['ta_designator'] ?? '',
-                'uraian'         => $designatorData['ta_uraian_pekerjaan'] ?? '',
-                'satuan'         => $designatorData['ta_satuan'] ?? '',
+                'designator'     => $designatorData['mitra_designator'] ?? '',
+                'uraian'         => $designatorData['mitra_uraian_pekerjaan'] ?? '',
+                'satuan'         => $designatorData['mitra_satuan'] ?? '',
                 'harga_material' => $hargaMaterial,
                 'harga_jasa'     => $hargaJasa,
                 'volume'         => $volume,
@@ -361,7 +357,7 @@ class RejectController extends Controller
         $totals = $this->hitungTotal($detailDocs);
 
         // --- Ambil data referensi designator pakai helper ---
-        [$project_ta_doc, $uraianOptions] = $this->fetchProjectTaData();
+        [$project_mitra_doc, $uraianOptions] = $this->fetchProjectTaData();
 
         return view('mitra.reject.edit_reject', [
             'reject' => [
@@ -371,7 +367,7 @@ class RejectController extends Controller
                 'detail'           => $detail,
             ],
             'totals'         => $totals,
-            'project_ta_doc' => $project_ta_doc,
+            'project_mitra_doc' => $project_mitra_doc,
         ]);
     }
 
@@ -411,7 +407,7 @@ class RejectController extends Controller
             $detailId = $detailIds[$index] ?? null;
 
             // Fetch the designator reference based on user input
-            $designatorDoc = $firestore->collection('Data_Project_TA')->where('ta_designator', '=', $dsg)->documents()->rows();
+            $designatorDoc = $firestore->collection('Data_Project_Mitra')->where('mitra_designator', '=', $dsg)->documents()->rows();
 
             if ($dsg && $volume > 0) {
                 if ($detailId && isset($existingMap[$detailId])) {
@@ -498,7 +494,7 @@ class RejectController extends Controller
             }
 
             // 3️⃣ Tambahkan ulang detail baru dari file revisi
-            $dataProjectCollection = $firestore->collection('Data_Project_TA');
+            $dataProjectCollection = $firestore->collection('Data_Project_Mitra');
             $totalMaterial = 0;
             $totalJasa = 0;
 
@@ -506,8 +502,8 @@ class RejectController extends Controller
                 $designator = $detail['designator'];
                 $volume = (float)$detail['volume'];
 
-                // 🔍 Cari designator di Data_Project_TA
-                $dataTA = $dataProjectCollection->where('ta_designator', '=', $designator)->documents();
+                // 🔍 Cari designator di Data_Project_Mitra
+                $dataTA = $dataProjectCollection->where('mitra_designator', '=', $designator)->documents();
                 $dataRef = null;
                 $hargaMaterial = 0;
                 $hargaJasa = 0;
@@ -515,8 +511,8 @@ class RejectController extends Controller
                 foreach ($dataTA as $d) {
                     if ($d->exists()) {
                         $dataRef = $dataProjectCollection->document($d->id());
-                        $hargaMaterial = $d->data()['ta_harga_material'] ?? 0;
-                        $hargaJasa = $d->data()['ta_harga_jasa'] ?? 0;
+                        $hargaMaterial = $d->data()['mitra_harga_material'] ?? 0;
+                        $hargaJasa = $d->data()['mitra_harga_jasa'] ?? 0;
                         break;
                     }
                 }
@@ -535,8 +531,8 @@ class RejectController extends Controller
             }
 
             $total = $totalMaterial + $totalJasa;
-            $ppn = $total * 0.11;
-            $grandTotal = $total + $ppn;
+            // $ppn = $total * 0.11;
+            // $grandTotal = $total + $ppn;
 
             // 4️⃣ Update data di All_Project_TA (ganti detail dan total, tapi QE & deskripsi tetap)
             $projectRef->update([
@@ -547,11 +543,14 @@ class RejectController extends Controller
                 ['path' => 'ta_project_pelaksana', 'value' => $header['ta_project_pelaksana'] ?? $oldData['ta_project_pelaksana'] ?? '-'],
                 ['path' => 'ta_project_witel', 'value' => $header['ta_project_witel'] ?? $oldData['ta_project_witel'] ?? '-'],
                 ['path' => 'ta_project_status', 'value' => 'PROCESS'], // status otomatis jadi PROCESS
-                ['path' => 'ta_project_total', 'value' => $grandTotal],
+                ['path' => 'ta_project_total', 'value' => $total],
                 ['path' => 'ta_project_waktu_upload', 'value' => Carbon::now()],
             ]);
 
-            return back()->with('success', 'Revisi berhasil diupload! Data lama diganti kecuali QE & deskripsi (tetap).');
+            return response()->json([
+                'success' => true,
+                'message' => 'Revisi berhasil diupload!'
+            ]);
         } catch (\Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }

@@ -71,18 +71,35 @@
                             <th colspan="6" class="text-end">TOTAL</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="6" class="text-end">PPN</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="6" class="text-end">TOTAL SETELAH PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
         </div>
+
+        <!-- Foto Evident -->
+        @if (!empty($reject['foto']) && count($reject['foto']) > 0)
+            <h3 class="section-title">Foto Evident:</h3>
+            <div class="rekap-box">
+                <div class="foto-group">
+                    <div class="foto-list">
+                        @forelse($reject['foto'] as $foto)
+                            <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                        @empty
+                            <span>-</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
 
     <style>
         :root {
@@ -191,6 +208,58 @@
         #data-table td:first-child,
         #data-table th:first-child {
             width: 50px;
+        }
+
+        /* Rekap */
+        .section-title {
+            color: #133995;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .rekap-section {
+            margin-left: 1.5rem;
+            margin-right: 1.5rem;
+        }
+
+        .rekap-box {
+            background: #F9F9F9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        /* Foto Evident */
+        .foto-group {
+            margin-bottom: 20px;
+        }
+
+        .foto-title {
+            font-weight: 600;
+            color: #133995;
+            margin-bottom: 10px;
+        }
+
+        .foto-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .foto-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            background: #F9F9F9;
+        }
+
+        .foto-item {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid #ddd;
         }
     </style>
 

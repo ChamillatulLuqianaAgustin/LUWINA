@@ -45,6 +45,8 @@
                             <th style="width: 100px;">VOLUME</th>
                             <th>TOTAL MATERIAL</th>
                             <th>TOTAL JASA</th>
+                            <th>FOTO SEBELUM</th>
+                            <th>FOTO SESUDAH</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,30 +61,58 @@
                                 <td>{{ $item->volume }}</td>
                                 <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
+                                <td>
+                                    {{-- @forelse($acc['foto']['sebelum'] ?? [] as $foto)
+                                        <img src="{{ $foto }}" class="foto-item">
+                                    @empty
+                                        <span>-</span>
+                                    @endforelse --}}
+                                    @if (isset($acc['foto']['sebelum'][$item->designator]))
+                                        @foreach ($acc['foto']['sebelum'][$item->designator] as $foto)
+                                            <img src="{{ $foto }}" class="foto-item zoomable">
+                                        @endforeach
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    {{-- @forelse($acc['foto']['sesudah'] ?? [] as $foto)
+                                        <img src="{{ $foto }}" class="foto-item">
+                                    @empty
+                                        <span>-</span>
+                                    @endforelse --}}
+                                    @if (isset($acc['foto']['sesudah'][$item->designator]))
+                                        @foreach ($acc['foto']['sesudah'][$item->designator] as $foto)
+                                            <img src="{{ $foto }}" class="foto-item zoomable">
+                                        @endforeach
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="6" class="text-end">MATERIAL</th>
-                            <th colspan="3">{{ number_format($totals['material'], 0, ',', '.') }}</th>
+                            <th colspan="7" class="text-end">MATERIAL</th>
+                            <th colspan="4">{{ number_format($totals['material'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="6" class="text-end">JASA</th>
-                            <th colspan="3">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
+                            <th colspan="7" class="text-end">JASA</th>
+                            <th colspan="4">{{ number_format($totals['jasa'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="6" class="text-end">TOTAL</th>
-                            <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                            <th colspan="7" class="text-end">TOTAL</th>
+                            <th colspan="4">{{ number_format($totals['total'], 0, ',', '.') }}</th>
+                        </tr>
+                        {{-- <tr>
+                            <th colspan="7" class="text-end">PPN</th>
+                            <th colspan="4">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
-                            <th colspan="6" class="text-end">PPN</th>
-                            <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
-                        </tr>
-                        <tr>
-                            <th colspan="6" class="text-end">TOTAL SETELAH PPN</th>
-                            <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                            <th colspan="7" class="text-end">TOTAL SETELAH PPN</th>
+                            <th colspan="4">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
@@ -90,41 +120,14 @@
     </div>
 
     <!-- Foto Evident -->
-    @if (!empty($acc['tgl_pengerjaan']) && $acc['tgl_pengerjaan'] != '-')
+    @if (!empty($acc['foto_project']) && is_array($acc['foto_project']))
         <div class="rekap-section mt-6">
             <h3 class="section-title">Foto Evident:</h3>
             <div class="rekap-box">
-                <div class="foto-group">
-                    <div class="foto-title">Sebelum</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['sebelum'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
-                    </div>
-                </div>
-
-                <div class="foto-group">
-                    <div class="foto-title">Proses</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['proses'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
-                    </div>
-                </div>
-
-                <div class="foto-group">
-                    <div class="foto-title">Sesudah</div>
-                    <div class="foto-list">
-                        @forelse($acc['foto']['sesudah'] ?? [] as $foto)
-                            <img src="{{ $foto }}" class="foto-item">
-                        @empty
-                            <span>-</span>
-                        @endforelse
-                    </div>
+                <div class="foto-list">
+                    @foreach ($acc['foto_project'] as $foto)
+                        <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                    @endforeach
                 </div>
             </div>
         </div>
@@ -161,6 +164,12 @@
             </div>
         </div>
     @endif
+
+    <!-- Modal Zoom Foto -->
+    <div id="imageZoomModal" class="zoom-modal">
+        <span class="zoom-close">&times;</span>
+        <img class="zoom-content" id="zoomedImage">
+    </div>
 
     <style>
         :root {
@@ -314,11 +323,19 @@
             gap: 15px;
         }
 
+        .foto-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            background: #F9F9F9;
+        }
+
         .foto-item {
-            width: 150px;
-            height: 150px;
+            width: 180px;
+            height: 180px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid #ddd;
         }
 
@@ -360,6 +377,65 @@
             border: none !important;
             border-top: none !important;
         }
+
+        .zoom-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .zoom-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+            /* box-shadow: 0 0 25px rgba(255, 255, 255, 0.3); */
+        }
+
+        .zoom-close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            font-size: 40px;
+            color: #fff;
+            cursor: pointer;
+        }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        function openZoom(src) {
+            const modal = document.getElementById("imageZoomModal");
+            const zoomImg = document.getElementById("zoomedImage");
+
+            zoomImg.src = src;
+            modal.style.display = "flex";
+        }
+
+        // tutup modal
+        document.querySelector(".zoom-close").onclick = () => {
+            document.getElementById("imageZoomModal").style.display = "none";
+        };
+
+        document.getElementById("imageZoomModal").onclick = (e) => {
+            if (e.target.id === "imageZoomModal") {
+                e.target.style.display = "none";
+            }
+        };
+
+        document.querySelectorAll('.zoomable').forEach(img => {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => {
+                openZoom(img.src);
+            });
+        });
+    </script>
 
 @endsection

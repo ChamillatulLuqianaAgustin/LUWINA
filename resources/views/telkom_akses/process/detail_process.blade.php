@@ -92,18 +92,34 @@
                             <th colspan="6" class="text-end">Total</th>
                             <th colspan="3">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="6" class="text-end">PPN (11%)</th>
                             <th colspan="3">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <th colspan="6" class="text-end">Total Setelah PPN</th>
                             <th colspan="3">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
         </div>
+
+        <!-- Foto Evident -->
+        @if (!empty($process['foto']) && count($process['foto']) > 0)
+            <h3 class="section-title">Foto Evident:</h3>
+            <div class="rekap-box">
+                <div class="foto-group">
+                    <div class="foto-list">
+                        @forelse($process['foto'] as $foto)
+                            <img src="{{ $foto }}" class="foto-item" alt="Foto Eviden">
+                        @empty
+                            <span>-</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <style>
             :root {
@@ -260,125 +276,191 @@
             #data-table th:first-child {
                 width: 50px;
             }
+
+            /* Rekap */
+            .section-title {
+                color: #133995;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+
+            .rekap-section {
+                margin-left: 1.5rem;
+                margin-right: 1.5rem;
+            }
+
+            .rekap-box {
+                background: #F9F9F9;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 20px;
+            }
+
+            /* Foto Evident */
+            .foto-group {
+                margin-bottom: 20px;
+            }
+
+            .foto-title {
+                font-weight: 600;
+                color: #133995;
+                margin-bottom: 10px;
+            }
+
+            .foto-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .foto-container {
+                padding: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 18px;
+                background: #F9F9F9;
+            }
+
+            .foto-item {
+                width: 180px;
+                height: 180px;
+                object-fit: cover;
+                border-radius: 10px;
+                border: 1px solid #ddd;
+            }
         </style>
 
     @endsection
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-    document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", () => {
 
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // SWEETALERT UNTUK ACC
-        const accForm = document.getElementById('formAcc');
-        if (accForm) {
-            accForm.addEventListener("submit", function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Anda akan ACC project ini.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    confirmButtonText: 'Ya, ACC!',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Memproses ACC...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        fetch(accForm.action, {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': token },
-                            body: new FormData(accForm)
-                        })
-                        .then(res => res.json().catch(() => ({})))
-                        .then(data => {
-                            if (!data || data.success === false) throw new Error(data.message || 'Terjadi kesalahan saat ACC project.');
-
+            // SWEETALERT UNTUK ACC
+            const accForm = document.getElementById('formAcc');
+            if (accForm) {
+                accForm.addEventListener("submit", function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Anda akan ACC project ini.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#133995',
+                        cancelButtonColor: '#C8170D',
+                        confirmButtonText: 'Ya, ACC!',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true
+                    }).then(result => {
+                        if (result.isConfirmed) {
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Project berhasil di-ACC.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => {
-                                window.location.href = "{{ route('telkomakses.acc') }}";
+                                title: 'Memproses ACC...',
+                                text: 'Mohon tunggu sebentar.',
+                                allowOutsideClick: false,
+                                didOpen: () => Swal.showLoading()
                             });
-                        })
-                        .catch(err => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat ACC project.',
-                                confirmButtonColor: '#C8170D'
-                            });
-                        });
-                    }
+
+                            fetch(accForm.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
+                                    body: new FormData(accForm)
+                                })
+                                .then(res => res.json().catch(() => ({})))
+                                .then(data => {
+                                    if (!data || data.success === false) throw new Error(data
+                                        .message ||
+                                        'Terjadi kesalahan saat ACC project.');
+
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Berhasil!',
+                                        text: data.message ||
+                                            'Project berhasil di-ACC.',
+                                        confirmButtonColor: '#133995'
+                                    }).then(() => {
+                                        window.location.href =
+                                            "{{ route('telkomakses.acc') }}";
+                                    });
+                                })
+                                .catch(err => {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Gagal!',
+                                        text: err.message ||
+                                            'Terjadi kesalahan saat ACC project.',
+                                        confirmButtonColor: '#C8170D'
+                                    });
+                                });
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-        // SWEETALERT UNTUK REJECT
-        const rejectForm = document.getElementById('formReject');
-        if (rejectForm) {
-            rejectForm.addEventListener("submit", async function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: 'Anda akan menolak (Reject) project ini.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#133995',
-                    cancelButtonColor: '#C8170D',
-                    confirmButtonText: 'Ya, Reject!',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Memproses Reject...',
-                            text: 'Mohon tunggu sebentar.',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        fetch(rejectForm.action, {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': token },
-                            body: new FormData(rejectForm)
-                        })
-                        .then(res => res.json().catch(() => ({})))
-                        .then(data => {
-                            if (!data || data.success === false) throw new Error(data.message || 'Terjadi kesalahan saat menolak project.');
-
+            // SWEETALERT UNTUK REJECT
+            const rejectForm = document.getElementById('formReject');
+            if (rejectForm) {
+                rejectForm.addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Anda akan menolak (Reject) project ini.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#133995',
+                        cancelButtonColor: '#C8170D',
+                        confirmButtonText: 'Ya, Reject!',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true
+                    }).then(result => {
+                        if (result.isConfirmed) {
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Project berhasil di-reject.',
-                                confirmButtonColor: '#133995'
-                            }).then(() => {
-                                window.location.href = "{{ route('telkomakses.reject') }}";
+                                title: 'Memproses Reject...',
+                                text: 'Mohon tunggu sebentar.',
+                                allowOutsideClick: false,
+                                didOpen: () => Swal.showLoading()
                             });
-                        })
-                        .catch(err => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: err.message || 'Terjadi kesalahan saat menolak project.',
-                                confirmButtonColor: '#C8170D'
-                            });
-                        });
-                    }
+
+                            fetch(rejectForm.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    },
+                                    body: new FormData(rejectForm)
+                                })
+                                .then(res => res.json().catch(() => ({})))
+                                .then(data => {
+                                    if (!data || data.success === false) throw new Error(
+                                        data.message ||
+                                        'Terjadi kesalahan saat menolak project.');
+
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Berhasil!',
+                                        text: data.message ||
+                                            'Project berhasil di-reject.',
+                                        confirmButtonColor: '#133995'
+                                    }).then(() => {
+                                        window.location.href =
+                                            "{{ route('telkomakses.reject') }}";
+                                    });
+                                })
+                                .catch(err => {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Gagal!',
+                                        text: err.message ||
+                                            'Terjadi kesalahan saat menolak project.',
+                                        confirmButtonColor: '#C8170D'
+                                    });
+                                });
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-    }); // end DOMContentLoaded
+        }); // end DOMContentLoaded
     </script>
