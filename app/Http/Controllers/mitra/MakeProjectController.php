@@ -204,7 +204,7 @@ class MakeProjectController extends Controller
             // ==============================
             $allProjectRef = $firestore->collection('All_Project_TA')->add([
                 'ta_project_deskripsi'        => $request->deskripsi,
-                'ta_project_khs'              => $request->khs,
+                'ta_project_ihld'              => $request->ihld,
                 'ta_project_pekerjaan'        => $request->pekerjaan,
                 'ta_project_pelaksana'        => $request->pelaksana,
                 'ta_project_qe_id'            => $firestore->collection('QE')->document($request->qe),

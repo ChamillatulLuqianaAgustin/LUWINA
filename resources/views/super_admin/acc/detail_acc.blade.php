@@ -140,14 +140,6 @@
                             <th colspan="8" class="text-end">TOTAL</th>
                             <th colspan="4">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                         </tr>
-                        <tr>
-                            <th colspan="8" class="text-end">PPN</th>
-                            <th colspan="4">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
-                        </tr>
-                        <tr>
-                            <th colspan="8" class="text-end">TOTAL SETELAH PPN</th>
-                            <th colspan="4">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                        </tr>
                     </tfoot>
                 </table>
             </div>
@@ -724,19 +716,19 @@
         }
 
         /* .btn-add,
-                                                                                                                                                                                                                                    .btn-remove {
-                                                                                                                                                                                                                                        display: flex;
-                                                                                                                                                                                                                                        justify-content: center;
-                                                                                                                                                                                                                                        align-items: center;
-                                                                                                                                                                                                                                        font-weight: bold;
-                                                                                                                                                                                                                                        font-size: 16px;
-                                                                                                                                                                                                                                        border-radius: 50%;
-                                                                                                                                                                                                                                        width: 36px;
-                                                                                                                                                                                                                                        height: 36px;
-                                                                                                                                                                                                                                        cursor: pointer;
-                                                                                                                                                                                                                                        border: none;
-                                                                                                                                                                                                                                        transition: 0.2s;
-                                                                                                                                                                                                                                    } */
+                                                                                                                                                                                                                                        .btn-remove {
+                                                                                                                                                                                                                                            display: flex;
+                                                                                                                                                                                                                                            justify-content: center;
+                                                                                                                                                                                                                                            align-items: center;
+                                                                                                                                                                                                                                            font-weight: bold;
+                                                                                                                                                                                                                                            font-size: 16px;
+                                                                                                                                                                                                                                            border-radius: 50%;
+                                                                                                                                                                                                                                            width: 36px;
+                                                                                                                                                                                                                                            height: 36px;
+                                                                                                                                                                                                                                            cursor: pointer;
+                                                                                                                                                                                                                                            border: none;
+                                                                                                                                                                                                                                            transition: 0.2s;
+                                                                                                                                                                                                                                        } */
 
         .btn-add {
             background: #133995;

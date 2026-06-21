@@ -540,7 +540,7 @@ class RejectController extends Controller
                 ['path' => 'ta_project_qe_id', 'value' => $oldQERef], // tetap pakai QE lama
                 ['path' => 'ta_project_pekerjaan', 'value' => $header['ta_project_pekerjaan'] ?? $oldNamaProject], // 🔥 ambil dari file revisi jika ada
                 ['path' => 'ta_project_deskripsi', 'value' => $oldDeskripsi], // deskripsi tetap
-                ['path' => 'ta_project_khs', 'value' => $header['ta_project_khs'] ?? $oldData['ta_project_khs'] ?? '-'],
+                ['path' => 'ta_project_ihld', 'value' => $header['ta_project_ihld'] ?? $oldData['ta_project_ihld'] ?? '-'],
                 ['path' => 'ta_project_pelaksana', 'value' => $header['ta_project_pelaksana'] ?? $oldData['ta_project_pelaksana'] ?? '-'],
                 ['path' => 'ta_project_witel', 'value' => $header['ta_project_witel'] ?? $oldData['ta_project_witel'] ?? '-'],
                 ['path' => 'ta_project_status', 'value' => 'PROCESS'], // status otomatis jadi PROCESS

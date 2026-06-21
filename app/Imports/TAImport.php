@@ -12,36 +12,66 @@ class TAImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-        // dd($rows);
-        // --- HEADER DATA ---
-        $this->headerData = [
-            'ta_project_pekerjaan' => $rows[1][3] ?? '',
-            'ta_project_khs'       => $rows[2][3] ?? '',
-            'ta_project_pelaksana' => isset($rows[3][3]) ? str_replace(':', '', trim($rows[3][3])) : '',
-            'ta_project_witel'     => isset($rows[4][3]) ? str_replace(':', '', trim($rows[4][3])) : '',
-        ];
-
-        // --- DETAIL DATA (mulai dari baris ke-11 / index 11) ---
         $this->detailData = [];
-        for ($i = 11; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            $designator = $row[2] ?? '';
-            $volume = $row[7] ?? '';
 
-            // Hanya masukkan baris jika designator ada dan volume tidak kosong
-            if (!empty($designator) && $volume !== '' && $volume !== null) {
+        // DETEKSI FORMAT BARU
+        $isNewFormat = strtoupper(trim($rows[0][0] ?? '')) == 'NAMA PROJECT:';
+
+        if ($isNewFormat) {
+
+            // ======================
+            // FORMAT BARU
+            // ======================
+
+            $this->headerData = [
+                'ta_project_pekerjaan' => trim($rows[0][1] ?? ''),
+                'ta_project_ihld'       => trim($rows[1][1] ?? ''),
+                'ta_project_pelaksana' => trim($rows[2][1] ?? ''),
+                'ta_project_witel'     => trim($rows[3][1] ?? ''),
+            ];
+
+            // Mulai baca setelah header DESIGNATOR | VOLUME
+            for ($i = 6; $i < count($rows); $i++) {
+
+                $designator = trim($rows[$i][0] ?? '');
+                $volume     = $rows[$i][1] ?? null;
+
+                if ($designator == '' || $volume === null || $volume === '') {
+                    continue;
+                }
+
                 $this->detailData[] = [
-                    'designator' => trim($designator),
-                    'volume' => is_numeric($volume) ? (float) $volume : $volume,
+                    'designator' => $designator,
+                    'volume'     => (float)$volume,
+                ];
+            }
+        } else {
+
+            // ======================
+            // FORMAT LAMA
+            // ======================
+
+            $this->headerData = [
+                'ta_project_pekerjaan' => $rows[1][3] ?? '',
+                'ta_project_ihld'       => $rows[2][3] ?? '',
+                'ta_project_pelaksana' => isset($rows[3][3]) ? str_replace(':', '', trim($rows[3][3])) : '',
+                'ta_project_witel'     => isset($rows[4][3]) ? str_replace(':', '', trim($rows[4][3])) : '',
+            ];
+
+            for ($i = 11; $i < count($rows); $i++) {
+
+                $designator = trim($rows[$i][2] ?? '');
+                $volume     = $rows[$i][7] ?? null;
+
+                if ($designator == '' || $volume === null || $volume === '') {
+                    continue;
+                }
+
+                $this->detailData[] = [
+                    'designator' => $designator,
+                    'volume'     => (float)$volume,
                 ];
             }
         }
-
-        // Tes hasil
-        // dd([
-        //     'headerData'   => $this->headerData,
-        //     'detailCount'  => count($this->detailData),
-        //     'detailSample' => array_slice($this->detailData, 0, 20),
-        // ]);
     }
 }

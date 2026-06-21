@@ -140,14 +140,6 @@
                                 <th colspan="8" class="text-end">TOTAL</th>
                                 <th colspan="4">{{ number_format($totals['total'], 0, ',', '.') }}</th>
                             </tr>
-                            {{-- <tr>
-                                <th colspan="8" class="text-end">PPN</th>
-                                <th colspan="4">{{ number_format($totals['ppn'], 0, ',', '.') }}</th>
-                            </tr>
-                            <tr>
-                                <th colspan="8" class="text-end">TOTAL SETELAH PPN</th>
-                                <th colspan="4">{{ number_format($totals['grand'], 0, ',', '.') }}</th>
-                            </tr> --}}
                         </tfoot>
                     </table>
                 </div>

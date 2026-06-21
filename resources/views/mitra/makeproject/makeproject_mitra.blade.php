@@ -70,9 +70,9 @@
             </div>
 
             <div class="form-group">
-                <label for="khs" class="label-khs">Nomor KHS:</label>
-                <input type="text" id="khs" name="khs" required class="input-field"
-                    placeholder="Masukkan nomor KHS">
+                <label for="ihld" class="label-ihld">ID IHLD:</label>
+                <input type="text" id="ihld" name="ihld" required class="input-field"
+                    placeholder="Masukkan ID IHLD">
             </div>
 
             <div class="form-group">
@@ -275,9 +275,9 @@
             /* Specific margin for Deskripsi label */
         }
 
-        .label-khs {
+        .label-ihld {
             margin-right: 32.5px;
-            /* Specific margin for KHS label */
+            /* Specific margin for IHLD label */
         }
 
         .label-pelaksana {
@@ -548,11 +548,11 @@
             const qe = document.getElementById('qe').value;
             const pekerjaan = document.getElementById('pekerjaan').value.trim();
             const deskripsi = document.getElementById('deskripsi').value.trim();
-            const khs = document.getElementById('khs').value.trim();
+            const ihld = document.getElementById('ihld').value.trim();
             const pelaksana = document.getElementById('pelaksana').value.trim();
             const witel = document.getElementById('witel').value.trim();
 
-            const allFilled = qe && pekerjaan && deskripsi && khs && pelaksana && witel;
+            const allFilled = qe && pekerjaan && deskripsi && ihld && pelaksana && witel;
 
             document.querySelectorAll('.select-dsg').forEach(select => {
                 select.disabled = !allFilled;
@@ -563,7 +563,7 @@
         document.addEventListener('DOMContentLoaded', toggleDesignatorSelects);
 
         // Jalankan ulang setiap ada perubahan input
-        ['qe', 'pekerjaan', 'deskripsi', 'khs', 'pelaksana', 'witel'].forEach(id => {
+        ['qe', 'pekerjaan', 'deskripsi', 'ihld', 'pelaksana', 'witel'].forEach(id => {
             document.getElementById(id).addEventListener('input', toggleDesignatorSelects);
             document.getElementById(id).addEventListener('change', toggleDesignatorSelects);
         });
