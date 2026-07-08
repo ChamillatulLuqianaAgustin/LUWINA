@@ -30,19 +30,28 @@ class TAImport implements ToCollection
                 'ta_project_witel'     => trim($rows[3][1] ?? ''),
             ];
 
-            // Mulai baca setelah header DESIGNATOR | VOLUME
+            // Mulai baca setelah header DESIGNATOR | HARGA | VOLUME
             for ($i = 6; $i < count($rows); $i++) {
 
                 $designator = trim($rows[$i][0] ?? '');
-                $volume     = $rows[$i][1] ?? null;
+
+                $hargaMaterial = $rows[$i][1] ?? 0;
+                $hargaJasa     = $rows[$i][2] ?? 0;
+                $volume        = $rows[$i][3] ?? null;
 
                 if ($designator == '' || $volume === null || $volume === '') {
                     continue;
                 }
 
+                // membersihkan format angka
+                $hargaMaterial = str_replace(['Rp', '.', ',', ' '], '', $hargaMaterial);
+                $hargaJasa     = str_replace(['Rp', '.', ',', ' '], '', $hargaJasa);
+
                 $this->detailData[] = [
-                    'designator' => $designator,
-                    'volume'     => (float)$volume,
+                    'designator'      => $designator,
+                    'harga_material'  => (float)$hargaMaterial,
+                    'harga_jasa'      => (float)$hargaJasa,
+                    'volume'          => (float)$volume,
                 ];
             }
         } else {

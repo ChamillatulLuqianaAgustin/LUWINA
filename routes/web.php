@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\super_admin\MitraController;
 use App\Http\Controllers\super_admin\UserController;
 use App\Http\Controllers\super_admin\MakeProjectController;
 use App\Http\Controllers\super_admin\AllProjectController;
@@ -26,6 +27,11 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Super Admin
 Route::prefix('superadmin')->group(function () {
+    // mitra
+    Route::get('/mitra', [MitraController::class, 'index'])->name('superadmin.mitra');
+    Route::post('/mitra/store', [MitraController::class, 'store'])->name('superadmin.mitra_store');
+    Route::post('/mitra/update/{id}', [MitraController::class, 'update'])->name('superadmin.mitra_update');
+    Route::delete('/mitra/delete/{id}', [MitraController::class, 'destroy'])->name('superadmin.mitra_destroy');
     // user
     Route::get('/user', [UserController::class, 'index'])->name('superadmin.user');
     Route::post('/user/store', [UserController::class, 'store'])->name('superadmin.user_store');

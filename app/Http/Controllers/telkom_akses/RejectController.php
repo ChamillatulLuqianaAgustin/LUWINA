@@ -191,30 +191,42 @@ class RejectController extends Controller
 
     private function hitungTotal($detailDocs)
     {
-        $totalMaterial = 0;
-        $totalJasa     = 0;
+        $total = 0;
 
         foreach ($detailDocs as $d) {
+
             if (!$d->exists()) continue;
 
             $row = $d->data();
-            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
-            $volume         = $row['ta_detail_volume'] ?? 0;
 
-            $totalMaterial += ($designatorData['mitra_harga_material'] ?? 0) * $volume;
-            $totalJasa     += ($designatorData['mitra_harga_jasa'] ?? 0) * $volume;
+            $designatorData = $row['ta_detail_ta_id']->snapshot()->data();
+
+            $volume = $row['ta_detail_volume'] ?? 0;
+
+            // ==========================
+            // Cek apakah project upload excel
+            // ==========================
+
+            if (
+                isset($row['ta_detail_harga_material']) &&
+                isset($row['ta_detail_harga_jasa'])
+            ) {
+
+                $hargaMaterial = $row['ta_detail_harga_material'];
+                $hargaJasa     = $row['ta_detail_harga_jasa'];
+            } else {
+
+                $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+                $hargaJasa     = $designatorData['mitra_harga_jasa'] ?? 0;
+            }
+
+            $total += ($hargaMaterial + $hargaJasa) * $volume;
         }
 
-        $total = $totalMaterial + $totalJasa;
-        // $ppn   = $total * 0.11;
-        // $grand = $total + $ppn;
-
         return [
-            'material' => $totalMaterial,
-            'jasa'     => $totalJasa,
+            'material' => 0,
+            'jasa'     => 0,
             'total'    => $total,
-            // 'ppn'      => $ppn,
-            // 'grand'    => $grand,
         ];
     }
 
@@ -250,12 +262,28 @@ class RejectController extends Controller
 
             $row = $d->data();
 
-            // Fetch data from Data_Project_Mitra
-            $designatorRef = $row['ta_detail_ta_id'];
+            // Fetch data dari Data_Project_Mitra
+            $designatorRef  = $row['ta_detail_ta_id'];
             $designatorData = $this->getReferenceData($designatorRef);
 
-            $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
-            $hargaJasa = $designatorData['mitra_harga_jasa'] ?? 0;
+            // ==========================
+            // Cek apakah upload Excel
+            // ==========================
+            if (
+                isset($row['ta_detail_harga_material']) &&
+                isset($row['ta_detail_harga_jasa'])
+            ) {
+
+                // gunakan harga dari Detail_Project_TA
+                $hargaMaterial = $row['ta_detail_harga_material'];
+                $hargaJasa     = $row['ta_detail_harga_jasa'];
+            } else {
+
+                // gunakan harga master
+                $hargaMaterial = $designatorData['mitra_harga_material'] ?? 0;
+                $hargaJasa     = $designatorData['mitra_harga_jasa'] ?? 0;
+            }
+
             $volume = $row['ta_detail_volume'] ?? 0;
 
             $totalM = $hargaMaterial * $volume;

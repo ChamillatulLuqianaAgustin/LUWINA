@@ -89,12 +89,14 @@ class UserController extends Controller
                 $data = $docu->data();
 
                 $uker_doc[] = [
-                    'id'   => $docu->id(),       // contoh: "1"
-                    'unit' => $data['Unit'] ?? null, // HARUS 'Unit'
+                    'id'    => $docu->id(),
+                    'unit'  => $data['Unit'] ?? null,
+                    'jenis' => $data['Jenis'] ?? null,
                 ];
             }
         }
-        // dd($uker_doc);
+
+        usort($uker_doc, fn($a, $b) => (int)$a['id'] <=> (int)$b['id']);
 
         return $uker_doc;
     }

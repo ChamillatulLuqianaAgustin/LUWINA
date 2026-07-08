@@ -1,5 +1,5 @@
 @extends('layouts.super_admin.template_superadmin')
-@section('title', 'User')
+@section('title', 'Mitra')
 
 @section('header')
     @include('layouts.super_admin.header_superadmin')
@@ -11,11 +11,11 @@
 
     <div class="page">
         <div class="top-bar">
-            <button type="button" class="btn-add-user">+ Add User</button>
+            <button type="button" class="btn-add-user">+ Add Mitra</button>
 
             <div class="search-container">
                 <label>Search:</label>
-                <input type="text" id="searchInput" placeholder="NIK / Nama" class="search-input">
+                <input type="text" id="searchInput" placeholder="Nama Mitra" class="search-input">
             </div>
         </div>
         <div class="table-responsive">
@@ -23,40 +23,32 @@
                 style="min-width: 100%">
                 <thead style="text-align: center;">
                     <tr>
-                        <th style="width: 50px;">NO</th>
-                        <th style="width: 200px;">NIK</th>
-                        <th style="width: 300px;">NAMA</th>
-                        <th style="width: 300px;">UNIT KERJA</th>
-                        <th style="width: 200px;">ROLE</th>
-                        <th style="width: 200px;">PASSWORD</th>
-                        <th style="width: 50px;">EDIT</th>
-                        <th style="width: 50px;">DELETE</th>
+                        <th style="width:70px;">NO</th>
+                        <th>NAMA MITRA</th>
+                        <th style="width:80px;">EDIT</th>
+                        <th style="width:80px;">DELETE</th>
                     </tr>
                 </thead>
                 <tbody style="text-align: center;">
-                    @foreach ($usr_doc as $index => $user)
+                    @foreach ($mitra_doc as $index => $mitra)
                         <tr>
-                            <td style="width: 50px;">{{ $index + 1 }}</td>
-                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $user['nik'] }}</td>
-                            <td style="max-width: 300px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $user['nama'] }}</td>
-                            <td style="max-width: 300px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $user['uker'] }}</td>
-                            <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                {{ $user['role'] }}</td>
-                            <td>********</td> <!-- Password ditampilkan sebagai asteris -->
+
+                            <td>{{ $index + 1 }}</td>
+
                             <td>
-                                <a href="#" class="btn-edit-user" data-id="{{ $user['id'] }}"
-                                    data-nik="{{ $user['nik'] }}" data-nama="{{ $user['nama'] }}"
-                                    data-uker="{{ $user['uker_id'] }}" data-role="{{ $user['role_id'] }}"
-                                    data-password="{{ $user['password'] }}">
-                                    <img src="{{ asset('assets/edit.png') }}" alt="Edit"
-                                        style="width:20px;height:20px;">
+                                {{ $mitra['unit'] }}
+                            </td>
+
+                            <td>
+                                <a href="#" class="btn-edit-mitra" data-id="{{ $mitra['id'] }}"
+                                    data-unit="{{ $mitra['unit'] }}">
+
+                                    <img src="{{ asset('assets/edit.png') }}" style="width:20px;height:20px;">
                                 </a>
                             </td>
+
                             <td>
-                                <form action="{{ route('superadmin.user_destroy', $user['id']) }}" method="POST"
+                                <form action="{{ route('superadmin.mitra_destroy', $mitra['id']) }}" method="POST"
                                     class="form-delete">
                                     @csrf
                                     @method('DELETE')
@@ -66,6 +58,7 @@
                                     </button>
                                 </form>
                             </td>
+
                         </tr>
                     @endforeach
                 </tbody>
@@ -73,109 +66,53 @@
         </div>
     </div>
 
-    <!-- Pop-Up Add User -->
-    <div id="addUserModal" class="modal" style="display: none;">
+    <!-- Pop-Up Add Mitra -->
+    <div id="addMitraModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <h3 class="title">Add User</h3>
-            <form class="addUserForm" id="addUserForm" method="POST" action="{{ route('superadmin.user_store') }}">
+            <h3 class="title">Add Mitra</h3>
+
+            <form id="addMitraForm" method="POST" action="{{ route('superadmin.mitra_store') }}">
+
                 @csrf
-                <div class="edit-nik">
-                    <label for="nik" class="label-nik">NIK:</label>
-                    <input type="text" id="nik" name="nik" class="input-field" placeholder="Masukkan NIK User"
-                        required>
-                </div>
 
                 <div class="edit-nama">
-                    <label for="nama" class="label-nama">Nama:</label>
-                    <input type="text" id="nama" name="nama" class="input-field" placeholder="Masukkan Nama User"
-                        required>
+                    <label class="label-nama">
+                        Nama Mitra:
+                    </label>
+
+                    <input type="text" name="unit" class="input-field" placeholder="Masukkan Nama Mitra" required>
                 </div>
 
-                <div class="edit-role">
-                    <label for="role" class="label-role">Role:</label>
-                    <select id="role" name="role" class="select-field" required>
-                        <option value="" disabled selected hidden>Pilih Role User</option>
-                        @foreach ($role_doc as $rl)
-                            <option value="{{ $rl['id'] }}">{{ $rl['role'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <button type="submit" class="btn-save">
+                    Save
+                </button>
 
-                <div class="edit-uker">
-                    <label for="uker" class="label-uker">Unit Kerja:</label>
-                    <select id="uker" name="uker" class="select-field" required>
-                        <option value="" disabled selected hidden>Pilih Unit Kerja</option>
-                        @foreach ($uker_doc as $uk)
-                            <option value="{{ $uk['id'] }}" data-jenis="{{ strtolower($uk['jenis']) }}">
-                                {{ $uk['unit'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="edit-password">
-                    <label for="password" class="label-password">Password:</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="password" name="password" class="input-field"
-                            placeholder="Masukkan Password User" required>
-                        <span class="toggle-password" onclick="togglePassword('password', this)" style="top: 55%;">
-                            <img src="{{ asset('assets/eye-closed.png') }}" alt="Show" id="password_eye">
-                        </span>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save">Save</button>
             </form>
+
         </div>
     </div>
 
-    <!-- Pop-Up Edit User -->
-    <div id="editUserModal" class="modal" style="display: none;">
+    <!-- Pop-Up Edit Mitra -->
+    <div id="editMitraModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <h3 class="title">Edit User</h3>
-            <form class="editUserForm" id="editUserForm" method="POST">
+            <h3 class="title">Edit Mitra</h3>
+
+            <form id="editMitraForm" method="POST">
                 @csrf
+
                 <input type="hidden" id="edit_id" name="id">
 
-                <div class="edit-nik">
-                    <label for="edit_nik" class="label-nik">NIK:</label>
-                    <input type="text" id="edit_nik" name="nik" class="input-field">
-                </div>
-
                 <div class="edit-nama">
-                    <label for="edit_nama" class="label-nama">Nama:</label>
-                    <input type="text" id="edit_nama" name="nama" class="input-field">
+                    <label for="edit_unit" class="label-nama">Nama Mitra:</label>
+
+                    <input type="text" id="edit_unit" name="unit" class="input-field"
+                        placeholder="Masukkan Nama Mitra" required>
                 </div>
 
-                <div class="edit-role">
-                    <label for="edit_role" class="label-role">Role:</label>
-                    <select id="edit_role" name="role" class="select-field">
-                        @foreach ($role_doc as $rl)
-                            <option value="{{ $rl['id'] }}">{{ $rl['role'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <button type="submit" class="btn-save">
+                    Save
+                </button>
 
-                <div class="edit-uker">
-                    <label for="edit_uker" class="label-uker">Unit Kerja:</label>
-                    <select id="edit_uker" name="uker" class="select-field">
-                        @foreach ($uker_doc as $uk)
-                            <option value="{{ $uk['id'] }}">{{ $uk['unit'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="edit-password">
-                    <label for="edit_password" class="label-password">Password:</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="edit_password" name="password" class="input-field">
-                        <span class="toggle-password" onclick="togglePassword('edit_password', this)" style="top: 55%;">
-                            <img src="{{ asset('assets/eye-closed.png') }}" alt="Show">
-                        </span>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-save">Save</button>
             </form>
         </div>
     </div>
@@ -429,54 +366,49 @@
 
     <script>
         document.getElementById("searchInput").addEventListener("keyup", function() {
+
             let filter = this.value.toLowerCase();
+
             let rows = document.querySelectorAll("#data-table tbody tr");
 
             rows.forEach(row => {
-                let nik = row.cells[1].textContent.toLowerCase();
-                let nama = row.cells[2].textContent.toLowerCase();
 
-                if (nik.includes(filter) || nama.includes(filter)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
+                let nama = row.cells[1].textContent.toLowerCase();
+
+                row.style.display =
+                    nama.includes(filter) ? "" : "none";
+
             });
+
         });
 
-        // Ambil modal Edit User
-        const editUserModal = document.getElementById("editUserModal");
+        const editMitraModal = document.getElementById("editMitraModal");
 
-        document.querySelectorAll('.btn-edit-user').forEach(link => {
-            link.addEventListener('click', function(event) {
-                event.preventDefault();
+        document.querySelectorAll(".btn-edit-mitra").forEach(button => {
 
-                const id = this.getAttribute('data-id');
-                const nik = this.getAttribute('data-nik');
-                const nama = this.getAttribute('data-nama');
-                const uker = this.getAttribute('data-uker');
-                const role = this.getAttribute('data-role');
-                const password = this.getAttribute('data-password');
+            button.addEventListener("click", function(e) {
 
-                // Isi form
-                document.getElementById('edit_id').value = id;
-                document.getElementById('edit_nik').value = nik;
-                document.getElementById('edit_nama').value = nama;
-                document.getElementById('edit_uker').value = uker;
-                document.getElementById('edit_role').value = role;
-                document.getElementById('edit_password').value = password;
+                e.preventDefault();
 
-                // Set action form ke route update
-                document.getElementById('editUserForm').action = `/superadmin/user/update/${id}`;
+                document.getElementById("edit_id").value =
+                    this.dataset.id;
 
-                editUserModal.style.display = "block";
+                document.getElementById("edit_unit").value =
+                    this.dataset.unit;
+
+                document.getElementById("editMitraForm").action =
+                    `/superadmin/mitra/update/${this.dataset.id}`;
+
+                editMitraModal.style.display = "block";
+
             });
+
         });
 
         // Tutup modal edit jika klik di luar
         window.addEventListener("click", function(event) {
-            if (event.target === editUserModal) {
-                editUserModal.style.display = "none";
+            if (event.target === editMitraModal) {
+                editMitraModal.style.display = "none";
             }
         });
 
@@ -500,51 +432,53 @@
             }
         }
 
-        // Ambil elemen modal Add User
-        const addUserModal = document.getElementById("addUserModal");
+        const addMitraModal = document.getElementById("addMitraModal");
 
-        // Tombol Add User
-        const addUserBtn = document.querySelector(".btn-add-user");
+        const addMitraBtn = document.querySelector(".btn-add-user");
 
-        // Tampilkan modal saat tombol Add User diklik
-        addUserBtn.addEventListener("click", function() {
-            addUserModal.style.display = "block";
+        addMitraBtn.addEventListener("click", function() {
+
+            addMitraModal.style.display = "block";
+
         });
 
-        // Tutup modal jika klik di luar area modal
         window.addEventListener("click", function(event) {
-            if (event.target === addUserModal) {
-                addUserModal.style.display = "none";
+
+            if (event.target === addMitraModal) {
+
+                addMitraModal.style.display = "none";
+
             }
+
         });
 
-        // SWEETALERT UNTUK ADD USER
-        document.getElementById("addUserForm").addEventListener("submit", async function(e) {
+        // SWEETALERT UNTUK ADD MITRA
+        document.getElementById("addMitraForm").addEventListener("submit", async function(e) {
             e.preventDefault();
 
-            const addUserModal = document.getElementById("addUserModal");
+            const addMitraModal = document.getElementById("addMitraModal");
             const saveBtn = this.querySelector(".btn-save");
             const actionUrl = this.action;
             const formData = new FormData(this);
 
             Swal.fire({
                 title: 'Apakah Anda yakin?',
-                text: 'Pastikan semua data user sudah benar sebelum disimpan.',
+                text: 'Pastikan semua data mitra sudah benar sebelum disimpan.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#133995',
                 cancelButtonColor: '#C8170D',
                 cancelButtonText: 'Cancel',
-                confirmButtonText: 'Ya, tambahkan user!',
+                confirmButtonText: 'Ya, tambahkan mitra!',
                 reverseButtons: true
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    // 1️⃣ Tutup modal Add User
-                    addUserModal.style.display = "none";
+                    // 1️⃣ Tutup modal Add Mitra
+                    addMitraModal.style.display = "none";
 
                     // 2️⃣ Tampilkan loading SweetAlert
                     Swal.fire({
-                        title: 'Sedang menambahkan user...',
+                        title: 'Sedang menambahkan mitra...',
                         text: 'Mohon tunggu sebentar.',
                         allowOutsideClick: false,
                         didOpen: () => {
@@ -564,14 +498,14 @@
 
                         if (!res.ok || (data.success === false)) {
                             throw new Error(data.message ||
-                                "Terjadi kesalahan saat menambahkan user.");
+                                "Terjadi kesalahan saat menambahkan mitra.");
                         }
 
                         // 3️⃣ Tutup loading dan tampilkan alert berhasil
                         Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: data.message || "User berhasil ditambahkan.",
+                            text: data.message || "Mitra berhasil ditambahkan.",
                             confirmButtonColor: "#133995"
                         }).then(() => {
                             window.location.reload();
@@ -582,7 +516,7 @@
                         Swal.fire({
                             icon: "error",
                             title: "Gagal!",
-                            text: err.message || "Terjadi kesalahan saat menambahkan user.",
+                            text: err.message || "Terjadi kesalahan saat menambahkan mitra.",
                             confirmButtonColor: "#C8170D"
                         });
                     } finally {
@@ -592,26 +526,26 @@
             });
         });
 
-        // SWEETALERT UNTUK DELETE USER
+        // SWEETALERT UNTUK DELETE MITRA
         document.querySelectorAll('.form-delete').forEach(form => {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 Swal.fire({
                     title: 'Apakah Anda yakin?',
-                    text: 'User ini akan dihapus secara permanen dan tidak dapat dikembalikan.',
+                    text: 'Mitra ini akan dihapus secara permanen dan tidak dapat dikembalikan.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#133995',
                     cancelButtonColor: '#C8170D',
                     cancelButtonText: 'Cancel',
-                    confirmButtonText: 'Ya, hapus user!',
+                    confirmButtonText: 'Ya, hapus mitra!',
                     reverseButtons: true
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         // 1️⃣ Tampilkan loading 
                         Swal.fire({
-                            title: 'Sedang menghapus user...',
+                            title: 'Sedang menghapus mitra...',
                             text: 'Mohon tunggu sebentar.',
                             allowOutsideClick: false,
                             didOpen: () => {
@@ -637,13 +571,13 @@
 
                             if (!res.ok || data.success === false)
                                 throw new Error(data.message ||
-                                    'Terjadi kesalahan saat menghapus user.');
+                                    'Terjadi kesalahan saat menghapus mitra.');
 
                             // 2️⃣ Tutup loading & tampilkan alert sukses
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil!',
-                                text: data.message || 'User berhasil dihapus.',
+                                text: data.message || 'Mitra berhasil dihapus.',
                                 confirmButtonColor: '#133995'
                             }).then(() => {
                                 window.location.reload();
@@ -655,7 +589,7 @@
                                 icon: 'error',
                                 title: 'Gagal!',
                                 text: err.message ||
-                                    'Terjadi kesalahan saat menghapus user.',
+                                    'Terjadi kesalahan saat menghapus mitra.',
                                 confirmButtonColor: '#C8170D'
                             });
                         }
@@ -664,18 +598,18 @@
             });
         });
 
-        // SWEETALERT UNTUK EDIT USER
-        document.getElementById("editUserForm").addEventListener("submit", async function(e) {
+        // SWEETALERT UNTUK EDIT MITRA
+        document.getElementById("editMitraForm").addEventListener("submit", async function(e) {
             e.preventDefault();
 
-            const editUserModal = document.getElementById("editUserModal");
+            const editMitraModal = document.getElementById("editMitraModal");
             const saveBtn = this.querySelector(".btn-save");
             const actionUrl = this.action;
             const formData = new FormData(this);
 
             Swal.fire({
                 title: 'Apakah Anda yakin?',
-                text: 'Perubahan data user akan disimpan.',
+                text: 'Perubahan data mitra akan disimpan.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#133995',
@@ -685,8 +619,8 @@
                 reverseButtons: true
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    // 1️⃣ Tutup modal edit user
-                    editUserModal.style.display = "none";
+                    // 1️⃣ Tutup modal edit mitra
+                    editMitraModal.style.display = "none";
 
                     // 2️⃣ Tampilkan loading
                     Swal.fire({
@@ -710,13 +644,13 @@
 
                         if (!res.ok || data.success === false)
                             throw new Error(data.message ||
-                                "Terjadi kesalahan saat menyimpan perubahan user.");
+                                "Terjadi kesalahan saat menyimpan perubahan mitra.");
 
                         // 3️⃣ Tutup loading & tampilkan alert sukses
                         Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: data.message || "Perubahan data user berhasil disimpan.",
+                            text: data.message || "Perubahan data mitra berhasil disimpan.",
                             confirmButtonColor: "#133995"
                         }).then(() => {
                             window.location.reload();
@@ -728,7 +662,7 @@
                             icon: "error",
                             title: "Gagal!",
                             text: err.message ||
-                                "Terjadi kesalahan saat menyimpan perubahan user.",
+                                "Terjadi kesalahan saat menyimpan perubahan mitra.",
                             confirmButtonColor: "#C8170D"
                         });
                     } finally {

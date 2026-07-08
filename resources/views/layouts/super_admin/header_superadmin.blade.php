@@ -25,6 +25,8 @@
 
 <!-- Menu Navigasi -->
 <div class="menu-nav">
+    <a href="{{ route('superadmin.mitra') }}"
+        class="{{ request()->routeIs('superadmin.mitra*') ? 'active' : '' }}"><span>MITRA</span></a>
     <a href="{{ route('superadmin.user') }}"
         class="{{ request()->routeIs('superadmin.user*') ? 'active' : '' }}"><span>USER</span></a>
     <a href="{{ route('superadmin.makeproject') }}"
