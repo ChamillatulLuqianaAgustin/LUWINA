@@ -108,7 +108,9 @@ class AccController extends Controller
             if ($doca->exists()) {
                 $data = $doca->data();
 
-                if (($data['ta_project_status'] ?? '') !== 'ACC') {
+                $status = $data['ta_project_status'] ?? '';
+
+                if (!in_array($status, ['ACC', 'REKONSILIASI', 'REVIEW TA', 'CLOSE'])) {
                     continue;
                 }
 
@@ -383,6 +385,20 @@ class AccController extends Controller
             // 'grand' => $grand,
         ];
 
+
+        $returnDocs = $firestore->collection('Return_Project')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        $catatanReturn = null;
+
+        foreach ($returnDocs as $rd) {
+            if ($rd->exists()) {
+                $catatanReturn = $rd->data()['catatan'] ?? null;
+                break; // ambil yang pertama
+            }
+        }
+
         return view('mitra.acc.detail_acc', [
             'acc' => [
                 'id'              => $id,
@@ -398,6 +414,7 @@ class AccController extends Controller
                 'status'          => $data['ta_project_status'],
                 'total'           => $data['ta_project_total'],
                 'detail'          => $detail,
+                'catatan_return' => $catatanReturn,
             ],
             'totals' => $totals,
         ]);
@@ -625,148 +642,24 @@ class AccController extends Controller
                 ->with('error', 'Project tidak ditemukan');
         }
 
-        // gunakan Firestore Timestamp agar konsisten dengan data Firestore
+        // Firestore Timestamp
         $now = new FireTimestamp(new \DateTime());
 
+        // Update waktu pengerjaan + status
         $docRef->update([
-            ['path' => 'ta_project_waktu_pengerjaan', 'value' => $now],
+            [
+                'path' => 'ta_project_waktu_pengerjaan',
+                'value' => $now,
+            ],
+            [
+                'path' => 'ta_project_status',
+                'value' => 'REKONSILIASI',
+            ],
         ]);
 
         return redirect()->route('mitra.acc_detail', $id)
-            ->with('success', 'Tanggal pengerjaan berhasil diset.');
+            ->with('success', 'Project berhasil dikerjakan.');
     }
-
-    // public function storeFoto(Request $request, $id)
-    // {
-    //     try {
-    //         $firestore = $this->getFirestore();
-
-    //         // mapping input => step
-    //         $mapping = [
-    //             'sebelum' => 'foto_sebelum',
-    //             'proses'  => 'foto_proses',
-    //             'sesudah' => 'foto_sesudah',
-    //         ];
-
-    //         // 1) Pastikan ada file sama sekali
-    //         $hasAnyFile = false;
-    //         foreach ($mapping as $inputName) {
-    //             if ($request->hasFile($inputName) && count($request->file($inputName)) > 0) {
-    //                 $hasAnyFile = true;
-    //                 break;
-    //             }
-    //         }
-    //         if (! $hasAnyFile) {
-    //             return response()->json(['status' => 'error', 'message' => 'Tidak ada file yang diupload.'], 400);
-    //         }
-
-    //         // 2) Upload ke Cloudinary dulu -> kumpulkan URL
-    //         $uploaded = [
-    //             'sebelum' => [],
-    //             'proses'  => [],
-    //             'sesudah' => [],
-    //         ];
-
-    //         foreach ($mapping as $tipe => $inputName) {
-    //             if ($request->hasFile($inputName)) {
-    //                 foreach ($request->file($inputName) as $file) {
-    //                     // safety: cek instance
-    //                     if (! $file->isValid()) continue;
-
-    //                     $originalName = $file->getClientOriginalName();
-    //                     $fileName = pathinfo($originalName, PATHINFO_FILENAME);
-    //                     $publicId = date('Y-m-d_His') . '_' . $fileName;
-    //                     $cloudinaryPath = "evident_foto/" . $tipe;
-
-    //                     // upload ke Cloudinary
-    //                     $cloudinary = new Cloudinary(config('cloudinary.url'));
-
-    //                     $upload = $cloudinary->uploadApi()->upload(
-    //                         $file->getRealPath(),
-    //                         [
-    //                             'public_id' => $publicId,
-    //                             'folder'    => $cloudinaryPath,
-    //                         ]
-    //                     );
-
-    //                     $secureUrl = $upload['secure_url'];
-    //                     $uploaded[$tipe][] = $secureUrl;
-    //                 }
-    //             }
-    //         }
-
-    //         // 3) Cari dokumen Foto_Evident (by project_id)
-    //         $fotoDocs = $firestore->collection('Foto_Evident')
-    //             ->where('project_id', '=', $id)
-    //             ->documents();
-
-    //         $docRef = null;
-    //         foreach ($fotoDocs as $d) {
-    //             if ($d->exists()) {
-    //                 $docRef = $firestore->collection('Foto_Evident')->document($d->id());
-    //                 break;
-    //             }
-    //         }
-
-    //         // Kalau belum ada dokumen -> buat baru (dengan struktur awal)
-    //         if (! $docRef) {
-    //             $newDoc = $firestore->collection('Foto_Evident')->add([
-    //                 'project_id'  => $id,
-    //                 'foto_path'   => [
-    //                     'sebelum' => [],
-    //                     'proses'  => [],
-    //                     'sesudah' => [],
-    //                 ],
-    //                 'uploaded_at' => new FireTimestamp(new \DateTime()),
-    //             ]);
-    //             // ambil reference dokumen yang baru dibuat
-    //             $docRef = $firestore->collection('Foto_Evident')->document($newDoc->id());
-    //         }
-
-    //         // 4) Ambil existing data dengan cara aman
-    //         $snapshot = $docRef->snapshot()->data() ?? [];
-    //         $existing = $snapshot['foto_path'] ?? [
-    //             'sebelum' => [],
-    //             'proses'  => [],
-    //             'sesudah' => [],
-    //         ];
-
-    //         // pastikan setiap key adalah array
-    //         $existing['sebelum'] = is_array($existing['sebelum']) ? $existing['sebelum'] : [];
-    //         $existing['proses']  = is_array($existing['proses']) ? $existing['proses'] : [];
-    //         $existing['sesudah'] = is_array($existing['sesudah']) ? $existing['sesudah'] : [];
-
-    //         // 5) Merge existing + uploaded
-    //         $merged = [
-    //             'sebelum' => array_values(array_merge($existing['sebelum'], $uploaded['sebelum'])),
-    //             'proses'  => array_values(array_merge($existing['proses'],  $uploaded['proses'])),
-    //             'sesudah' => array_values(array_merge($existing['sesudah'], $uploaded['sesudah'])),
-    //         ];
-
-    //         // 6) Simpan ke Firestore (merge)
-    //         $docRef->set([
-    //             'project_id'  => $id,
-    //             'foto_path'   => $merged,
-    //             'uploaded_at' => new FireTimestamp(new \DateTime()),
-    //         ], ['merge' => true]);
-
-    //         // 7) Update ta_project_waktu_selesai bila perlu
-    //         $projectRef = $firestore->collection('All_Project_TA')->document($id);
-    //         $projectDoc = $projectRef->snapshot();
-    //         if ($projectDoc->exists()) {
-    //             $data = $projectDoc->data();
-    //             if (empty($data['ta_project_waktu_selesai'])) {
-    //                 $projectRef->update([
-    //                     ['path' => 'ta_project_waktu_selesai', 'value' => new FireTimestamp(new \DateTime())],
-    //                 ]);
-    //             }
-    //         }
-
-    //         return response()->json(['status' => 'success', 'message' => 'Foto evident berhasil diupload.', 'data' => $merged], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-    //     }
-    // }
 
     public function storeFoto(Request $request, $id)
     {
@@ -876,16 +769,28 @@ class AccController extends Controller
             ];
 
             // ================================
-            // MERGE PER DESIGNATOR
+            // CREATE / UPDATE PER DESIGNATOR
             // ================================
             foreach ($uploaded['sebelum'] as $dsg => $urls) {
-                $existing['sebelum'][$dsg] =
-                    array_merge($existing['sebelum'][$dsg] ?? [], $urls);
+
+                if (empty($existing['sebelum'][$dsg])) {
+                    // CREATE
+                    $existing['sebelum'][$dsg] = $urls;
+                } else {
+                    // UPDATE (replace foto lama)
+                    $existing['sebelum'][$dsg] = $urls;
+                }
             }
 
             foreach ($uploaded['sesudah'] as $dsg => $urls) {
-                $existing['sesudah'][$dsg] =
-                    array_merge($existing['sesudah'][$dsg] ?? [], $urls);
+
+                if (empty($existing['sesudah'][$dsg])) {
+                    // CREATE
+                    $existing['sesudah'][$dsg] = $urls;
+                } else {
+                    // UPDATE (replace foto lama)
+                    $existing['sesudah'][$dsg] = $urls;
+                }
             }
 
             // ================================
@@ -909,7 +814,7 @@ class AccController extends Controller
             if ($projectSnapshot->exists()) {
                 $projectData = $projectSnapshot->data();
 
-                // hanya set jika belum ada
+                // isi waktu selesai hanya sekali
                 if (empty($projectData['ta_project_waktu_selesai'])) {
                     $projectRef->update([
                         [
@@ -918,12 +823,19 @@ class AccController extends Controller
                         ],
                     ]);
                 }
+
+                // status selalu menjadi REVIEW TA setelah upload foto
+                $projectRef->update([
+                    [
+                        'path'  => 'ta_project_status',
+                        'value' => 'REVIEW TA',
+                    ],
+                ]);
             }
 
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Foto evident berhasil diupload.'
-            ]);
+            return redirect()
+                ->route('mitra.acc_detail', $id)
+                ->with('success', 'Foto evident berhasil diupload.');
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',

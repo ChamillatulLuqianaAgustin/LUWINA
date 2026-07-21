@@ -156,9 +156,9 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBmidPMSQnPi5SbwvEmNLfbfuRhZC-iKQk",
-            authDomain: "luwina-381dd.firebaseapp.com",
-            projectId: "luwina-381dd",
+            apiKey: "AIzaSyCv4AIblAq5XXSt7rJpCqXmyC3Ajm12tbI",
+            authDomain: "luwina-ta.firebaseapp.com",
+            projectId: "luwina-ta",
         };
 
         // init

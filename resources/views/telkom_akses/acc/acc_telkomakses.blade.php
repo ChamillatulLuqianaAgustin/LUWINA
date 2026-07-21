@@ -57,9 +57,36 @@
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['tgl_selesai'] }}</td>
                             <td>
-                                <span style="color: #28a745; font-weight:600;">
-                                    {{ $acc['status'] }}
-                                </span>
+                                @switch($acc['status'])
+                                    @case('ACC')
+                                        <span style="color: #ffbf00; font-weight:600;">
+                                            {{ $acc['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REKONSILIASI')
+                                        <span style="color: #ff00f2; font-weight:600;">
+                                            {{ $acc['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REVIEW TA')
+                                        <span style="color: #0D6EFD; font-weight:600;">
+                                            {{ $acc['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('CLOSE')
+                                        <span style="color: #00ff3c; font-weight:600;">
+                                            {{ $acc['status'] }}
+                                        </span>
+                                    @break
+
+                                    @default
+                                        <span style="color: #ff0000; font-weight:600;">
+                                            {{ $acc['status'] }}
+                                        </span>
+                                @endswitch
                             </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $acc['total'] }}</td>

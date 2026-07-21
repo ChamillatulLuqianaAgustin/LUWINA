@@ -89,14 +89,49 @@
                                 {{ $project['tgl_pengerjaan'] }}</td>
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['tgl_selesai'] }}</td>
-                            <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                @if ($project['status'] === 'ACC')
-                                    <span style="color: #28a745; font-weight: 600;">{{ $project['status'] }}</span>
-                                @elseif ($project['status'] === 'REJECT')
-                                    <span style="color: #dc3545; font-weight: 600;">{{ $project['status'] }}</span>
-                                @else
-                                    <span>{{ $project['status'] }}</span>
-                                @endif
+                            <td>
+                                @switch($project['status'])
+                                    @case('ACC')
+                                        <span style="color: #ffbf00; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REKONSILIASI')
+                                        <span style="color: #ff00f2; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REVIEW TA')
+                                        <span style="color: #0D6EFD; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('CLOSE')
+                                        <span style="color: #00ff3c; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('PROCESS')
+                                        <span style="color: #797979; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REJECT')
+                                        <span style="color: #ff0000; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @default
+                                        <span style="color: #ff0000; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                @endswitch
                             </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['total_formatted'] }}</td>

@@ -11,11 +11,29 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
         <div class="page">
-            <!-- Tombol Back -->
             <div class="action-bar">
+
                 <a href="{{ route('telkomakses.acc') }}" class="btn-back">
-                    <i class="fa fa-arrow-left" style="margin-right: 8px;"></i> Back
+                    <i class="fa fa-arrow-left" style="margin-right:8px;"></i> Back
                 </a>
+
+                @if ($acc['status'] == 'REVIEW TA')
+                    <div class="action-buttons">
+
+                        <button type="button" class="btn-action btn-pending" id="btnReturn">
+                            Return
+                        </button>
+
+                        <form action="{{ route('telkomakses.acc.close', $acc['id']) }}" method="POST" id="formClose">
+                            @csrf
+                            <button type="submit" class="btn-action btn-done" id="btnClose">
+                                Close
+                            </button>
+                        </form>
+
+                    </div>
+                @endif
+
             </div>
 
             <!-- Nama Project + Table wrapper -->
@@ -156,6 +174,39 @@
                 </div>
             </div>
         @endif
+
+        <div id="returnModal" class="modal" style="display:none;">
+
+            <div class="modal-content">
+
+                <h3 style="color:#133995">
+                    Catatan Return
+                </h3>
+
+                <form action="{{ route('telkomakses.acc.return', $acc['id']) }}" method="POST">
+
+                    @csrf
+
+                    <textarea name="catatan_return" rows="5" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:10px;"
+                        placeholder="Masukkan catatan revisi..." required></textarea>
+
+                    <div style="display:flex;justify-content:space-between;margin-top:20px;">
+
+                        <button type="button" id="cancelReturn" class="modal-btn cancel">
+                            Cancel
+                        </button>
+
+                        <button type="submit" class="modal-btn upload">
+                            Simpan
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
 
         <!-- Modal Zoom Foto -->
         <div id="imageZoomModal" class="zoom-modal">
@@ -398,6 +449,208 @@
                 color: #fff;
                 cursor: pointer;
             }
+
+            .btn-pending {
+                background: var(--blue);
+                color: white;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                border: none;
+                cursor: pointer;
+                font-family: 'Poppins', sans-serif;
+            }
+
+            .btn-pending:hover {
+                background-color: #fff;
+                color: #133995 !important;
+                border: 1px solid #CFD0D2;
+                text-decoration: none;
+            }
+
+            .btn-done {
+                background: #E5E5E8;
+                color: #133995;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                border: none;
+                cursor: pointer;
+                font-family: 'Poppins', sans-serif;
+            }
+
+            .btn-done:hover {
+                background: #133995;
+                color: #fff;
+            }
+
+            .action-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .action-buttons {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .action-buttons form {
+                margin: 0;
+            }
+
+            .btn-action {
+                min-width: 82px;
+                height: 36px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+                padding: 0 18px;
+            }
+
+            .btn-return {
+                background: #E67E22;
+                color: #fff;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-family: 'Poppins', sans-serif;
+            }
+
+            .btn-return:hover {
+                background: #cf6e1d;
+            }
+
+            .btn-close {
+                background: #16A34A;
+                color: #fff;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-family: 'Poppins', sans-serif;
+            }
+
+            .btn-close:hover {
+                background: #12823b;
+            }
+
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+            }
+
+            .modal-content {
+                background: #fff;
+                border-radius: 10px;
+                margin: 5% auto;
+                padding: 20px;
+                width: 50%;
+                max-width: 600px;
+
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .previewImages img {
+                width: 120px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+            }
+
+            .modal-btn {
+                padding: 10px 24px;
+                font-size: 14px;
+                border-radius: 8px;
+                font-family: 'Poppins', sans-serif;
+                min-width: 120px;
+                text-align: center;
+                border: none;
+                transition: 0.2s;
+            }
+
+            .modal-btn.cancel {
+                background: #E5E5E8;
+                color: #133995;
+            }
+
+            .modal-btn.prev {
+                background: #E5E5E8;
+                color: #133995;
+            }
+
+            .modal-btn.next {
+                background: #133995;
+                color: #fff;
+            }
+
+            .modal-btn.upload {
+                background: #133995;
+                color: #fff;
+            }
+
+            .modal-btn:hover {
+                opacity: 0.9;
+                cursor: pointer;
+            }
+
+            /* PUSATKAN KONTEN DI DALAM MODAL DONE */
+            #doneModal .modal-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* FORM DI TENGAH */
+            #doneModal form {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* WRAPPER TABEL DI TENGAH */
+            #doneModal form>div {
+                width: 95%;
+                margin: 0 auto;
+            }
+
+            /* TABEL DI TENGAH */
+            #doneModal table {
+                margin: 0 auto;
+            }
+
+            .file-center {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .zoom-modal {
+                display: none;
+                position: fixed;
+                z-index: 9999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+                justify-content: center;
+                align-items: center;
+            }
         </style>
 
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -426,6 +679,48 @@
                 img.style.cursor = 'zoom-in';
                 img.addEventListener('click', () => {
                     openZoom(img.src);
+                });
+            });
+
+
+            const returnModal = document.getElementById("returnModal");
+
+            document.getElementById("btnReturn")?.addEventListener("click", function() {
+                returnModal.style.display = "block";
+            });
+
+            document.getElementById("cancelReturn")?.addEventListener("click", function() {
+                returnModal.style.display = "none";
+            });
+
+            window.addEventListener("click", function(e) {
+
+                if (e.target === returnModal) {
+
+                    returnModal.style.display = "none";
+
+                }
+
+            });
+
+            const btnClose = document.getElementById("btnClose");
+            const formClose = document.getElementById("formClose");
+
+            btnClose?.addEventListener("click", function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Close Project?',
+                    text: 'Project yang sudah CLOSE tidak dapat diedit lagi.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Close',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#133995',
+                    cancelButtonColor: '#C8170D',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        formClose.submit();
+                    }
                 });
             });
         </script>

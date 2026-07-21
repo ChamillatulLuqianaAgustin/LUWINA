@@ -23,7 +23,7 @@ use App\Http\Controllers\mitra\RejectController as MRejectController;
 // Route Login Page
 Route::get('/', [AuthController::class, 'index'])->name('login');
 Route::post('/login-proses', [AuthController::class, 'proses_login'])->name('login-proses');
-Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Super Admin
 Route::prefix('superadmin')->group(function () {
@@ -95,6 +95,8 @@ Route::prefix('superadmin')->group(function () {
     Route::post('/acc/{id}/kerjakan', [AccController::class, 'kerjakan'])->name('superadmin.acc.kerjakan');
     Route::post('/acc/{id}/done', [AccController::class, 'storeFoto'])->name('superadmin.acc.storeFoto');
     Route::post('/acc/{id}/pending', [AccController::class, 'pending'])->name('superadmin.acc.pending');
+    Route::post('/acc/{id}/return', [AccController::class, 'returnProject'])->name('superadmin.acc.return');
+    Route::post('/acc/{id}/close', [AccController::class, 'closeProject'])->name('superadmin.acc.close');
     // reject
     Route::get('/reject', [RejectController::class, 'index'])->name('superadmin.reject');
     Route::get('/reject/detail/{id}', [RejectController::class, 'detail'])->name('superadmin.reject_detail');
@@ -128,6 +130,8 @@ Route::prefix('telkomakses')->group(function () {
     // acc
     Route::get('/acc', [TAAccController::class, 'index'])->name('telkomakses.acc');
     Route::get('/acc/detail/{id}', [TAAccController::class, 'detail'])->name('telkomakses.acc_detail');
+    Route::post('/acc/{id}/return', [TAAccController::class, 'returnProject'])->name('telkomakses.acc.return');
+    Route::post('/acc/{id}/close', [TAAccController::class, 'closeProject'])->name('telkomakses.acc.close');
     // reject
     Route::get('/reject', [TARejectController::class, 'index'])->name('telkomakses.reject');
     Route::get('/reject/detail/{id}', [TARejectController::class, 'detail'])->name('telkomakses.reject_detail');
@@ -175,8 +179,6 @@ Route::prefix('mitra')->group(function () {
         ->name('mitra.allproject_reject_destroy_project');
     Route::post('/allproject/reject/{id}/upload-revisi', [MAllProjectController::class, 'updateRevisiReject'])
         ->name('mitra.allproject_reject_upload_revisi');
-
-
     Route::get('/allproject/download', [MAllProjectController::class, 'downloadPDF'])->name('mitra.allproject_download');
     // Process
     Route::get('/process', [MProcessController::class, 'index'])->name('mitra.process');

@@ -108,7 +108,9 @@ class AccController extends Controller
             if ($doca->exists()) {
                 $data = $doca->data();
 
-                if (($data['ta_project_status'] ?? '') !== 'ACC') {
+                $status = $data['ta_project_status'] ?? '';
+
+                if (!in_array($status, ['ACC', 'REKONSILIASI', 'REVIEW TA', 'CLOSE'])) {
                     continue;
                 }
 
@@ -379,6 +381,19 @@ class AccController extends Controller
             // 'grand' => $grand,
         ];
 
+        $returnDocs = $firestore->collection('Return_Project')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        $catatanReturn = null;
+
+        foreach ($returnDocs as $rd) {
+            if ($rd->exists()) {
+                $catatanReturn = $rd->data()['catatan'] ?? null;
+                break; // ambil yang pertama
+            }
+        }
+
         return view('telkom_akses.acc.detail_acc', [
             'acc' => [
                 'id'              => $id,
@@ -394,9 +409,58 @@ class AccController extends Controller
                 'status'          => $data['ta_project_status'],
                 'total'           => $data['ta_project_total'],
                 'detail'          => $detail,
+                'catatan_return' => $catatanReturn,
             ],
             'totals' => $totals,
         ]);
+    }
+
+    public function returnProject(Request $request, $id)
+    {
+        $request->validate([
+            'catatan_return' => 'required|string'
+        ]);
+
+        $firestore = $this->getFirestore();
+
+        // simpan catatan return
+        $firestore->collection('Return_Project')->add([
+            'project_id' => $id,
+            'catatan' => $request->catatan_return,
+            'created_at' => new FireTimestamp(new \DateTime())
+        ]);
+
+        // ubah status project
+        $firestore->collection('All_Project_TA')
+            ->document($id)
+            ->update([
+                [
+                    'path' => 'ta_project_status',
+                    'value' => 'REKONSILIASI'
+                ]
+            ]);
+
+        return redirect()
+            ->route('telkomakses.acc_detail', $id)
+            ->with('success', 'Project berhasil direturn.');
+    }
+
+    public function closeProject($id)
+    {
+        $firestore = $this->getFirestore();
+
+        $firestore->collection('All_Project_TA')
+            ->document($id)
+            ->update([
+                [
+                    'path' => 'ta_project_status',
+                    'value' => 'CLOSE'
+                ]
+            ]);
+
+        return redirect()
+            ->route('telkomakses.acc_detail', $id)
+            ->with('success', 'Project berhasil di-close.');
     }
 
     private function formatDate($timestamp)

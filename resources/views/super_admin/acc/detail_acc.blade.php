@@ -20,20 +20,32 @@
 
             <!-- Tombol Kerjakan -->
             <div class="action-buttons">
-                @if ($acc['tgl_pengerjaan'] == '-' || empty($acc['tgl_pengerjaan']))
-                    <form id="formKerjakan" action="{{ route('superadmin.acc.kerjakan', $acc['id']) }}" method="POST"
-                        style="display:inline;">
+                @if ($acc['status'] == 'ACC')
+                    <form id="formKerjakan" action="{{ route('superadmin.acc.kerjakan', $acc['id']) }}" method="POST">
                         @csrf
                         <button type="button" id="btnKerjakan" class="btn-action btn-kerjakan">
                             Kerjakan
                         </button>
                     </form>
-                @elseif(
-                    $acc['tgl_pengerjaan'] != '-' &&
-                        ($acc['tgl_selesai'] == '-' || empty($acc['tgl_selesai'])) &&
-                        $acc['status'] !== 'done')
-                    <button type="button" class="btn-action btn-pending" id="btnPending">Pending</button>
-                    <button type="button" class="btn-action btn-done" id="btnDone">Done</button>
+                @elseif($acc['status'] == 'REKONSILIASI')
+                    <button type="button" class="btn-action btn-pending" id="btnPending">
+                        Pending
+                    </button>
+
+                    <button type="button" class="btn-action btn-done" id="btnDone">
+                        Done
+                    </button>
+                @elseif($acc['status'] == 'REVIEW TA')
+                    <button type="button" class="btn-action btn-pending" id="btnReturn">
+                        Return
+                    </button>
+
+                    <form action="{{ route('superadmin.acc.close', $acc['id']) }}" method="POST" id="formClose">
+                        @csrf
+                        <button type="submit" class="btn-action btn-done">
+                            Close
+                        </button>
+                    </form>
                 @endif
             </div>
         </div>
@@ -43,13 +55,10 @@
             <!-- Header Nama Project -->
             <div class="project-header">
                 <span class="project-title">{{ $acc['nama_project'] ?? 'Nama project belum ada' }}</span>
-                <a href="{{ route('superadmin.acc_edit', $acc['id']) }}" class="edit-project">Edit Project</a>
+                <a href="{{ route('superadmin.acc_edit', $acc['id']) }}" class="edit-project">
+                    Edit Project
+                </a>
             </div>
-
-            {{-- <div style="margin: 10px 0; padding: 0 16px;">
-                    <p><strong>Tanggal Pengerjaan:</strong> {{ !empty($acc['tgl_pengerjaan']) ? $acc['tgl_pengerjaan'] : '-' }}</p>
-                    <p><strong>Tanggal Selesai:</strong> {{ !empty($acc['tgl_selesai']) ? $acc['tgl_selesai'] : '-' }}</p>
-                </div> --}}
 
             <!-- Tabel Detail -->
             <div class="table-responsive">
@@ -84,11 +93,6 @@
                                 <td>{{ number_format($item->total_material, 0, ',', '.') }}</td>
                                 <td>{{ number_format($item->total_jasa, 0, ',', '.') }}</td>
                                 <td>
-                                    {{-- @forelse($acc['foto']['sebelum'] ?? [] as $foto)
-                                        <img src="{{ $foto }}" class="foto-item">
-                                    @empty
-                                        <span>-</span>
-                                    @endforelse --}}
                                     @if (isset($acc['foto']['sebelum'][$item->designator]))
                                         @foreach ($acc['foto']['sebelum'][$item->designator] as $foto)
                                             <img src="{{ $foto }}" class="foto-item zoomable">
@@ -98,11 +102,6 @@
                                     @endif
                                 </td>
                                 <td>
-                                    {{-- @forelse($acc['foto']['sesudah'] ?? [] as $foto)
-                                        <img src="{{ $foto }}" class="foto-item">
-                                    @empty
-                                        <span>-</span>
-                                    @endforelse --}}
                                     @if (isset($acc['foto']['sesudah'][$item->designator]))
                                         @foreach ($acc['foto']['sesudah'][$item->designator] as $foto)
                                             <img src="{{ $foto }}" class="foto-item zoomable">
@@ -117,6 +116,7 @@
                                         method="POST" class="form-delete-material">
                                         @csrf
                                         @method('DELETE')
+
                                         <button type="submit"
                                             style="border:none;background:none;padding:0;cursor:pointer;">
                                             <img src="{{ asset('assets/delete.png') }}" alt="Delete"
@@ -146,71 +146,33 @@
         </div>
 
         <!-- Tombol Delete Data Project -->
-        <div id="deleteProject" style="margin-top: 20px; text-align: left;">
+        <div id="deleteProject" style="margin-top:20px; text-align:left;">
+
             <form action="{{ route('superadmin.acc_destroy_project', $acc['id']) }}" method="POST"
                 class="form-delete-project">
+
                 @csrf
                 @method('DELETE')
+
                 <button type="submit"
-                    style="background-color:#C8170D; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family: 'Poppins', sans-serif;
-                        font-weight: 500;">
-                    <i class="fa fa-trash" style="margin-right:8px;"></i> Hapus Data Project
+                    style="background-color:#C8170D;
+                   color:white;
+                   padding:10px 20px;
+                   border:none;
+                   border-radius:8px;
+                   cursor:pointer;
+                   font-family:'Poppins', sans-serif;
+                   font-weight:500;">
+
+                    <i class="fa fa-trash" style="margin-right:8px;"></i>
+                    Hapus Data Project
+
                 </button>
+
             </form>
+
         </div>
     </div>
-
-    <!-- Pop Up Done Upload Foto -->
-    {{-- <div id="doneModal" class="modal" style="display:none;">
-            <div class="modal-content">
-                <h3 id="modalTitle" style="text-align:center; color:#133995;">Upload Foto Evident Sebelum Pengerjaan</h3>
-                <p id="modalDesc" style="text-align:center;">Silahkan unggah foto evident <b>sebelum</b> pengerjaan</p>
-
-                <form id="formUploadFoto" method="POST" action="{{ route('superadmin.acc.storeFoto', $acc['id']) }}"
-                    enctype="multipart/form-data">
-                    @csrf
-
-                    <!-- Drop Zone / Upload -->
-                    <div id="dropZone"
-                        style="border:2px dashed #ccc; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px;">
-                        <input type="file" name="foto_sebelum[]" id="imagesSebelum" multiple accept="image/*" hidden>
-                        <input type="file" name="foto_proses[]" id="imagesProses" multiple accept="image/*" hidden>
-                        <input type="file" name="foto_sesudah[]" id="imagesSesudah" multiple accept="image/*" hidden>
-                        <label for="imagesSebelum" style="cursor:pointer; display:block; color:#595961;">
-                            <i class="fa fa-cloud-upload-alt" style="font-size:24px; margin-bottom:8px;"></i><br>
-                            <span>Upload Foto Sebelum Pengerjaan<br>JPEG/PNG up to 10MB</span>
-                            <br><br>
-                            <button type="button" id="browseBtn" class="btn-browse">Browse</button>
-                        </label>
-                    </div>
-
-                    <!-- Preview Gambar per Step -->
-                    <div id="previewSebelum" class="previewImages"
-                        style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-                    <div id="previewProses" class="previewImages"
-                        style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-                    <div id="previewSesudah" class="previewImages"
-                        style="display:none; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-
-                    <!-- Tombol Navigasi -->
-                    <div style="display:flex; justify-content:space-between; margin-top:20px;">
-                        <!-- Container kiri -->
-                        <div id="leftBtns">
-                            <button type="button" id="cancelBtn" class="modal-btn cancel">Cancel</button>
-                            <button type="button" id="prevBtn" class="modal-btn prev"
-                                style="display:none;">Previous</button>
-                        </div>
-
-                        <!-- Container kanan -->
-                        <div id="rightBtns">
-                            <button type="button" id="nextBtn" class="modal-btn next">Next</button>
-                            <button type="submit" id="uploadBtn" class="modal-btn upload"
-                                style="display:none;">Upload</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div> --}}
 
     <div id="doneModal" class="modal" style="display:none;">
         <div class="modal-content" style="max-width:1500px;">
@@ -222,8 +184,31 @@
                 enctype="multipart/form-data">
                 @csrf
 
-                <div style="max-height:400px; overflow:auto; margin-top:50px;">
-                    {{-- <table class="data-table table-bordered upload-table" style="width:100%;"> --}}
+                <div style="max-height:400px; overflow:auto;">
+                    @if (!empty($acc['catatan_return']))
+                        <div
+                            style="
+    width:95%;
+    margin:20px auto;
+    background:#FFF4E5;
+    border-left:5px solid #F39C12;
+    padding:15px;
+    border-radius:8px;
+">
+
+                            <div style="
+        font-weight:600;
+        color:#C56A00;
+        margin-bottom:8px;">
+                                Catatan Return
+                            </div>
+
+                            <div style="color:#555;">
+                                {{ $acc['catatan_return'] }}
+                            </div>
+
+                        </div>
+                    @endif
                     <table class="data-table table-bordered" style="width:100%;">
                         <thead style="text-align: center; vertical-align: middle;">
                             <tr>
@@ -240,18 +225,36 @@
                                     <td style="text-align: center;">{{ $i + 1 }}</td>
                                     <td>{{ $item->designator }}</td>
                                     <td>{{ $item->uraian }}</td>
-                                    <td style="text-align: center;">
+                                    <td style="text-align:center;">
                                         <div class="file-center">
+
+                                            @if (isset($acc['foto']['sebelum'][$item->designator]))
+                                                @foreach ($acc['foto']['sebelum'][$item->designator] as $foto)
+                                                    <img src="{{ $foto }}" class="foto-item zoomable"
+                                                        style="width:80px;height:80px;margin-bottom:6px;">
+                                                @endforeach
+                                            @endif
+
                                             <input type="file" name="foto_sebelum[{{ $item->designator }}][]"
                                                 accept="image/*" onchange="previewImage(this)" multiple>
+
                                             <img class="img-preview" style="display:none;">
                                         </div>
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td style="text-align:center;">
                                         <div class="file-center">
+
+                                            @if (isset($acc['foto']['sesudah'][$item->designator]))
+                                                @foreach ($acc['foto']['sesudah'][$item->designator] as $foto)
+                                                    <img src="{{ $foto }}" class="foto-item zoomable"
+                                                        style="width:80px;height:80px;margin-bottom:6px;">
+                                                @endforeach
+                                            @endif
+
                                             <input type="file" name="foto_sesudah[{{ $item->designator }}][]"
-                                                accept="image/*" onchange="previewImage(this)">
-                                            <img class="img-preview" style="display:none;" multiple>
+                                                accept="image/*" onchange="previewImage(this)" multiple>
+
+                                            <img class="img-preview" style="display:none;">
                                         </div>
                                     </td>
                                 </tr>
@@ -260,11 +263,13 @@
                     </table>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;margin-top:20px;">
-                    <button type="button" class="modal-btn cancel" id="cancelBtn">Cancel</button>
+                <div style="display:flex;justify-content:center;gap:100px!important;margin-top:25px;">
+                    <button type="button" id="cancelReturn" class="modal-btn cancel">
+                        Cancel
+                    </button>
 
                     <button type="submit" class="modal-btn upload">
-                        Upload
+                        Simpan
                     </button>
                 </div>
             </form>
@@ -361,6 +366,40 @@
             </div>
         </div>
     @endif
+
+    <div id="returnModal" class="modal" style="display:none;">
+
+        <div class="modal-content">
+
+            <h3 style="color:#133995">
+                Catatan Return
+            </h3>
+
+            <form action="{{ route('superadmin.acc.return', $acc['id']) }}" method="POST">
+
+                @csrf
+
+                <textarea name="catatan_return" rows="5"
+                    style="width:100%;border:1px solid #ccc;border-radius:8px;padding:10px;" placeholder="Masukkan catatan revisi..."
+                    required></textarea>
+
+                <div style="display:flex;justify-content:space-between;margin-top:20px;">
+
+                    <button type="button" id="cancelReturn" class="modal-btn cancel">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="modal-btn upload">
+                        Simpan
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
 
     <!-- Modal Zoom Foto -->
     <div id="imageZoomModal" class="zoom-modal">
@@ -715,21 +754,6 @@
             margin-bottom: 20px;
         }
 
-        /* .btn-add,
-                                                                                                                                                                                                                                        .btn-remove {
-                                                                                                                                                                                                                                            display: flex;
-                                                                                                                                                                                                                                            justify-content: center;
-                                                                                                                                                                                                                                            align-items: center;
-                                                                                                                                                                                                                                            font-weight: bold;
-                                                                                                                                                                                                                                            font-size: 16px;
-                                                                                                                                                                                                                                            border-radius: 50%;
-                                                                                                                                                                                                                                            width: 36px;
-                                                                                                                                                                                                                                            height: 36px;
-                                                                                                                                                                                                                                            cursor: pointer;
-                                                                                                                                                                                                                                            border: none;
-                                                                                                                                                                                                                                            transition: 0.2s;
-                                                                                                                                                                                                                                        } */
-
         .btn-add {
             background: #133995;
             color: #fff;
@@ -900,6 +924,34 @@
             color: #fff;
             cursor: pointer;
         }
+
+        .btn-return {
+            background: #E67E22;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-return:hover {
+            background: #cf6e1d;
+        }
+
+        .btn-close {
+            background: #16A34A;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-close:hover {
+            background: #12823b;
+        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -908,25 +960,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const doneModal = document.getElementById("doneModal");
             const btnDone = document.getElementById("btnDone");
-            // const browseBtn = document.getElementById("browseBtn");
-            // const dropZone = document.getElementById("dropZone");
-
-            // Input terpisah untuk setiap step
-            // const inputSebelum = document.getElementById("imagesSebelum");
-            // const inputProses = document.getElementById("imagesProses");
-            // const inputSesudah = document.getElementById("imagesSesudah");
-
-            // const prevBtn = document.getElementById("prevBtn");
-            // const nextBtn = document.getElementById("nextBtn");
-            // const uploadBtn = document.getElementById("uploadBtn");
-
-            // const title = document.getElementById("modalTitle");
-            // const desc = document.getElementById("modalDesc");
             const cancelBtn = document.getElementById("cancelBtn");
-
-            // const previewSebelum = document.getElementById("previewSebelum");
-            // const previewProses = document.getElementById("previewProses");
-            // const previewSesudah = document.getElementById("previewSesudah");
 
             const btnKerjakan = document.getElementById('btnKerjakan');
             const formKerjakan = document.getElementById('formKerjakan');
@@ -1165,14 +1199,6 @@
                                     });
                                 }
                             })
-                        // .catch(() => {
-                        //     Swal.fire({
-                        //         icon: 'error',
-                        //         title: 'Gagal!',
-                        //         text: 'Terjadi kesalahan saat upload.',
-                        //         confirmButtonColor: '#C8170D'
-                        //     });
-                        // });
 
                     });
 
@@ -1201,281 +1227,10 @@
             reader.readAsDataURL(file);
         }
 
-        // let step = 1;
-        // let imagesSebelum = [];
-        // let imagesProses = [];
-        // let imagesSesudah = [];
-
-        // Fungsi render dengan tombol hapus
-        // function renderPreview(container, imagesArray) {
-        //     container.innerHTML = "";
-        //     imagesArray.forEach((file, index) => {
-        //         const reader = new FileReader();
-        //         reader.onload = e => {
-        //             const wrapper = document.createElement("div");
-        //             wrapper.classList.add("preview-item");
-
-        //             const img = document.createElement("img");
-        //             img.src = e.target.result;
-
-        //             const removeBtn = document.createElement("button");
-        //             removeBtn.innerHTML = "×";
-        //             removeBtn.classList.add("remove-btn");
-        //             removeBtn.addEventListener("click", () => {
-        //                 imagesArray.splice(index, 1);
-        //                 renderPreview(container, imagesArray);
-        //             });
-
-        //             wrapper.appendChild(img);
-        //             wrapper.appendChild(removeBtn);
-        //             container.appendChild(wrapper);
-        //         };
-        //         reader.readAsDataURL(file);
-        //     });
-        // }
-
-        // // Open modal Done
-        // btnDone?.addEventListener('click', function() {
-        //     doneModal.style.display = "block";
-        // });
-        // // btnDone?.addEventListener('click', () => {
-        // //     step = 1;
-        // //     updateModal();
-        // //     doneModal.style.display = "block";
-        // // });
-
-        // // Tutup modal Done
-        // cancelBtn.addEventListener('click', () => {
-        //     doneModal.style.display = "none";
-        // });
-
         // Klik luar modal untuk tutup
         window.addEventListener("click", (e) => {
             if (e.target === doneModal) doneModal.style.display = "none";
         });
-
-        // Browse file
-        // browseBtn.addEventListener('click', () => {
-        //     if (step === 1) inputSebelum.click();
-        //     else if (step === 2) inputProses.click();
-        //     else inputSesudah.click();
-        // });
-
-        // Handle input Sebelum
-        // inputSebelum.addEventListener('change', () => {
-        //     imagesSebelum.push(...Array.from(inputSebelum.files));
-        //     renderPreview(previewSebelum, imagesSebelum);
-        //     inputSebelum.value = "";
-        // });
-
-        // Handle input Proses
-        // inputProses.addEventListener('change', () => {
-        //     imagesProses.push(...Array.from(inputProses.files));
-        //     renderPreview(previewProses, imagesProses);
-        //     inputProses.value = "";
-        // });
-
-        // Handle input Sesudah
-        // inputSesudah.addEventListener('change', () => {
-        //     imagesSesudah.push(...Array.from(inputSesudah.files));
-        //     renderPreview(previewSesudah, imagesSesudah);
-        //     inputSesudah.value = "";
-        // });
-
-        // Drag & Drop
-        // dropZone.addEventListener("dragover", (e) => {
-        //     e.preventDefault();
-        //     dropZone.style.borderColor = "#133995";
-        // });
-
-        // dropZone.addEventListener("dragleave", () => {
-        //     dropZone.style.borderColor = "#ccc";
-        // });
-
-        // dropZone.addEventListener("drop", (e) => {
-        //     e.preventDefault();
-        //     dropZone.style.borderColor = "#ccc";
-        //     const files = Array.from(e.dataTransfer.files);
-
-        //     if (files.length > 0) {
-        //         if (step === 1) {
-        //             imagesSebelum.push(...files);
-        //             renderPreview(previewSebelum, imagesSebelum);
-        //         } else if (step === 2) {
-        //             imagesProses.push(...files);
-        //             renderPreview(previewProses, imagesProses);
-        //         } else {
-        //             imagesSesudah.push(...files);
-        //             renderPreview(previewSesudah, imagesSesudah);
-        //         }
-        //     }
-        // });
-
-        // Navigation buttons
-        // nextBtn.addEventListener('click', () => {
-        //     if (step < 3) step++;
-        //     updateModal();
-        // });
-        // prevBtn.addEventListener('click', () => {
-        //     if (step > 1) step--;
-        //     updateModal();
-        // });
-
-        // Update tampilan modal sesuai step
-        // function updateModal() {
-        //     previewSebelum.style.display = "none";
-        //     previewProses.style.display = "none";
-        //     previewSesudah.style.display = "none";
-
-        //     cancelBtn.style.display = "none";
-        //     prevBtn.style.display = "none";
-        //     nextBtn.style.display = "none";
-        //     uploadBtn.style.display = "none";
-
-        //     if (step === 1) {
-        //         title.textContent = "Upload Foto Evident Sebelum Pengerjaan";
-        //         desc.innerHTML = "Silahkan unggah foto evident <b>sebelum</b> pengerjaan";
-        //         inputImages = inputSebelum;
-        //         previewSebelum.style.display = "flex";
-        //         renderPreview(previewSebelum, imagesSebelum);
-        //         cancelBtn.style.display = "inline-block";
-        //         nextBtn.style.display = "inline-block";
-        //     } else if (step === 2) {
-        //         title.textContent = "Upload Foto Evident Proses Pengerjaan";
-        //         desc.innerHTML = "Silahkan unggah foto evident <b>proses</b> pengerjaan";
-        //         inputImages = inputProses;
-        //         previewProses.style.display = "flex";
-        //         renderPreview(previewProses, imagesProses);
-        //         prevBtn.style.display = "inline-block";
-        //         nextBtn.style.display = "inline-block";
-        //     } else if (step === 3) {
-        //         title.textContent = "Upload Foto Evident Sesudah Pengerjaan";
-        //         desc.innerHTML = "Silahkan unggah foto evident <b>setelah</b> pengerjaan";
-        //         inputImages = inputSesudah;
-        //         previewSesudah.style.display = "flex";
-        //         renderPreview(previewSesudah, imagesSesudah);
-        //         prevBtn.style.display = "inline-block";
-        //         uploadBtn.style.display = "inline-block";
-        //     }
-        // }
-
-        // ALERT CANCEL UPLOAD FOTO
-        // const btnCancelDone = document.getElementById("cancelBtn");
-
-        // if (btnCancelDone && doneModal) {
-        //     btnCancelDone.addEventListener("click", function(e) {
-        //         e.preventDefault();
-
-        //         Swal.fire({
-        //             title: 'Batalkan upload foto?',
-        //             text: 'Apakah Anda yakin ingin membatalkan upload foto evident ini?',
-        //             icon: 'warning',
-        //             showCancelButton: true,
-        //             confirmButtonColor: '#C8170D',
-        //             cancelButtonColor: '#133995',
-        //             cancelButtonText: 'Tidak',
-        //             confirmButtonText: 'Ya, batalkan!',
-        //             reverseButtons: true
-        //         }).then((result) => {
-        //             if (result.isConfirmed) {
-        //                 // Tutup modal done
-        //                 const bootstrapModal = bootstrap.Modal.getInstance(doneModal);
-        //                 bootstrapModal.hide();
-
-        //                 // Optional: tampilkan notifikasi kecil
-        //                 Swal.fire({
-        //                     icon: 'success',
-        //                     title: 'Upload dibatalkan',
-        //                     showConfirmButton: false,
-        //                     timer: 1500
-        //                 });
-        //             }
-        //         });
-        //     });
-        // }
-
-        // ALERT UPLOAD FOTO
-        // uploadBtn.addEventListener('click', async function(e) {
-        //     e.preventDefault();
-
-        //     const form = document.getElementById('formUploadFoto');
-        //     const actionUrl = form.action;
-
-        //     Swal.fire({
-        //         title: 'Apakah Anda yakin?',
-        //         text: 'Setelah upload, foto evident tidak dapat diubah.',
-        //         icon: 'warning',
-        //         showCancelButton: true,
-        //         confirmButtonColor: '#133995',
-        //         cancelButtonColor: '#C8170D',
-        //         confirmButtonText: 'Ya, upload!'
-        //     }).then(async (result) => {
-        //         if (!result.isConfirmed) return;
-
-        //         Swal.fire({
-        //             title: 'Sedang mengunggah foto...',
-        //             text: 'Mohon tunggu sebentar.',
-        //             allowOutsideClick: false,
-        //             didOpen: () => Swal.showLoading()
-        //         });
-
-        //         // --- 1) Sinkronisasi ke input file (opsional, tapi aman dipakai)
-        //         const dtSebelum = new DataTransfer();
-        //         imagesSebelum.forEach(f => dtSebelum.items.add(f));
-        //         inputSebelum.files = dtSebelum.files;
-
-        //         const dtProses = new DataTransfer();
-        //         imagesProses.forEach(f => dtProses.items.add(f));
-        //         inputProses.files = dtProses.files;
-
-        //         const dtSesudah = new DataTransfer();
-        //         imagesSesudah.forEach(f => dtSesudah.items.add(f));
-        //         inputSesudah.files = dtSesudah.files;
-
-        //         // --- 2) Buat FormData final untuk dikirim
-        //         const formData = new FormData();
-        //         formData.append("_token", document.querySelector(
-        //             'meta[name="csrf-token"]').content);
-
-        //         imagesSebelum.forEach((f, i) => formData.append(`foto_sebelum[${i}]`,
-        //             f));
-        //         imagesProses.forEach((f, i) => formData.append(`foto_proses[${i}]`, f));
-        //         imagesSesudah.forEach((f, i) => formData.append(`foto_sesudah[${i}]`,
-        //             f));
-
-        //         try {
-        //             const response = await fetch(actionUrl, {
-        //                 method: "POST",
-        //                 body: new FormData(form)
-        //             });
-
-        //             const data = await response.json();
-
-        //             if (!response.ok) throw new Error(data.message || "Upload gagal.");
-
-        //             Swal.fire({
-        //                 icon: "success",
-        //                 title: "Berhasil!",
-        //                 text: data.message || "Foto berhasil diupload.",
-        //                 confirmButtonColor: '#133995'
-        //             }).then(() => window.location.reload());
-
-        //         } catch (error) {
-        //             Swal.fire({
-        //                 icon: "error",
-        //                 title: "Gagal!",
-        //                 text: error.message || "Terjadi kesalahan.",
-        //                 confirmButtonColor: '#C8170D'
-        //             });
-        //         }
-        //     });
-
-        //     // Sembunyikan tombol Pending & Done setelah upload berhasil
-        //     const btnPending = document.getElementById('btnPending');
-        //     const btnDone = document.getElementById('btnDone');
-        //     if (btnPending) btnPending.style.display = 'none';
-        //     if (btnDone) btnDone.style.display = 'none';
-        // });
 
         // Pending
         const pendingModal = document.getElementById("pendingModal");
@@ -1594,6 +1349,51 @@
             img.style.cursor = 'zoom-in';
             img.addEventListener('click', () => {
                 openZoom(img.src);
+            });
+        });
+
+        const returnModal = document.getElementById("returnModal");
+
+        document.getElementById("btnReturn")?.addEventListener("click", function() {
+
+            returnModal.style.display = "block";
+
+        });
+
+        document.getElementById("cancelReturn")?.addEventListener("click", function() {
+
+            returnModal.style.display = "none";
+
+        });
+
+        window.addEventListener("click", function(e) {
+
+            if (e.target === returnModal) {
+
+                returnModal.style.display = "none";
+
+            }
+
+        });
+
+        const btnClose = document.getElementById("btnClose");
+        const formClose = document.getElementById("formClose");
+
+        btnClose?.addEventListener("click", function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Close Project?',
+                text: 'Project yang sudah CLOSE tidak dapat diedit lagi.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Close',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#133995',
+                cancelButtonColor: '#C8170D',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    formClose.submit();
+                }
             });
         });
     </script>

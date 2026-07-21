@@ -276,7 +276,7 @@
         }
 
         .label-ihld {
-            margin-right: 32.5px;
+            margin-right: 68px;
             /* Specific margin for IHLD label */
         }
 

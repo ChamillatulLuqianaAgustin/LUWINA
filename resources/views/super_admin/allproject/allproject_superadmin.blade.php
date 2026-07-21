@@ -94,14 +94,49 @@
                                 {{ $project['tgl_pengerjaan'] }}</td>
                             <td style="max-width: 200px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['tgl_selesai'] }}</td>
-                            <td style="max-width: 10px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
-                                @if ($project['status'] === 'ACC')
-                                    <span style="color: #28a745; font-weight: 600;">{{ $project['status'] }}</span>
-                                @elseif ($project['status'] === 'REJECT')
-                                    <span style="color: #dc3545; font-weight: 600;">{{ $project['status'] }}</span>
-                                @else
-                                    <span>{{ $project['status'] }}</span>
-                                @endif
+                            <td>
+                                @switch($project['status'])
+                                    @case('ACC')
+                                        <span style="color: #ffbf00; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REKONSILIASI')
+                                        <span style="color: #ff00f2; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REVIEW TA')
+                                        <span style="color: #0D6EFD; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('CLOSE')
+                                        <span style="color: #00ff3c; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('PROCESS')
+                                        <span style="color: #797979; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @case('REJECT')
+                                        <span style="color: #ff0000; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                    @break
+
+                                    @default
+                                        <span style="color: #ff0000; font-weight:600;">
+                                            {{ $project['status'] }}
+                                        </span>
+                                @endswitch
                             </td>
                             <td style="max-width: 150px; white-space: nowrap; overflow-x: auto; overflow-y: hidden;">
                                 {{ $project['total_formatted'] }}</td>
@@ -598,12 +633,12 @@
 
         /* Bagian Chart */
         /* .charts-row {
-                                                                margin-top: 20px;
-                                                                display: grid;
-                                                                grid-template-columns: 2fr 1fr;
-                                                                gap: 18px;
-                                                                margin-bottom: 22px;
-                                                            } */
+                                                                        margin-top: 20px;
+                                                                        display: grid;
+                                                                        grid-template-columns: 2fr 1fr;
+                                                                        gap: 18px;
+                                                                        margin-bottom: 22px;
+                                                                    } */
 
         .charts-row {
             margin-top: 20px;
@@ -627,8 +662,8 @@
         }
 
         /* .card.left {
-                                                            height: 420px;
-                                                        } */
+                                                                    height: 420px;
+                                                                } */
 
         .card.left {
             display: flex;
@@ -638,11 +673,11 @@
         }
 
         /* .right-column {
-                                                        display: flex;
-                                                        flex-direction: column;
-                                                        gap: 18px;
-                                                        height: 420px;
-                                                    } */
+                                                                display: flex;
+                                                                flex-direction: column;
+                                                                gap: 18px;
+                                                                height: 420px;
+                                                            } */
 
         .right-column {
             display: flex;
@@ -654,9 +689,9 @@
         }
 
         /* .right-column .card {
-                                                    flex: 1;
-                                                    padding: 12px;
-                                                } */
+                                                            flex: 1;
+                                                            padding: 12px;
+                                                        } */
 
         .right-column .card {
             flex: 1;
@@ -673,10 +708,10 @@
         }
 
         /* .chart-wrap {
-                                                flex: 1;
-                                                min-height: 0;
-                                                display: flex;
-                                            } */
+                                                        flex: 1;
+                                                        min-height: 0;
+                                                        display: flex;
+                                                    } */
 
         .chart-wrap {
             flex-grow: 1;
@@ -687,10 +722,10 @@
         }
 
         /* .chart-wrap canvas {
-                                            width: 100% !important;
-                                            height: 100% !important;
-                                            display: block;
-                                        } */
+                                                    width: 100% !important;
+                                                    height: 100% !important;
+                                                    display: block;
+                                                } */
 
         .chart-wrap canvas {
             width: 100% !important;

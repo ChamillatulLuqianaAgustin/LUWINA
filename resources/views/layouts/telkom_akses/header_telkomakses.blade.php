@@ -1,5 +1,6 @@
 <!-- Import font Poppins dari Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <div style="padding:10px 20px; font-family: 'Poppins', sans-serif;">
     <!-- Logo Luwina & Logo TA -->
@@ -9,17 +10,30 @@
     </div>
 
     <!-- Profil + NIK/NAMA -->
-    <div style="display:flex; align-items:center; margin-top:30px;">
-        <img src="{{ asset('assets/profile.png') }}" alt="User Avatar"
-            style="height:60px; border-radius:50%; margin-right:12px;">
-        <div>
-            <div style="font-weight:400; color:#133995; margin-bottom:4px;">
-                {{ $user['nik'] }}
-            </div>
-            <div style="color:#133995; font-weight:400;">
-                {{ $user['nama'] }}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px;">
+
+        <div style="display:flex; align-items:center;">
+            <img src="{{ asset('assets/profile.png') }}" alt="User Avatar"
+                style="height:60px; border-radius:50%; margin-right:12px;">
+
+            <div>
+                <div style="font-weight:400; color:#133995; margin-bottom:4px;">
+                    {{ $user['nik'] }}
+                </div>
+
+                <div style="color:#133995; font-weight:400;">
+                    {{ $user['nama'] }}
+                </div>
             </div>
         </div>
+
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn-logout">
+                Logout
+            </button>
+        </form>
+
     </div>
 </div>
 
@@ -88,6 +102,23 @@
     .menu-nav a.active span {
         color: white;
     }
+
+    .btn-logout {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        background: #C8170D;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+    }
+
+    .btn-logout:hover {
+        color: #C8170D;
+        background: #fff;
+        border: 1px solid #C8170D;
+    }
 </style>
 
 <script>
@@ -98,5 +129,19 @@
                 link.innerHTML = `<span>${link.textContent}</span>`;
             });
         });
+    });
+</script>
+
+<script>
+    document.getElementById('logoutForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        try {
+            await firebase.auth().signOut();
+        } catch (err) {
+            console.log(err);
+        }
+
+        this.submit();
     });
 </script>

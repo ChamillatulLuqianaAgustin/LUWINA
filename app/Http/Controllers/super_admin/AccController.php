@@ -109,7 +109,9 @@ class AccController extends Controller
             if ($doca->exists()) {
                 $data = $doca->data();
 
-                if (($data['ta_project_status'] ?? '') !== 'ACC') {
+                $status = $data['ta_project_status'] ?? '';
+
+                if (!in_array($status, ['ACC', 'REKONSILIASI', 'REVIEW TA', 'CLOSE'])) {
                     continue;
                 }
 
@@ -384,6 +386,19 @@ class AccController extends Controller
             // 'grand' => $grand,
         ];
 
+        $returnDocs = $firestore->collection('Return_Project')
+            ->where('project_id', '=', $id)
+            ->documents();
+
+        $catatanReturn = null;
+
+        foreach ($returnDocs as $rd) {
+            if ($rd->exists()) {
+                $catatanReturn = $rd->data()['catatan'] ?? null;
+                break; // ambil yang pertama
+            }
+        }
+
         return view('super_admin.acc.detail_acc', [
             'acc' => [
                 'id'              => $id,
@@ -399,6 +414,7 @@ class AccController extends Controller
                 'status'          => $data['ta_project_status'],
                 'total'           => $data['ta_project_total'],
                 'detail'          => $detail,
+                'catatan_return' => $catatanReturn,
             ],
             'totals' => $totals,
         ]);
@@ -626,15 +642,23 @@ class AccController extends Controller
                 ->with('error', 'Project tidak ditemukan');
         }
 
-        // gunakan Firestore Timestamp agar konsisten dengan data Firestore
+        // Firestore Timestamp
         $now = new FireTimestamp(new \DateTime());
 
+        // Update waktu pengerjaan + status
         $docRef->update([
-            ['path' => 'ta_project_waktu_pengerjaan', 'value' => $now],
+            [
+                'path' => 'ta_project_waktu_pengerjaan',
+                'value' => $now,
+            ],
+            [
+                'path' => 'ta_project_status',
+                'value' => 'REKONSILIASI',
+            ],
         ]);
 
         return redirect()->route('superadmin.acc_detail', $id)
-            ->with('success', 'Tanggal pengerjaan berhasil diset.');
+            ->with('success', 'Project berhasil dikerjakan.');
     }
 
     public function storeFoto(Request $request, $id)
@@ -745,16 +769,28 @@ class AccController extends Controller
             ];
 
             // ================================
-            // MERGE PER DESIGNATOR
+            // CREATE / UPDATE PER DESIGNATOR
             // ================================
             foreach ($uploaded['sebelum'] as $dsg => $urls) {
-                $existing['sebelum'][$dsg] =
-                    array_merge($existing['sebelum'][$dsg] ?? [], $urls);
+
+                if (empty($existing['sebelum'][$dsg])) {
+                    // CREATE
+                    $existing['sebelum'][$dsg] = $urls;
+                } else {
+                    // UPDATE (replace foto lama)
+                    $existing['sebelum'][$dsg] = $urls;
+                }
             }
 
             foreach ($uploaded['sesudah'] as $dsg => $urls) {
-                $existing['sesudah'][$dsg] =
-                    array_merge($existing['sesudah'][$dsg] ?? [], $urls);
+
+                if (empty($existing['sesudah'][$dsg])) {
+                    // CREATE
+                    $existing['sesudah'][$dsg] = $urls;
+                } else {
+                    // UPDATE (replace foto lama)
+                    $existing['sesudah'][$dsg] = $urls;
+                }
             }
 
             // ================================
@@ -778,7 +814,7 @@ class AccController extends Controller
             if ($projectSnapshot->exists()) {
                 $projectData = $projectSnapshot->data();
 
-                // hanya set jika belum ada
+                // isi waktu selesai hanya sekali
                 if (empty($projectData['ta_project_waktu_selesai'])) {
                     $projectRef->update([
                         [
@@ -787,12 +823,19 @@ class AccController extends Controller
                         ],
                     ]);
                 }
+
+                // status selalu menjadi REVIEW TA setelah upload foto
+                $projectRef->update([
+                    [
+                        'path'  => 'ta_project_status',
+                        'value' => 'REVIEW TA',
+                    ],
+                ]);
             }
 
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Foto evident berhasil diupload.'
-            ]);
+            return redirect()
+                ->route('superadmin.acc_detail', $id)
+                ->with('success', 'Foto evident berhasil diupload.');
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -824,6 +867,54 @@ class AccController extends Controller
         }
 
         return back()->with('success', 'Project berhasil dipending');
+    }
+
+    public function returnProject(Request $request, $id)
+    {
+        $request->validate([
+            'catatan_return' => 'required|string'
+        ]);
+
+        $firestore = $this->getFirestore();
+
+        // simpan catatan return
+        $firestore->collection('Return_Project')->add([
+            'project_id' => $id,
+            'catatan' => $request->catatan_return,
+            'created_at' => new FireTimestamp(new \DateTime())
+        ]);
+
+        // ubah status project
+        $firestore->collection('All_Project_TA')
+            ->document($id)
+            ->update([
+                [
+                    'path' => 'ta_project_status',
+                    'value' => 'REKONSILIASI'
+                ]
+            ]);
+
+        return redirect()
+            ->route('superadmin.acc_detail', $id)
+            ->with('success', 'Project berhasil direturn.');
+    }
+
+    public function closeProject($id)
+    {
+        $firestore = $this->getFirestore();
+
+        $firestore->collection('All_Project_TA')
+            ->document($id)
+            ->update([
+                [
+                    'path' => 'ta_project_status',
+                    'value' => 'CLOSE'
+                ]
+            ]);
+
+        return redirect()
+            ->route('superadmin.acc_detail', $id)
+            ->with('success', 'Project berhasil di-close.');
     }
 
     private function formatDate($timestamp)
