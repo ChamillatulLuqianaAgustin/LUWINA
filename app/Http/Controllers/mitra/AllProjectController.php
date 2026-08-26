@@ -297,7 +297,7 @@ class AllProjectController extends Controller
             $request->validate([
                 'file' => 'required|mimes:xlsx,xls',
                 'qe' => 'required|string',
-                'status' => 'required|string',
+                // 'status' => 'required|string',
                 'deskripsi' => 'required|string',
             ]);
 
@@ -340,7 +340,8 @@ class AllProjectController extends Controller
                 'ta_project_witel'        => $header['ta_project_witel'],
                 'ta_project_foto_id'      => null,
                 'ta_project_pending_id'   => null,
-                'ta_project_status'       => $request->status,
+                // 'ta_project_status'       => $request->status,
+                'ta_project_status' => 'PROCESS',
                 'ta_project_total'        => 0,
                 'ta_project_waktu_pengerjaan' => null,
                 'ta_project_waktu_selesai'    => null,
@@ -370,9 +371,25 @@ class AllProjectController extends Controller
                 $firestore->collection('Detail_Project_TA')->add([
                     'ta_detail_all_id' => $allProjectRef,
                     'ta_detail_ta_id'  => $dataRef,
+                    'ta_detail_harga_material' => $detail['harga_material'],
+                    'ta_detail_harga_jasa'     => $detail['harga_jasa'],
                     'ta_detail_volume' => $volume,
                 ]);
             }
+
+            $detailDocs = $firestore
+                ->collection('Detail_Project_TA')
+                ->where('ta_detail_all_id', '=', $allProjectRef)
+                ->documents();
+
+            $total = $this->hitungTotal($detailDocs);
+
+            $allProjectRef->update([
+                [
+                    'path'  => 'ta_project_total',
+                    'value' => $total['total']
+                ]
+            ]);
 
             return response()->json([
                 'success' => true,

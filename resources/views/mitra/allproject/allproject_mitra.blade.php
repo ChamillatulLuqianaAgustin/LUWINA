@@ -139,9 +139,13 @@
                             <td>
                                 <a href="
                                     @if ($project['status'] === 'PROCESS') {{ route('mitra.allproject_process_detail', $project['id']) }}
-                                    @elseif ($project['status'] === 'ACC') {{ route('mitra.allproject_acc_detail', $project['id']) }}
+                                    @elseif (
+                                        $project['status'] === 'ACC' ||
+                                            $project['status'] === 'REKONSILIASI' ||
+                                            $project['status'] === 'REVIEW TA' ||
+                                            $project['status'] === 'CLOSE') {{ route('mitra.allproject_acc_detail', $project['id']) }}
                                     @elseif ($project['status'] === 'REJECT') {{ route('mitra.allproject_reject_detail', $project['id']) }}
-                                    @else {{ route('telkomakses.allproject', $project['id']) }} @endif "
+                                    @else {{ route('mitra.allproject', $project['id']) }} @endif "
                                     title="Lihat Detail">
                                     <img src="{{ asset('assets/detail.png') }}" alt="Detail"
                                         style="width:20px;height:20px;">
@@ -187,8 +191,15 @@
                         style="margin-top: 10px; color: #133995; font-size: 13px; font-weight: 500;"></div>
                 </div>
 
+                <div style="text-align:center; margin-bottom:15px;">
+                    <a href="{{ asset('template/form_upload_luwina.xlsx') }}" download
+                        style="color:#133995; font-weight:600; text-decoration:none;">
+                        📄 Klik untuk Mengunduh Format Upload
+                    </a>
+                </div>
+
                 <div class="row mb-3">
-                    <div class="form-status">
+                    {{-- <div class="form-status">
                         <label class="label-status">Status:</label>
                         <select name="status" class="select-field" required>
                             <option value="" disabled selected hidden>Pilih Status Project</option>
@@ -196,7 +207,7 @@
                             <option value="ACC" style="color:#34C759;">ACC</option>
                             <option value="REJECT" style="color:#C8170D;">REJECT</option>
                         </select>
-                    </div>
+                    </div> --}}
 
                     <div class="form-qe">
                         <label class="label-qe">QE:</label>
@@ -622,12 +633,12 @@
 
         /* Bagian Chart */
         /* .charts-row {
-                                                                margin-top: 20px;
-                                                                display: grid;
-                                                                grid-template-columns: 2fr 1fr;
-                                                                gap: 18px;
-                                                                margin-bottom: 22px;
-                                                            } */
+                                                                            margin-top: 20px;
+                                                                            display: grid;
+                                                                            grid-template-columns: 2fr 1fr;
+                                                                            gap: 18px;
+                                                                            margin-bottom: 22px;
+                                                                        } */
 
         .charts-row {
             margin-top: 20px;
@@ -651,8 +662,8 @@
         }
 
         /* .card.left {
-                                                            height: 420px;
-                                                        } */
+                                                                        height: 420px;
+                                                                    } */
 
         .card.left {
             display: flex;
@@ -662,11 +673,11 @@
         }
 
         /* .right-column {
-                                                        display: flex;
-                                                        flex-direction: column;
-                                                        gap: 18px;
-                                                        height: 420px;
-                                                    } */
+                                                                    display: flex;
+                                                                    flex-direction: column;
+                                                                    gap: 18px;
+                                                                    height: 420px;
+                                                                } */
 
         .right-column {
             display: flex;
@@ -678,9 +689,9 @@
         }
 
         /* .right-column .card {
-                                                    flex: 1;
-                                                    padding: 12px;
-                                                } */
+                                                                flex: 1;
+                                                                padding: 12px;
+                                                            } */
 
         .right-column .card {
             flex: 1;
@@ -697,10 +708,10 @@
         }
 
         /* .chart-wrap {
-                                                flex: 1;
-                                                min-height: 0;
-                                                display: flex;
-                                            } */
+                                                            flex: 1;
+                                                            min-height: 0;
+                                                            display: flex;
+                                                        } */
 
         .chart-wrap {
             flex-grow: 1;
@@ -711,10 +722,10 @@
         }
 
         /* .chart-wrap canvas {
-                                            width: 100% !important;
-                                            height: 100% !important;
-                                            display: block;
-                                        } */
+                                                        width: 100% !important;
+                                                        height: 100% !important;
+                                                        display: block;
+                                                    } */
 
         .chart-wrap canvas {
             width: 100% !important;

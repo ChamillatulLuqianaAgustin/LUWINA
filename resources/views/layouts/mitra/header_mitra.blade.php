@@ -18,11 +18,11 @@
 
             <div>
                 <div style="font-weight:400; color:#133995; margin-bottom:4px;">
-                    {{ $user['nik'] }}
+                    <span id="userNik">Memuat...</span>
                 </div>
 
                 <div style="color:#133995; font-weight:400;">
-                    {{ $user['nama'] }}
+                    <span id="userNama">Memuat...</span>
                 </div>
             </div>
         </div>
@@ -145,5 +145,20 @@
         }
 
         this.submit();
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const nik = localStorage.getItem("user_nik");
+        const nama = localStorage.getItem("user_nama");
+
+        console.log("NIK:", nik);
+        console.log("Nama:", nama);
+
+        document.getElementById("userNik").textContent = nik || "-";
+        document.getElementById("userNama").textContent = nama || "-";
+
     });
 </script>

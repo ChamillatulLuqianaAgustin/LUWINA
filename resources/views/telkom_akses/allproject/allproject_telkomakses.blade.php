@@ -138,7 +138,11 @@
                             <td>
                                 <a href="
                                     @if ($project['status'] === 'PROCESS') {{ route('telkomakses.allproject_process_detail', $project['id']) }}
-                                    @elseif ($project['status'] === 'ACC') {{ route('telkomakses.allproject_acc_detail', $project['id']) }}
+                                    @elseif (
+                                        $project['status'] === 'ACC' ||
+                                            $project['status'] === 'REKONSILIASI' ||
+                                            $project['status'] === 'REVIEW TA' ||
+                                            $project['status'] === 'CLOSE') {{ route('telkomakses.allproject_acc_detail', $project['id']) }}
                                     @elseif ($project['status'] === 'REJECT') {{ route('telkomakses.allproject_reject_detail', $project['id']) }}
                                     @else {{ route('telkomakses.allproject', $project['id']) }} @endif "
                                     title="Lihat Detail">

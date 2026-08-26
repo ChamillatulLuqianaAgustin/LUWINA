@@ -349,14 +349,14 @@ class AllProjectController extends Controller
             ]);
 
             // 4️⃣ Simpan ke Detail_Project_TA (hanya baris valid sesuai TAImport)
-            $dataProjectCollection = $firestore->collection('Data_Project_Mitra');
+            $dataProjectCollection = $firestore->collection('Data_Project_TA');
             foreach ($details as $detail) {
                 $designator = $detail['designator'];
                 $volume = $detail['volume'];
                 $volume     = $detail['volume'];
 
-                // 🔍 Cari dokumen designator di Data_Project_Mitra
-                $dataTA = $dataProjectCollection->where('mitra_designator', '=', $designator)->documents();
+                // 🔍 Cari dokumen designator di Data_Project_TA
+                $dataTA = $dataProjectCollection->where('ta_designator', '=', $designator)->documents();
                 $dataRef = null;
                 foreach ($dataTA as $d) {
                     if ($d->exists()) {

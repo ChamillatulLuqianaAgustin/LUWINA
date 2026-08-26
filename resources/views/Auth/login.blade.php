@@ -168,11 +168,13 @@
 
     <script>
         async function loginFirebase() {
+
             const nik = document.querySelector('input[name="nik"]').value;
             const password = document.querySelector('input[name="password"]').value;
 
             try {
-                // ambil user dari Firestore
+
+                // Ambil user dari Firestore
                 const snapshot = await db.collection("User")
                     .where("user_nik", "==", nik)
                     .limit(1)
@@ -185,36 +187,57 @@
 
                 const userData = snapshot.docs[0].data();
 
+                // Cek password
                 if (userData.user_password !== password) {
                     Swal.fire("Error", "Password salah", "error");
                     return;
                 }
 
-                // ambil role
+                // Ambil role
                 let roleName = "Unknown";
+
                 if (userData.user_role) {
                     const roleDoc = await userData.user_role.get();
                     roleName = roleDoc.data().role;
                 }
 
-                // simpan ke localStorage (pengganti session)
+                // SIMPAN DATA LOGIN
+                localStorage.setItem("user_nik", nik);
                 localStorage.setItem("user_nama", userData.user_nama);
                 localStorage.setItem("role", roleName);
 
-                // redirect
+                console.log("NIK LOGIN:", nik);
+                console.log("NAMA LOGIN:", userData.user_nama);
+                console.log("ROLE LOGIN:", roleName);
+
+                // Redirect
                 if (roleName === "Super Admin") {
+
                     window.location.href = "/superadmin/allproject";
+
                 } else if (roleName === "Telkom Akses") {
+
                     window.location.href = "/telkomakses/allproject";
+
                 } else if (roleName === "Mitra") {
+
                     window.location.href = "/mitra/allproject";
+
                 } else {
+
                     window.location.href = "/";
+
                 }
 
             } catch (error) {
+
                 console.error(error);
-                Swal.fire("Error", "Terjadi kesalahan", "error");
+
+                Swal.fire(
+                    "Error",
+                    "Terjadi kesalahan",
+                    "error"
+                );
             }
         }
     </script>
